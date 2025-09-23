@@ -1,0 +1,83 @@
+<form class="{{cssClass}}" autocomplete="off">
+    <header class="sheet-header">
+      <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}"/>
+      <div class="header-fields">
+        <h1 class="charname"><input name="name" type="text" value="{{item.name}}" placeholder="Name"/></h1>
+      </div>
+    </header>
+  
+    {{!-- Sheet Tab Navigation --}}
+    <nav class="sheet-tabs tabs" data-group="primary">
+      <a class="item" data-tab="description">Description</a>
+      <a class="item" data-tab="attributes">Attributes</a>
+    </nav>
+  
+    {{!-- Sheet Body --}}
+    <section class="sheet-body">
+      {{!-- Description Tab --}}
+      <div class="tab" data-group="primary" data-tab="description">
+        <textarea name="system.description">{{system.description}}</textarea>
+      </div>
+  
+      {{!-- Attributes Tab --}}
+      <div class="tab" data-group="primary" data-tab="attributes">
+        <div class="form-group">
+          <label>School</label>
+          <select name="system.school">
+              {{selectOptions spellSchoolOptions selected=system.school}}
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Is Dark Magic?</label>
+          <input type="checkbox" name="system.isDarkMagic" {{checked system.isDarkMagic}}/>
+        </div>
+        
+        <div class="form-group">
+          <label>Damage</label>
+          <input type="text" name="system.damage" value="{{system.damage}}"/>
+        </div>
+        
+        <div class="form-group">
+          <label>Damage Type</label>
+          <select name="system.damageType">
+              {{selectOptions spellDamageTypeOptions selected=system.damageType}}
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Time/Duration</label>
+          <input type="text" name="system.time" value="{{system.time}}"/>
+        </div>
+        
+        <div class="form-group">
+          <label>Successes Required</label>
+          <input type="text" name="system.successes" value="{{system.successes}}" data-dtype="Number"/>
+        </div>
+        
+        <div class="form-group">
+          <label>Attack</label>
+          <select name="system.attack">
+              {{selectOptions spellAttackOptions selected=system.attack}}
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Range</label>
+          <input type="text" name="system.range" value="{{system.range}}"/>
+        </div>
+        
+        <div class="form-group">
+          <label>Bonus Effect</label>
+          <textarea name="system.bonusEffect">{{system.bonusEffect}}</textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>Mishap Modifier</label>
+          <select name="system.mishapModifier">
+              {{selectOptions mishapModifierOptions selected=system.mishapModifier}}
+          </select>
+        </div>
+      </div>
+    </section>
+  </form>

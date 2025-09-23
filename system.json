@@ -1,0 +1,53 @@
+{
+  "id": "feue",
+  "name": "feue",
+  "title": "Fire Emblem: Ultimate Edition",
+  "description": "A system for playing Fire Emblem: Ultimate Edition TTRPG in Foundry VTT",
+  "version": "13.0.0",
+  "authors": [
+    {
+      "name": "Jeremy H.",
+      "discord": "ColeArkenach"
+    }
+  ],
+  "compatibility": {
+    "minimum": 12,
+    "verified": "13",
+    "maximum": "13"
+  },
+  "esmodules": [
+    "feue.js"
+  ],
+  "styles": [
+    "styles/feue.css"
+  ],
+  "packs": [
+    {
+      "name": "species",
+      "label": "Species",
+      "system": "thefade",
+      "path": "./packs/species.db",
+      "type": "Item"
+    }
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "grid": {
+    "distance": 1,
+    "units": "square"
+  },
+  "primaryTokenAttribute": "hp",
+  "secondaryTokenAttribute": "sanity",
+  "url": "https://github.com/colearkenach/thefade-foundry",
+  "manifest": "https://github.com/colearkenach/thefade-foundry/releases/download/v13/system.json",
+  "download": "https://github.com/colearkenach/thefade-foundry/archive/refs/tags/v13.zip",
+  "license": "LICENSE.txt",
+  "itemTypes": [
+    "weapon"
+  ]
+}

@@ -1,0 +1,298 @@
+{
+  "Actor": {
+    "types": [ "character" ],
+    "templates": {
+      "base": {
+        "hp": {
+          "value": 0
+        },
+        "attributes": {
+          "physique": {
+            "value": 1
+          },
+          "finesse": {
+            "value": 1
+          },
+          "mind": {
+            "value": 1
+          },
+          "presence": {
+            "value": 1
+          },
+          "soul": {
+            "value": 1
+          }
+        }
+      }
+    },
+    "character": {
+      "templates": [ "base" ],
+      "biography": "",
+      "appearance": "",
+      "sanity": {
+        "value": 10,
+        "miscBonus": 0
+      },
+      "darkMagic": {
+        "spellsLearned": {},
+        "currentSin": 0,
+        "sinThresholdBonus": 0,
+        "addictionLevel": "none"
+      },
+      "hpMiscBonus": 0,
+      "level": 1,
+      "tier1tl": 1,
+      "tier2tl": 0,
+      "tier3tl": 0,
+      "initiative": 0,
+      "initiativeBonus": 0,
+      "experience": 0,
+      "species": {
+        "name": "",
+        "baseHP": 0,
+        "size": "medium",
+        "creatureType": "humanoid",
+        "creatureSubtype": "",
+        "languages": "",
+        "speciesAbilities": {}
+      },
+      "movement": {
+        "land": 4,
+        "fly": 0,
+        "swim": 0,
+        "climb": 0,
+        "burrow": 0
+      },
+      "overland-movement": {
+        "landOverland": 24,
+        "flyOverland": 0,
+        "swimOverland": 0,
+        "climbOverland": 0,
+        "burrowOverland": 0
+      },
+      "defenses": {
+        "resilience": 0,
+        "avoid": 0,
+        "grit": 0,
+        "resilienceBonus": 0,
+        "avoidBonus": 0,
+        "gritBonus": 0,
+        "passiveDodge": 0,
+        "passiveParry": 0,
+        "facing": "front"
+      },
+      "magicItems": {
+        "head": null,
+        "neck": null,
+        "body": null,
+        "hands": null,
+        "ring1": null,
+        "ring2": null,
+        "belt": null,
+        "boots": null
+      },
+      "currentAttunements": 0,
+      "maxAttunements": 0,
+      "currency": {
+        "serpents": 0
+      },
+      "background": "",
+      "notes": "",
+      "religion": "",
+      "language": "",
+      "aura": {
+        "color": "",
+        "shape": "",
+        "intensity": ""
+      },
+      "personalDetails": {
+        "age": 0,
+        "sex": "",
+        "sexuality": "",
+        "heightFeet": 0,
+        "heightInches": 0,
+        "weight": 0,
+        "hairColor": "#000000",
+        "eyeColor": "#000000",
+        "skinColor": "#000000",
+        "xenochild": false,
+        "handedness": "",
+        "birthplace": "",
+        "culture": ""
+      },
+      "family": {
+        "father": {
+          "name": "",
+          "alive": false
+        },
+        "mother": {
+          "name": "",
+          "alive": false
+        },
+        "siblings": [],
+        "maritalStatus": "",
+        "spouse": {
+          "name": "",
+          "alive": false
+        },
+        "children": [],
+        "build": "",
+        "distinguishingMarks": "",
+        "voice": "",
+        "socialClass": "",
+        "education": "",
+        "occupation": "",
+        "greatestVice": "",
+        "reputation": "",
+        "fightingStyle": ""
+      }
+    }
+  },
+  "Item": {
+    "types": [
+      "weapon",
+      "armor",
+      "skill",
+      "path",
+      "spell",
+      "talent",
+      "clothing",
+      "species",
+      "drug",
+      "poison",
+      "biological",
+      "medical",
+      "travel",
+      "mount",
+      "vehicle",
+      "musical",
+      "potion",
+      "staff",
+      "wand",
+      "gate",
+      "communication",
+      "containment",
+      "dream",
+      "fleshcraft",
+      "magicitem",
+      "trait",
+      "precept"
+    ],
+    "templates": {
+      "base": {
+        "description": ""
+      },
+      "physical": {
+        "weight": 0,
+        "price": 0,
+        "quantity": 1,
+        "equipped":  false
+      }
+    },
+    "weapon": {
+      "templates": [ "base", "physical" ],
+      "damage": 0,
+      "damageType": "B",
+      "critical": 4,
+      "handedness": "One-Handed",
+      "range": "Melee",
+      "integrity": 10,
+      "qualities": "",
+      "skill": "Sword",
+      "attribute": "physique",
+      "material": "iron",
+      "miscBonus": 0
+    },
+    "armor": {
+      "templates": [ "base", "physical" ],
+      "ap": 0,
+      "currentAP": 0,
+      "isHeavy": false,
+      "location": "Body",
+      "autoBlock": "",
+      "material": "iron"
+    },
+    "skill": {
+      "templates": [ "base" ],
+      "rank": "untrained",
+      "category": "Combat",
+      "attribute": "physique",
+      "usage": "",
+      "miscBonus": 0
+    },
+    "path": {
+      "templates": [ "base" ],
+      "tier": 1,
+      "baseHP": 0,
+      "skills": "",
+      "requirements": "",
+      "abilities": {},
+      "pathSkills": []
+    },
+    "spell": {
+      "templates": [ "base" ],
+      "school": "General",
+      "isDarkMagic": false,
+      "damage": "",
+      "damageType": "",
+      "time": "Instantaneous",
+      "successes": 3,
+      "attack": "",
+      "range": "",
+      "bonusEffect": "",
+      "mishapModifier": "none"
+    },
+    "talent": {
+      "templates": [ "base" ],
+      "prerequisites": "",
+      "usesPerDay": 0,
+      "associatedPath": ""
+    },
+    "species": {
+      "templates": [ "base" ],
+      "baseHP": 0,
+      "size": "medium",
+      "creatureType": "humanoid",
+      "creatureSubtype": "",
+      "languages": "",
+      "abilityBonuses": {
+        "physique": 0,
+        "finesse": 0,
+        "mind": 0,
+        "presence": 0,
+        "soul": 0
+      },
+      "flexibleBonus": {
+        "value": 0,
+        "selectedAttribute": ""
+      },
+      "movement": {
+        "land": 4,
+        "fly": 0,
+        "swim": 0,
+        "climb": 0,
+        "burrow": 0
+      },
+      "speciesAbilities": {},
+      "description": "",
+      "personality": "",
+      "history": "",
+      "youngAge": "",
+      "adultAge": "",
+      "oldAge": "",
+      "maximumAge": 0,
+      "visionType": [
+        "normal",
+        "enhanced",
+        "darkvision"
+      ],
+      "biologicallyImmortal": false
+    },
+    "item": {
+      "templates": [ "base", "physical" ],
+      "itemCategory": "mundane",
+      "effect": "",
+      "duration": ""
+    }
+  }
+}
