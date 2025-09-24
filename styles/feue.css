@@ -629,3 +629,104 @@
     border-bottom: 2px solid var(--feue-accent);
     padding-bottom: 5px;
 }
+
+/* ===== ITEM SHEET SPECIFIC FIXES ===== */
+.feue.item .sheet-header {
+    padding: 8px 10px;
+    min-height: 60px;
+}
+
+    .feue.item .sheet-header .item-img {
+        width: 48px;
+        height: 48px;
+        border: 2px solid var(--feue-accent);
+        border-radius: 4px;
+    }
+
+    .feue.item .sheet-header .header-fields {
+        flex: 1;
+        margin-left: 10px;
+    }
+
+    .feue.item .sheet-header .item-name {
+        margin: 0;
+        font-size: 16px;
+    }
+
+        .feue.item .sheet-header .item-name input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+        }
+
+/* ===== COMPACT FORM STYLING ===== */
+.feue.item .form-row {
+    gap: 10px;
+    margin: 8px 0;
+}
+
+.feue.item .form-group {
+    gap: 3px;
+}
+
+    .feue.item .form-group label {
+        font-size: 11px;
+        font-weight: bold;
+        color: var(--feue-secondary);
+        margin-bottom: 2px;
+    }
+
+    .feue.item .form-group input,
+    .feue.item .form-group select,
+    .feue.item .form-group textarea {
+        font-size: 11px;
+        padding: 3px 5px;
+        border: 1px solid var(--feue-border);
+        border-radius: 3px;
+    }
+
+.feue.item .stats-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin: 8px 0;
+}
+
+    .feue.item .stats-grid .form-group {
+        min-width: 0;
+    }
+
+        .feue.item .stats-grid .form-group input {
+            width: 100%;
+            text-align: center;
+        }
+
+/* ===== CLASS TAB SPECIFIC ===== */
+.feue.item .tab.class h4 {
+    font-size: 12px;
+    color: var(--feue-primary);
+    margin: 12px 0 6px 0;
+    border-bottom: 1px solid var(--feue-accent);
+    padding-bottom: 2px;
+}
+
+.feue.item .uses-group {
+    align-items: center;
+}
+
+    .feue.item .uses-group input {
+        width: 40px;
+    }
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 640px) {
+    .feue.item .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .feue.item .form-row {
+        flex-direction: column;
+    }
+}

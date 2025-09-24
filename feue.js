@@ -254,7 +254,9 @@ class FireEmblemCharacterSheet extends ActorSheet {
             template: "systems/feue/templates/actor/character-sheet.html",
             width: 800,
             height: 950,
-            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "main" }]
+            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "main" }],
+            closeOnSubmit: false,
+            submitOnChange: true
         });
     }
 
@@ -459,9 +461,11 @@ class FireEmblemItemSheet extends ItemSheet {
         return foundry.utils.mergeObject(super.defaultOptions, {
             classes: ["feue", "sheet", "item"],
             template: "systems/feue/templates/item/item-sheet.html",
-            width: 520,
-            height: 480,
-            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "description" }]
+            width: 600,
+            height: 600,
+            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "description" }],
+            closeOnSubmit: false,
+            submitOnChange: true
         });
     }
 
@@ -470,6 +474,49 @@ class FireEmblemItemSheet extends ItemSheet {
         data.dtypes = ["String", "Number", "Boolean"];
         data.FEUE = FEUE;
         return data;
+    }
+
+    activateListeners(html) {
+        super.activateListeners(html);
+
+        // Handle form submissions properly
+        if (!this.options.editable) return;
+
+        // Handle array inputs for unit types and weapon proficiencies
+        html.find('input[name="system.unitTypes"]').change(this._onArrayInput.bind(this));
+        html.find('input[name="system.weaponProficiencies"]').change(this._onArrayInput.bind(this));
+        html.find('input[name="system.promotesInto"]').change(this._onArrayInput.bind(this));
+    }
+
+    /**
+     * Handle array input fields (convert comma-separated strings to arrays)
+     */
+    async _onArrayInput(event) {
+        event.preventDefault();
+        const element = event.currentTarget;
+        const field = element.name;
+        const value = element.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+        await this.item.update({ [field]: value });
+    }
+
+    /**
+     * Override _updateObject to handle form data properly
+     */
+    async _updateObject(event, formData) {
+        // Handle array fields specifically
+        if (formData["system.unitTypes"] && typeof formData["system.unitTypes"] === "string") {
+            formData["system.unitTypes"] = formData["system.unitTypes"].split(',').map(s => s.trim()).filter(s => s.length > 0);
+        }
+        if (formData["system.weaponProficiencies"] && typeof formData["system.weaponProficiencies"] === "string") {
+            formData["system.weaponProficiencies"] = formData["system.weaponProficiencies"].split(',').map(s => s.trim()).filter(s => s.length > 0);
+        }
+        if (formData["system.promotesInto"] && typeof formData["system.promotesInto"] === "string") {
+            formData["system.promotesInto"] = formData["system.promotesInto"].split(',').map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        // Update the item
+        return super._updateObject(event, formData);
     }
 }
 
@@ -495,6 +542,11 @@ Hooks.once("init", function () {
             "/": lvalue / rvalue,
             "%": lvalue % rvalue
         }[operator];
+    });
+
+    Handlebars.registerHelper('join', function (array, separator) {
+        if (!array || !Array.isArray(array)) return '';
+        return array.join(separator || ', ');
     });
 
     // Register sheet application classes
