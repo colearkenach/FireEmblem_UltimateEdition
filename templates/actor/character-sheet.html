@@ -110,7 +110,7 @@
                         <label>Affinity</label>
                         <select name="system.affinity">
                             {{#each FEUE.AFFINITIES as |affinity|}}
-                            <option value="{{affinity}}" {{#ifEquals ../system.affinity affinity}} selected{{/ifEquals}}>{{affinity}}</option>
+                            <option value="{{affinity}}" {{#ifEquals ../systemDisplay.affinity affinity}} selected{{/ifEquals}}>{{affinity}}</option>
                             {{/each}}
                         </select>
                     </div>
@@ -295,35 +295,35 @@
                 <div class="details-grid">
                     <div class="detail">
                         <label>Age</label>
-                        <input type="text" name="system.personalDetails.age" value="{{system.personalDetails.age}}" data-dtype="Number" />
+                        <input type="text" name="system.personalDetails.age" value="{{systemDisplay.personalDetails.age}}" data-dtype="Number" />
                     </div>
                     <div class="detail">
                         <label>Sex</label>
-                        <input type="text" name="system.personalDetails.sex" value="{{system.personalDetails.sex}}" />
+                        <input type="text" name="system.personalDetails.sex" value="{{systemDisplay.personalDetails.sex}}" />
                     </div>
                     <div class="detail">
                         <label>Height</label>
-                        <input type="text" name="system.personalDetails.height" value="{{system.personalDetails.height}}" />
+                        <input type="text" name="system.personalDetails.height" value="{{systemDisplay.personalDetails.height}}" />
                     </div>
                     <div class="detail">
                         <label>Weight</label>
-                        <input type="text" name="system.personalDetails.weight" value="{{system.personalDetails.weight}}" />
+                        <input type="text" name="system.personalDetails.weight" value="{{systemDisplay.personalDetails.weight}}" />
                     </div>
                     <div class="detail">
                         <label>Birthplace</label>
-                        <input type="text" name="system.personalDetails.birthplace" value="{{system.personalDetails.birthplace}}" />
+                        <input type="text" name="system.personalDetails.birthplace" value="{{systemDisplay.personalDetails.birthplace}}" />
                     </div>
                 </div>
             </div>
 
             <div class="biography-text">
                 <h3>Biography</h3>
-                <textarea name="system.biography" rows="8" placeholder="Character biography...">{{system.biography}}</textarea>
+                <textarea name="system.biography" rows="8" placeholder="Character biography...">{{systemDisplay.biography}}</textarea>
             </div>
 
             <div class="appearance-text">
                 <h3>Appearance</h3>
-                <textarea name="system.appearance" rows="6" placeholder="Character appearance...">{{system.appearance}}</textarea>
+                <textarea name="system.appearance" rows="6" placeholder="Character appearance...">{{systemDisplay.appearance}}</textarea>
             </div>
         </div>
 

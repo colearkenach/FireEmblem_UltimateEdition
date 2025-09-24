@@ -59,7 +59,17 @@ const FALLBACK_ACTOR_DATA = {
         current: 4
     },
     unitTypes: ["Infantry"],
-    weaponRanks: {}
+    weaponRanks: {},
+    affinity: "Fire",
+    biography: "",
+    appearance: "",
+    personalDetails: {
+        age: 18,
+        sex: "",
+        height: "",
+        weight: "",
+        birthplace: ""
+    }
 };
 
 const DEFAULT_WEAPON_RANKS = Object.fromEntries(
@@ -83,6 +93,46 @@ function hasCustomArrayValues(values, fallback) {
     return cleaned.some((value, index) => value !== fallback[index]);
 }
 
+function sanitizeNumberField(target, path) {
+    if (!foundry?.utils?.hasProperty?.(target, path)) return;
+
+    const raw = foundry.utils.getProperty(target, path);
+    if (raw === "" || raw === null || raw === undefined) {
+        foundry.utils.setProperty(target, path, null);
+        return;
+    }
+
+    if (typeof raw === "number" && Number.isFinite(raw)) {
+        return;
+    }
+
+    const numeric = Number(raw);
+    if (Number.isFinite(numeric)) {
+        foundry.utils.setProperty(target, path, numeric);
+    } else {
+        foundry.utils.setProperty(target, path, null);
+    }
+}
+
+function sanitizeDelimitedArrayField(target, path, { delimiter = /[,\n]+/ } = {}) {
+    if (!foundry?.utils?.hasProperty?.(target, path)) return;
+
+    const raw = foundry.utils.getProperty(target, path);
+    let values = [];
+
+    if (Array.isArray(raw)) {
+        values = raw;
+    } else if (typeof raw === "string") {
+        values = raw.split(delimiter);
+    }
+
+    const cleaned = values
+        .map(value => (value ?? "").toString().trim())
+        .filter(value => value.length > 0);
+
+    foundry.utils.setProperty(target, path, cleaned);
+}
+
 // ====================================================================
 // 1. CORE ACTOR CLASSES
 // ====================================================================
@@ -103,6 +153,11 @@ class FireEmblemActor extends Actor {
         });
         systemData.unitTypes = Array.isArray(systemData.unitTypes) ? systemData.unitTypes : [];
 
+        // Ensure basic fields exist
+        if (!systemData.affinity) systemData.affinity = "Fire";
+        if (!systemData.biography) systemData.biography = "";
+        if (!systemData.appearance) systemData.appearance = "";
+        if (!systemData.personalDetails) systemData.personalDetails = {};
 
         // Calculate derived combat stats using the adjusted values
         this._prepareCharacterData(systemData);
@@ -129,6 +184,7 @@ class FireEmblemActor extends Actor {
         display.growthRates = display.growthRates || foundry.utils.deepClone(FALLBACK_ACTOR_DATA.growthRates);
         display.movement = display.movement || foundry.utils.deepClone(FALLBACK_ACTOR_DATA.movement);
         display.unitTypes = Array.isArray(display.unitTypes) ? display.unitTypes.slice() : [];
+        display.personalDetails = display.personalDetails || foundry.utils.deepClone(FALLBACK_ACTOR_DATA.personalDetails);
 
         if (!classData) {
             return display;
@@ -349,7 +405,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
             height: 950,
             tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "main" }],
             closeOnSubmit: false,
-            submitOnChange: false  // CHANGED: Turn off auto-submit
+            submitOnChange: false  // Turn off auto-submit
         });
     }
 
@@ -420,12 +476,10 @@ class FireEmblemCharacterSheet extends ActorSheet {
         // Weapon rank changes - handle on change for dropdowns
         html.find('.weapon-rank').change(this._onWeaponRankChange.bind(this));
 
-        // Handle text fields on blur, dropdowns on change
+        // Handle specific field types to prevent loops
         html.find('select[name="system.affinity"]').change(this._onFieldChange.bind(this));
-        html.find('input[name^="system.personalDetails"], textarea[name="system.biography"], textarea[name="system.appearance"]').on('blur', this._onFieldChange.bind(this));
-
-        // Handle attribute and growth rate changes on blur
-        html.find('input[name^="system.attributes"], input[name^="system.growthRates"], input[name^="system.movement"]').on('blur', this._onFieldChange.bind(this));
+        html.find('input[name^="system.personalDetails."], textarea[name="system.biography"], textarea[name="system.appearance"]').on('blur', this._onFieldChange.bind(this));
+        html.find('input[name^="system.attributes."], input[name^="system.growthRates."], input[name^="system.movement."], input[name="system.experience"]').on('blur', this._onFieldChange.bind(this));
 
         // Item controls
         html.find('.item-edit').click(this._onItemEdit.bind(this));
@@ -437,51 +491,77 @@ class FireEmblemCharacterSheet extends ActorSheet {
     }
 
     /**
-     * Handle field changes without aggressive sanitization
+     * Handle field changes with improved logic and loop prevention
      */
     async _onFieldChange(event) {
         event.stopPropagation();
-        event.stopImmediatePropagation();
+        event.preventDefault();
 
         const element = event.currentTarget;
         const field = element.name;
 
-        if (!field) return;
+        if (!field || !field.startsWith('system.')) return;
 
-        let value;
+        // Prevent update loops
+        if (this._updating) return;
 
-        if (element.type === "checkbox") {
-            value = element.checked;
-        } else {
-            value = element.value;
-        }
+        let value = element.value;
 
+        // Handle data type conversion
         const dtype = element.dataset.dtype;
-        if (dtype === "Number" && value !== "") {
+        if (dtype === "Number" && value !== "" && value !== null) {
             const numValue = Number(value);
             if (Number.isFinite(numValue)) {
                 value = numValue;
+            } else {
+                // Invalid number, don't update
+                return;
             }
-            // If it's not a valid number, leave it as string and let user fix it
         } else if (dtype === "Boolean") {
             value = element.checked;
         }
 
-        const systemPath = field.startsWith("system.") ? field.slice(7) : field;
-        const currentValue = foundry?.utils?.getProperty?.(this.actor.system, systemPath);
+        // Get the field path within system
+        const systemPath = field.slice(7); // Remove 'system.' prefix
 
+        // Get current value from the source data (not display data)
+        let currentValue;
+        try {
+            currentValue = foundry.utils.getProperty(this.actor._source.system || this.actor.system, systemPath);
+        } catch (e) {
+            currentValue = undefined;
+        }
+
+        // Don't update if values are the same (strict comparison)
         if (currentValue === value) {
             return;
         }
 
-        const updateData = { [field]: value };
+        // Set update flag to prevent loops
+        this._updating = true;
 
         try {
+            // Prepare update data
+            const updateData = { [field]: value };
+
             await this.actor.update(updateData);
+            console.log(`Successfully updated ${field} to:`, value);
+
         } catch (error) {
-            console.error(`Failed to update field ${field}`, error);
-            const errorMessage = game.i18n?.localize?.("FEUE.Errors.fieldUpdateFailed") || `Failed to update ${field}`;
-            ui.notifications?.error?.(errorMessage);
+            console.error(`Failed to update field ${field}:`, error);
+            ui.notifications?.error?.(`Failed to update ${field}`);
+
+            // Revert the field value on error
+            if (currentValue !== undefined && currentValue !== null) {
+                element.value = currentValue;
+            } else {
+                element.value = "";
+            }
+        } finally {
+            // Clear update flag after a short delay
+            setTimeout(() => {
+                this._updating = false;
+            }, 100);
         }
     }
 
