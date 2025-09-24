@@ -1,7 +1,174 @@
 {
-  "THEFADE.AttributePhysique": "Physique",
-
-
-
-  "TYPES.Item.weapon": "Weapon"
+  "FEUE": {
+    "SystemName": "Fire Emblem: Ultimate Edition",
+    "Attributes": {
+      "hp": "Hit Points",
+      "strength": "Strength",
+      "magic": "Magic",
+      "skill": "Skill",
+      "speed": "Speed",
+      "defense": "Defense",
+      "resistance": "Resistance",
+      "luck": "Luck",
+      "charm": "Charm",
+      "build": "Build"
+    },
+    "AttributesShort": {
+      "hp": "HP",
+      "strength": "STR",
+      "magic": "MAG",
+      "skill": "SKL",
+      "speed": "SPD",
+      "defense": "DEF",
+      "resistance": "RES",
+      "luck": "LUK",
+      "charm": "CHA",
+      "build": "BLD"
+    },
+    "WeaponTypes": {
+      "sword": "Sword",
+      "lance": "Lance",
+      "axe": "Axe",
+      "bow": "Bow",
+      "firearm": "Firearm",
+      "unarmed": "Unarmed",
+      "knife": "Knife",
+      "anima": "Anima",
+      "light": "Light",
+      "dark": "Dark",
+      "staff": "Staff"
+    },
+    "WeaponRanks": {
+      "E": "E",
+      "D": "D",
+      "C": "C",
+      "B": "B",
+      "A": "A",
+      "S": "S",
+      "Prf": "Prf"
+    },
+    "ClassTypes": {
+      "recruit": "Recruit",
+      "standard": "Standard",
+      "promoted": "Promoted",
+      "advanced": "Advanced",
+      "enemyOnly": "Enemy Only"
+    },
+    "UnitTypes": {
+      "infantry": "Infantry",
+      "mounted": "Mounted",
+      "flying": "Flying",
+      "dragon": "Dragon",
+      "armored": "Armored",
+      "magician": "Magician",
+      "beast": "Beast",
+      "monster": "Monster"
+    },
+    "Affinities": {
+      "fire": "Fire",
+      "thunder": "Thunder",
+      "wind": "Wind",
+      "ice": "Ice",
+      "earth": "Earth",
+      "dark": "Dark",
+      "light": "Light",
+      "anima": "Anima"
+    },
+    "Combat": {
+      "hitRate": "Hit Rate",
+      "critRate": "Critical Rate",
+      "avoid": "Avoid",
+      "dodge": "Dodge",
+      "damage": "Damage",
+      "might": "Might",
+      "hit": "Hit",
+      "crit": "Crit",
+      "range": "Range",
+      "weight": "Weight",
+      "uses": "Uses"
+    },
+    "Actions": {
+      "attack": "Attack",
+      "equip": "Equip",
+      "unequip": "Unequip",
+      "levelUp": "Level Up",
+      "edit": "Edit",
+      "delete": "Delete",
+      "create": "Create"
+    },
+    "Sheets": {
+      "character": "Character",
+      "weapon": "Weapon",
+      "item": "Item",
+      "skill": "Skill",
+      "spell": "Spell"
+    },
+    "Tabs": {
+      "main": "Main",
+      "combat": "Combat",
+      "inventory": "Inventory",
+      "skills": "Skills & Spells",
+      "biography": "Biography",
+      "description": "Description"
+    },
+    "Labels": {
+      "level": "Level",
+      "experience": "Experience",
+      "class": "Class",
+      "affinity": "Affinity",
+      "movement": "Movement",
+      "weaponRanks": "Weapon Ranks",
+      "growthRates": "Growth Rates",
+      "personalDetails": "Personal Details",
+      "age": "Age",
+      "sex": "Sex",
+      "height": "Height",
+      "weight": "Weight",
+      "birthplace": "Birthplace",
+      "background": "Background",
+      "biography": "Biography",
+      "appearance": "Appearance",
+      "encumbrance": "Encumbrance",
+      "fatePoints": "Fate Points"
+    },
+    "Messages": {
+      "levelUpGained": "gained a level!",
+      "levelUpNoGains": "gained a level but no stats increased!",
+      "attackHit": "HIT",
+      "attackMiss": "MISS",
+      "criticalHit": "CRITICAL HIT!",
+      "normalHit": "Normal Hit"
+    },
+    "Settings": {
+      "useStaticGrowth": {
+        "name": "Use Static Growth Bonuses",
+        "hint": "Use predetermined stat growth instead of rolling dice"
+      },
+      "casualMode": {
+        "name": "Casual Mode",
+        "hint": "Units are knocked out instead of killed"
+      },
+      "useFatePoints": {
+        "name": "Use Fate Points",
+        "hint": "Allow players to reroll dice using Fate Points"
+      }
+    },
+    "Errors": {
+      "cannotUseWeapon": "Cannot use this weapon - insufficient weapon rank",
+      "notEnoughFatePoints": "Not enough Fate Points",
+      "weaponBroken": "Weapon is broken and cannot be used"
+    }
+  },
+  "TYPES": {
+    "Actor": {
+      "character": "Character"
+    },
+    "Item": {
+      "weapon": "Weapon",
+      "item": "Item",
+      "skill": "Skill",
+      "spell": "Spell",
+      "class": "Class"
+    }
+  }
 }

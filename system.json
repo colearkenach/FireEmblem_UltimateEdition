@@ -21,9 +21,7 @@
   "styles": [
     "styles/feue.css"
   ],
-  "packs": [
-
-  ],
+  "packs": [],
   "languages": [
     {
       "lang": "en",
@@ -35,13 +33,10 @@
     "distance": 1,
     "units": "square"
   },
-  "primaryTokenAttribute": "hp",
-  "secondaryTokenAttribute": "sanity",
+  "primaryTokenAttribute": "attributes.hp",
+  "secondaryTokenAttribute": null,
   "url": "https://github.com/colearkenach/FireEmblem_UltimateEdition",
   "manifest": "https://github.com/colearkenach/FireEmblem_UltimateEdition/releases/download/v13/system.json",
   "download": "https://github.com/colearkenach/FireEmblem_UltimateEdition/archive/refs/tags/v13.zip",
-  "license": "LICENSE.txt",
-  "itemTypes": [
-    "weapon"
-  ]
+  "license": "LICENSE.txt"
 }

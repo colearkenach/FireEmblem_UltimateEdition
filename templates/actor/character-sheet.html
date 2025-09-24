@@ -1,19 +1,331 @@
 <form class="{{cssClass}} flexcol" autocomplete="off">
-    <header class="sheet-header">
-        <!--<img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" height="100" width="100"/>-->
-        <div class="header-fields">
-            <h1 class="charname"><input name="name" type="text" value="{{actor.name}}" placeholder="Name" /></h1>
+
+    {{!-- Sheet Header --}}
+    <header class="sheet-header flexrow">
+        <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" height="100" width="100" />
+        <div class="header-fields flexcol">
+            <h1 class="charname">
+                <input name="name" type="text" value="{{actor.name}}" placeholder="Character Name" />
+            </h1>
+            <div class="resource flexrow">
+                <div class="resource-label">Level</div>
+                <div class="resource-value">
+                    <input type="text" name="system.level" value="{{system.level}}" data-dtype="Number" />
+                </div>
+                <button type="button" class="level-up">Level Up</button>
+            </div>
+            <div class="resource flexrow">
+                <div class="resource-label">Class</div>
+                <div class="resource-value">
+                    {{#if equippedClass}}
+                    {{equippedClass.name}} ({{equippedClass.system.classType}})
+                    {{else}}
+                    No Class Equipped
+                    {{/if}}
+                </div>
+            </div>
         </div>
     </header>
 
     {{!-- Sheet Tab Navigation --}}
     <nav class="sheet-tabs tabs" data-group="primary">
-        <a class="item" data-tab="main">Stats & Info</a>
+        <a class="item" data-tab="main">Main</a>
+        <a class="item" data-tab="combat">Combat</a>
         <a class="item" data-tab="inventory">Inventory</a>
+        <a class="item" data-tab="skills">Skills & Spells</a>
+        <a class="item" data-tab="biography">Biography</a>
     </nav>
 
     {{!-- Sheet Body --}}
     <section class="sheet-body">
+
+        {{!-- Main Tab --}}
+        <div class="tab main" data-group="primary" data-tab="main">
+            <div class="flexrow">
+                {{!-- Attributes Section --}}
+                <div class="attributes flexcol">
+                    <h3>Attributes</h3>
+                    <div class="attributes-grid">
+                        {{#each system.attributes as |attribute key|}}
+                        <div class="attribute flexrow">
+                            <label class="attribute-label">{{key}}</label>
+                            <div class="attribute-value">
+                                <input type="text" name="system.attributes.{{key}}.value" value="{{attribute.value}}" data-dtype="Number" />
+                                <span>/</span>
+                                <input type="text" name="system.attributes.{{key}}.max" value="{{attribute.max}}" data-dtype="Number" />
+                            </div>
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+
+                {{!-- Growth Rates Section --}}
+                <div class="growth-rates flexcol">
+                    <h3>Growth Rates</h3>
+                    <div class="growth-grid">
+                        {{#each system.growthRates as |growth key|}}
+                        <div class="growth-rate flexrow">
+                            <label class="growth-label">{{key}}</label>
+                            <input type="text" name="system.growthRates.{{key}}" value="{{growth}}" data-dtype="Number" />
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+            </div>
+
+            {{!-- Weapon Ranks Section --}}
+            <div class="weapon-ranks">
+                <h3>Weapon Ranks</h3>
+                <div class="weapon-ranks-grid">
+                    {{#each system.weaponRanks as |rank weapon|}}
+                    <div class="weapon-rank flexrow">
+                        <label class="weapon-label">{{weapon}}</label>
+                        <select class="weapon-rank" name="system.weaponRanks.{{weapon}}" data-weapon-type="{{weapon}}">
+                            {{#each FEUE.WEAPON_RANKS as |rankData rankKey|}}
+                            <option value="{{rankKey}}" {{#ifEquals rank rankKey}} selected{{/ifEquals}}>{{rankData.label}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+
+            {{!-- Movement & Details --}}
+            <div class="flexrow">
+                <div class="movement flexcol">
+                    <h3>Movement</h3>
+                    <div class="resource flexrow">
+                        <label>Base Movement</label>
+                        <input type="text" name="system.movement.base" value="{{system.movement.base}}" data-dtype="Number" />
+                    </div>
+                    <div class="resource flexrow">
+                        <label>Current Movement</label>
+                        <input type="text" name="system.movement.current" value="{{system.movement.current}}" data-dtype="Number" />
+                    </div>
+                </div>
+
+                <div class="details flexcol">
+                    <h3>Details</h3>
+                    <div class="resource flexrow">
+                        <label>Affinity</label>
+                        <select name="system.affinity">
+                            {{#each FEUE.AFFINITIES as |affinity|}}
+                            <option value="{{affinity}}" {{#ifEquals ../system.affinity affinity}} selected{{/ifEquals}}>{{affinity}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+                    <div class="resource flexrow">
+                        <label>Experience</label>
+                        <input type="text" name="system.experience" value="{{system.experience}}" data-dtype="Number" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{!-- Combat Tab --}}
+        <div class="tab combat" data-group="primary" data-tab="combat">
+            <div class="combat-stats flexrow">
+                <div class="combat-stat">
+                    <label>Hit Rate</label>
+                    <span class="computed-value">{{system.combat.hitRate}}%</span>
+                </div>
+                <div class="combat-stat">
+                    <label>Critical Rate</label>
+                    <span class="computed-value">{{system.combat.critRate}}%</span>
+                </div>
+                <div class="combat-stat">
+                    <label>Avoid</label>
+                    <span class="computed-value">{{system.combat.avoid}}%</span>
+                </div>
+                <div class="combat-stat">
+                    <label>Dodge</label>
+                    <span class="computed-value">{{system.combat.dodge}}</span>
+                </div>
+            </div>
+
+            {{!-- Equipped Weapons --}}
+            <div class="weapons-section">
+                <h3>Weapons</h3>
+                {{#each weapons as |weapon|}}
+                <div class="item weapon flexrow" data-item-id="{{weapon._id}}">
+                    <div class="item-image">
+                        <img src="{{weapon.img}}" title="{{weapon.name}}" width="24" height="24" />
+                    </div>
+                    <h4 class="item-name">{{weapon.name}}</h4>
+                    <div class="weapon-stats">
+                        <span>{{weapon.system.might}} Mt</span>
+                        <span>{{weapon.system.hit}}% Hit</span>
+                        <span>{{weapon.system.crit}}% Crit</span>
+                        <span>{{weapon.system.range}} Rng</span>
+                    </div>
+                    <div class="item-controls">
+                        <a class="item-control item-equip" title="{{#if weapon.system.equipped}}Unequip{{else}}Equip{{/if}}">
+                            <i class="fas {{#if weapon.system.equipped}}fa-shield-alt{{else}}fa-hand-paper{{/if}}"></i>
+                        </a>
+                        <a class="item-control roll-attack" data-weapon-id="{{weapon._id}}" title="Attack">
+                            <i class="fas fa-dice-d20"></i>
+                        </a>
+                        <a class="item-control item-edit" title="Edit Item">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a class="item-control item-delete" title="Delete Item">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+
+        {{!-- Inventory Tab --}}
+        <div class="tab inventory" data-group="primary" data-tab="inventory">
+            <div class="encumbrance">
+                <h3>Encumbrance: {{encumbrance.current}}/{{encumbrance.max}}</h3>
+                <div class="encumbrance-bar">
+                    <div class="encumbrance-fill" style="width: {{math encumbrance.current '/' encumbrance.max '*' 100}}%"></div>
+                </div>
+            </div>
+
+            <div class="items-section">
+                <h3>Items</h3>
+                {{#each items as |item|}}
+                <div class="item flexrow" data-item-id="{{item._id}}">
+                    <div class="item-image">
+                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" />
+                    </div>
+                    <h4 class="item-name">{{item.name}}</h4>
+                    <div class="item-quantity">{{item.system.quantity}}</div>
+                    <div class="item-weight">{{item.system.weight}} wt</div>
+                    <div class="item-controls">
+                        <a class="item-control item-edit" title="Edit Item">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a class="item-control item-delete" title="Delete Item">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+
+        {{!-- Skills & Spells Tab --}}
+        <div class="tab skills" data-group="primary" data-tab="skills">
+            <div class="flexrow">
+                <div class="classes-section flexcol">
+                    <h3>Classes</h3>
+                    {{#each classes as |class|}}
+                    <div class="item class flexrow" data-item-id="{{class._id}}">
+                        <div class="item-image">
+                            <img src="{{class.img}}" title="{{class.name}}" width="24" height="24" />
+                        </div>
+                        <div class="class-info">
+                            <h4 class="item-name">{{class.name}}</h4>
+                            <p class="class-details">{{class.system.classType}} | Max Lv {{class.system.maxLevel}}</p>
+                        </div>
+                        <div class="item-controls">
+                            <a class="item-control item-equip {{#if class.system.equipped}}equipped{{/if}}" title="{{#if class.system.equipped}}Unequip{{else}}Equip{{/if}}">
+                                <i class="fas {{#if class.system.equipped}}fa-shield-alt{{else}}fa-hand-paper{{/if}}"></i>
+                            </a>
+                            <a class="item-control item-edit" title="Edit Class">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a class="item-control item-delete" title="Delete Class">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+
+                <div class="skills-section flexcol">
+                    <h3>Skills</h3>
+                    {{#each skills as |skill|}}
+                    <div class="item skill flexrow" data-item-id="{{skill._id}}">
+                        <div class="item-image">
+                            <img src="{{skill.img}}" title="{{skill.name}}" width="24" height="24" />
+                        </div>
+                        <div class="skill-info">
+                            <h4 class="item-name">{{skill.name}}</h4>
+                            <p class="skill-type">{{skill.system.skillType}}</p>
+                        </div>
+                        <div class="item-controls">
+                            <a class="item-control item-edit" title="Edit Skill">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a class="item-control item-delete" title="Delete Skill">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+
+            <div class="spells-section">
+                <h3>Spells</h3>
+                {{#each spells as |spell|}}
+                <div class="item spell flexrow" data-item-id="{{spell._id}}">
+                    <div class="item-image">
+                        <img src="{{spell.img}}" title="{{spell.name}}" width="24" height="24" />
+                    </div>
+                    <div class="spell-info">
+                        <h4 class="item-name">{{spell.name}}</h4>
+                        <p class="spell-details">
+                            {{spell.system.school}} | {{spell.system.hpCost}} HP | {{spell.system.range}} Range
+                        </p>
+                    </div>
+                    <div class="item-controls">
+                        <a class="item-control item-edit" title="Edit Spell">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a class="item-control item-delete" title="Delete Spell">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+
+        {{!-- Biography Tab --}}
+        <div class="tab biography" data-group="primary" data-tab="biography">
+            <div class="personal-details">
+                <h3>Personal Details</h3>
+                <div class="details-grid">
+                    <div class="detail">
+                        <label>Age</label>
+                        <input type="text" name="system.personalDetails.age" value="{{system.personalDetails.age}}" data-dtype="Number" />
+                    </div>
+                    <div class="detail">
+                        <label>Sex</label>
+                        <input type="text" name="system.personalDetails.sex" value="{{system.personalDetails.sex}}" />
+                    </div>
+                    <div class="detail">
+                        <label>Height</label>
+                        <input type="text" name="system.personalDetails.height" value="{{system.personalDetails.height}}" />
+                    </div>
+                    <div class="detail">
+                        <label>Weight</label>
+                        <input type="text" name="system.personalDetails.weight" value="{{system.personalDetails.weight}}" />
+                    </div>
+                    <div class="detail">
+                        <label>Birthplace</label>
+                        <input type="text" name="system.personalDetails.birthplace" value="{{system.personalDetails.birthplace}}" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="biography-text">
+                <h3>Biography</h3>
+                <textarea name="system.biography" rows="8" placeholder="Character biography...">{{system.biography}}</textarea>
+            </div>
+
+            <div class="appearance-text">
+                <h3>Appearance</h3>
+                <textarea name="system.appearance" rows="6" placeholder="Character appearance...">{{system.appearance}}</textarea>
+            </div>
+        </div>
 
     </section>
 </form>
