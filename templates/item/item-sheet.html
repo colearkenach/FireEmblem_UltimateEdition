@@ -1,4 +1,4 @@
-<form class="{{cssClass}} flexcol" autocomplete="off">
+<form class="feue {{cssClass}} flexcol" autocomplete="off">
 
     {{!-- Sheet Header --}}
     <header class="sheet-header flexrow">
@@ -116,7 +116,7 @@
 
             <div class="form-group">
                 <label>Weapon Properties</label>
-                <textarea name="system.properties" rows="2" placeholder="List weapon properties...">{{system.properties}}</textarea>
+                <textarea name="system.properties" rows="2" placeholder="List weapon properties...">{{join system.properties '\n'}}</textarea>
             </div>
         </div>
         {{/if}}

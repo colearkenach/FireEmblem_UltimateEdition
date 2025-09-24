@@ -83,6 +83,46 @@ function hasCustomArrayValues(values, fallback) {
     return cleaned.some((value, index) => value !== fallback[index]);
 }
 
+function sanitizeNumberField(target, path) {
+    if (!foundry?.utils?.hasProperty?.(target, path)) return;
+
+    const raw = foundry.utils.getProperty(target, path);
+    if (raw === "" || raw === null || raw === undefined) {
+        foundry.utils.setProperty(target, path, null);
+        return;
+    }
+
+    if (typeof raw === "number" && Number.isFinite(raw)) {
+        return;
+    }
+
+    const numeric = Number(raw);
+    if (Number.isFinite(numeric)) {
+        foundry.utils.setProperty(target, path, numeric);
+    } else {
+        foundry.utils.setProperty(target, path, null);
+    }
+}
+
+function sanitizeDelimitedArrayField(target, path, { delimiter = /[,\n]+/ } = {}) {
+    if (!foundry?.utils?.hasProperty?.(target, path)) return;
+
+    const raw = foundry.utils.getProperty(target, path);
+    let values = [];
+
+    if (Array.isArray(raw)) {
+        values = raw;
+    } else if (typeof raw === "string") {
+        values = raw.split(delimiter);
+    }
+
+    const cleaned = values
+        .map(value => (value ?? "").toString().trim())
+        .filter(value => value.length > 0);
+
+    foundry.utils.setProperty(target, path, cleaned);
+}
+
 // ====================================================================
 // 1. CORE ACTOR CLASSES
 // ====================================================================
@@ -102,6 +142,7 @@ class FireEmblemActor extends Actor {
             overwrite: true
         });
         systemData.unitTypes = Array.isArray(systemData.unitTypes) ? systemData.unitTypes : [];
+
 
         // Calculate derived combat stats using the adjusted values
         this._prepareCharacterData(systemData);
@@ -615,28 +656,85 @@ class FireEmblemItemSheet extends ItemSheet {
         event.preventDefault();
         const element = event.currentTarget;
         const field = element.name;
-        const value = element.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        const update = {};
+        foundry.utils.setProperty(update, field, element.value);
+        sanitizeDelimitedArrayField(update, field);
 
-        await this.item.update({ [field]: value });
+        await this.item.update(update);
     }
 
     /**
      * Override _updateObject to handle form data properly
      */
     async _updateObject(event, formData) {
-        // Handle array fields specifically
-        if (formData["system.unitTypes"] && typeof formData["system.unitTypes"] === "string") {
-            formData["system.unitTypes"] = formData["system.unitTypes"].split(',').map(s => s.trim()).filter(s => s.length > 0);
-        }
-        if (formData["system.weaponProficiencies"] && typeof formData["system.weaponProficiencies"] === "string") {
-            formData["system.weaponProficiencies"] = formData["system.weaponProficiencies"].split(',').map(s => s.trim()).filter(s => s.length > 0);
-        }
-        if (formData["system.promotesInto"] && typeof formData["system.promotesInto"] === "string") {
-            formData["system.promotesInto"] = formData["system.promotesInto"].split(',').map(s => s.trim()).filter(s => s.length > 0);
+        const expanded = foundry.utils.expandObject(formData);
+        this._cleanItemSubmitData(expanded);
+
+        return this.item.update(expanded);
+    }
+
+    _cleanItemSubmitData(data) {
+        const numericFields = [
+            "system.price",
+            "system.weight",
+            "system.quantity",
+            "system.might",
+            "system.hit",
+            "system.crit",
+            "system.hpCost",
+            "system.maxLevel",
+            "system.movement",
+            "system.level"
+        ];
+
+        const nestedNumericFields = [
+            "system.uses.value",
+            "system.uses.max",
+            "system.baseStats.hp",
+            "system.baseStats.strength",
+            "system.baseStats.magic",
+            "system.baseStats.skill",
+            "system.baseStats.speed",
+            "system.baseStats.defense",
+            "system.baseStats.resistance",
+            "system.baseStats.luck",
+            "system.baseStats.charm",
+            "system.baseStats.build",
+            "system.growthRates.hp",
+            "system.growthRates.strength",
+            "system.growthRates.magic",
+            "system.growthRates.skill",
+            "system.growthRates.speed",
+            "system.growthRates.defense",
+            "system.growthRates.resistance",
+            "system.growthRates.luck",
+            "system.growthRates.charm",
+            "system.growthRates.build",
+            "system.statCaps.hp",
+            "system.statCaps.strength",
+            "system.statCaps.magic",
+            "system.statCaps.skill",
+            "system.statCaps.speed",
+            "system.statCaps.defense",
+            "system.statCaps.resistance",
+            "system.statCaps.luck",
+            "system.statCaps.charm",
+            "system.statCaps.build"
+        ];
+
+        for (const path of numericFields.concat(nestedNumericFields)) {
+            sanitizeNumberField(data, path);
         }
 
-        // Update the item
-        return super._updateObject(event, formData);
+        sanitizeDelimitedArrayField(data, "system.unitTypes");
+        sanitizeDelimitedArrayField(data, "system.weaponProficiencies");
+        sanitizeDelimitedArrayField(data, "system.promotesInto");
+        sanitizeDelimitedArrayField(data, "system.properties", { delimiter: /[\n,]+/ });
+
+        if (foundry.utils.hasProperty(data, "system.properties") && !Array.isArray(foundry.utils.getProperty(data, "system.properties"))) {
+            const props = foundry.utils.getProperty(data, "system.properties");
+            foundry.utils.setProperty(data, "system.properties", Array.isArray(props) ? props : []);
+        }
     }
 }
 

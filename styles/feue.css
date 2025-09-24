@@ -29,16 +29,28 @@
     color: var(--feue-text);
 }
 
-    .feue .window-content {
-        background: var(--feue-bg);
-        padding: 0;
-    }
+.window-app.feue .window-content,
+.app.feue .window-content {
+    background: var(--feue-bg);
+    padding: 0;
+}
+
+.window-app.feue .window-content > form,
+.app.feue .window-content > form {
+    background: transparent;
+    padding: 0;
+}
 
     .feue .sheet-header {
         background: linear-gradient(135deg, var(--feue-header-bg) 0%, var(--feue-primary) 100%);
         color: white;
-        padding: 10px;
+        padding: 12px 16px;
         border-bottom: 2px solid var(--feue-accent);
+    }
+
+    .feue .sheet-header.flexrow {
+        align-items: center;
+        gap: 16px;
     }
 
     .feue .profile-img {
@@ -82,13 +94,14 @@
         background: var(--feue-primary);
         border: none;
         border-bottom: 2px solid var(--feue-accent);
+        padding: 0 16px;
     }
 
         .feue .tabs .item {
             background: transparent;
             color: rgba(255,255,255,0.7);
             border: none;
-            padding: 6px 12px;
+            padding: 4px 10px;
             font-weight: bold;
             font-size: 14px;
             transition: all 0.2s ease;
@@ -108,7 +121,7 @@
     /* ===== SHEET BODY ===== */
     .feue .sheet-body {
         background: var(--feue-bg);
-        padding: 15px;
+        padding: 16px;
         overflow-y: auto;
     }
 
