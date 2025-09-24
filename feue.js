@@ -83,46 +83,6 @@ function hasCustomArrayValues(values, fallback) {
     return cleaned.some((value, index) => value !== fallback[index]);
 }
 
-function sanitizeNumberField(target, path) {
-    if (!foundry?.utils?.hasProperty?.(target, path)) return;
-
-    const raw = foundry.utils.getProperty(target, path);
-    if (raw === "" || raw === null || raw === undefined) {
-        foundry.utils.setProperty(target, path, null);
-        return;
-    }
-
-    if (typeof raw === "number" && Number.isFinite(raw)) {
-        return;
-    }
-
-    const numeric = Number(raw);
-    if (Number.isFinite(numeric)) {
-        foundry.utils.setProperty(target, path, numeric);
-    } else {
-        foundry.utils.setProperty(target, path, null);
-    }
-}
-
-function sanitizeDelimitedArrayField(target, path, { delimiter = /[,\n]+/ } = {}) {
-    if (!foundry?.utils?.hasProperty?.(target, path)) return;
-
-    const raw = foundry.utils.getProperty(target, path);
-    let values = [];
-
-    if (Array.isArray(raw)) {
-        values = raw;
-    } else if (typeof raw === "string") {
-        values = raw.split(delimiter);
-    }
-
-    const cleaned = values
-        .map(value => (value ?? "").toString().trim())
-        .filter(value => value.length > 0);
-
-    foundry.utils.setProperty(target, path, cleaned);
-}
-
 // ====================================================================
 // 1. CORE ACTOR CLASSES
 // ====================================================================
@@ -389,7 +349,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
             height: 950,
             tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "main" }],
             closeOnSubmit: false,
-            submitOnChange: true
+            submitOnChange: false  // CHANGED: Turn off auto-submit
         });
     }
 
@@ -457,17 +417,15 @@ class FireEmblemCharacterSheet extends ActorSheet {
         // Level up button
         html.find('.level-up').click(this._onLevelUp.bind(this));
 
-        // Weapon rank changes
+        // Weapon rank changes - handle on change for dropdowns
         html.find('.weapon-rank').change(this._onWeaponRankChange.bind(this));
 
-        const directFieldSelectors = [
-            'select[name="system.affinity"]',
-            'input[name^="system.personalDetails"]',
-            'textarea[name="system.biography"]',
-            'textarea[name="system.appearance"]'
-        ].join(', ');
+        // Handle text fields on blur, dropdowns on change
+        html.find('select[name="system.affinity"]').change(this._onFieldChange.bind(this));
+        html.find('input[name^="system.personalDetails"], textarea[name="system.biography"], textarea[name="system.appearance"]').on('blur', this._onFieldChange.bind(this));
 
-        html.find(directFieldSelectors).on('change', this._onDirectFieldChange.bind(this));
+        // Handle attribute and growth rate changes on blur
+        html.find('input[name^="system.attributes"], input[name^="system.growthRates"], input[name^="system.movement"]').on('blur', this._onFieldChange.bind(this));
 
         // Item controls
         html.find('.item-edit').click(this._onItemEdit.bind(this));
@@ -476,6 +434,47 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
         // Combat rolls
         html.find('.roll-attack').click(this._onRollAttack.bind(this));
+    }
+
+    /**
+     * Handle field changes without aggressive sanitization
+     */
+    async _onFieldChange(event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const element = event.currentTarget;
+        const field = element.name;
+
+        if (!field) return;
+
+        let value = element.value;
+
+        const dtype = element.dataset.dtype;
+        if (dtype === "Number" && value !== "") {
+            const numValue = Number(value);
+            if (Number.isFinite(numValue)) {
+                value = numValue;
+            }
+            // If it's not a valid number, leave it as string and let user fix it
+        } else if (dtype === "Boolean") {
+            value = element.checked;
+        }
+
+        const systemPath = field.startsWith("system.") ? field.slice(7) : field;
+        const currentValue = foundry?.utils?.getProperty?.(this.actor.system, systemPath);
+
+        if (currentValue === value) {
+            return;
+        }
+
+        try {
+            await this.actor.update({ [field]: value });
+        } catch (error) {
+            console.error(`Failed to update field ${field}`, error);
+            const errorMessage = game.i18n?.localize?.("FEUE.Errors.fieldUpdateFailed") || `Failed to update ${field}`;
+            ui.notifications?.error?.(errorMessage);
+        }
     }
 
     /**
@@ -519,45 +518,6 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const newRank = element.value;
 
         await this.actor.update({ [`system.weaponRanks.${weaponType}`]: newRank });
-    }
-
-    async _onDirectFieldChange(event) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-
-        const element = event.currentTarget;
-        const field = element.name;
-
-        if (!field) {
-            return;
-        }
-
-        let value = element.value;
-
-        const dtype = element.dataset.dtype;
-        if (dtype === "Number") {
-            value = value === "" ? null : Number(value);
-            if (!Number.isFinite(value)) {
-                value = null;
-            }
-        } else if (dtype === "Boolean") {
-            value = element.checked;
-        }
-
-        const systemPath = field.startsWith("system.") ? field.slice(7) : field;
-        const currentValue = foundry?.utils?.getProperty?.(this.actor.system, systemPath);
-
-        if (currentValue === value) {
-            return;
-        }
-
-        try {
-            await this.actor.update({ [field]: value });
-        } catch (error) {
-            console.error(`Failed to update field ${field}`, error);
-            const errorMessage = game.i18n?.localize?.("FEUE.Errors.fieldUpdateFailed") || `Failed to update ${field}`;
-            ui.notifications?.error?.(errorMessage);
-        }
     }
 
     /**
