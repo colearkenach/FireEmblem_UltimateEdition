@@ -37,7 +37,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Price</label>
-                    <input type="number" name="system.price" value="{{system.price}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.price" value="{{system.price}}" placeholder="0" />
                 </div>
 
                 {{#unless (eq item.type "skill")}}
@@ -45,12 +45,12 @@
                 {{#unless (eq item.type "class")}}
                 <div class="form-group">
                     <label>Weight</label>
-                    <input type="number" name="system.weight" value="{{system.weight}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.weight" value="{{system.weight}}" placeholder="0" />
                 </div>
 
                 <div class="form-group">
                     <label>Quantity</label>
-                    <input type="number" name="system.quantity" value="{{system.quantity}}" placeholder="1" />
+                    <input type="number" data-dtype="Number" name="system.quantity" value="{{system.quantity}}" placeholder="1" />
                 </div>
                 {{/unless}}
                 {{/unless}}
@@ -84,17 +84,17 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Might</label>
-                    <input type="number" name="system.might" value="{{system.might}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.might" value="{{system.might}}" placeholder="0" />
                 </div>
 
                 <div class="form-group">
                     <label>Hit Rate</label>
-                    <input type="number" name="system.hit" value="{{system.hit}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.hit" value="{{system.hit}}" placeholder="0" />
                 </div>
 
                 <div class="form-group">
                     <label>Crit Rate</label>
-                    <input type="number" name="system.crit" value="{{system.crit}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.crit" value="{{system.crit}}" placeholder="0" />
                 </div>
             </div>
 
@@ -107,9 +107,9 @@
                 <div class="form-group">
                     <label>Uses</label>
                     <div class="uses-group">
-                        <input type="number" name="system.uses.value" value="{{system.uses.value}}" placeholder="0" />
+                        <input type="number" data-dtype="Number" name="system.uses.value" value="{{system.uses.value}}" placeholder="0" />
                         <span>/</span>
-                        <input type="number" name="system.uses.max" value="{{system.uses.max}}" placeholder="0" />
+                        <input type="number" data-dtype="Number" name="system.uses.max" value="{{system.uses.max}}" placeholder="0" />
                     </div>
                 </div>
             </div>
@@ -147,24 +147,24 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>HP Cost</label>
-                    <input type="number" name="system.hpCost" value="{{system.hpCost}}" placeholder="1" />
+                    <input type="number" data-dtype="Number" name="system.hpCost" value="{{system.hpCost}}" placeholder="1" />
                 </div>
 
                 <div class="form-group">
                     <label>Might</label>
-                    <input type="number" name="system.might" value="{{system.might}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.might" value="{{system.might}}" placeholder="0" />
                 </div>
 
                 <div class="form-group">
                     <label>Hit Rate</label>
-                    <input type="number" name="system.hit" value="{{system.hit}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.hit" value="{{system.hit}}" placeholder="0" />
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label>Crit Rate</label>
-                    <input type="number" name="system.crit" value="{{system.crit}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.crit" value="{{system.crit}}" placeholder="0" />
                 </div>
 
                 <div class="form-group">
@@ -197,12 +197,12 @@
 
                 <div class="form-group">
                     <label>Max Level</label>
-                    <input type="number" name="system.maxLevel" value="{{system.maxLevel}}" placeholder="20" />
+                    <input type="number" data-dtype="Number" name="system.maxLevel" value="{{system.maxLevel}}" placeholder="20" />
                 </div>
 
                 <div class="form-group">
                     <label>Movement</label>
-                    <input type="number" name="system.movement" value="{{system.movement}}" placeholder="4" />
+                    <input type="number" data-dtype="Number" name="system.movement" value="{{system.movement}}" placeholder="4" />
                 </div>
             </div>
 
@@ -220,43 +220,43 @@
             <div class="stats-grid">
                 <div class="form-group">
                     <label>HP</label>
-                    <input type="number" name="system.baseStats.hp" value="{{system.baseStats.hp}}" placeholder="15" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.hp" value="{{system.baseStats.hp}}" placeholder="15" />
                 </div>
                 <div class="form-group">
                     <label>STR</label>
-                    <input type="number" name="system.baseStats.strength" value="{{system.baseStats.strength}}" placeholder="5" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.strength" value="{{system.baseStats.strength}}" placeholder="5" />
                 </div>
                 <div class="form-group">
                     <label>MAG</label>
-                    <input type="number" name="system.baseStats.magic" value="{{system.baseStats.magic}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.magic" value="{{system.baseStats.magic}}" placeholder="0" />
                 </div>
                 <div class="form-group">
                     <label>SKL</label>
-                    <input type="number" name="system.baseStats.skill" value="{{system.baseStats.skill}}" placeholder="5" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.skill" value="{{system.baseStats.skill}}" placeholder="5" />
                 </div>
                 <div class="form-group">
                     <label>SPD</label>
-                    <input type="number" name="system.baseStats.speed" value="{{system.baseStats.speed}}" placeholder="5" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.speed" value="{{system.baseStats.speed}}" placeholder="5" />
                 </div>
                 <div class="form-group">
                     <label>DEF</label>
-                    <input type="number" name="system.baseStats.defense" value="{{system.baseStats.defense}}" placeholder="2" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.defense" value="{{system.baseStats.defense}}" placeholder="2" />
                 </div>
                 <div class="form-group">
                     <label>RES</label>
-                    <input type="number" name="system.baseStats.resistance" value="{{system.baseStats.resistance}}" placeholder="0" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.resistance" value="{{system.baseStats.resistance}}" placeholder="0" />
                 </div>
                 <div class="form-group">
                     <label>LUK</label>
-                    <input type="number" name="system.baseStats.luck" value="{{system.baseStats.luck}}" placeholder="2" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.luck" value="{{system.baseStats.luck}}" placeholder="2" />
                 </div>
                 <div class="form-group">
                     <label>CHA</label>
-                    <input type="number" name="system.baseStats.charm" value="{{system.baseStats.charm}}" placeholder="1" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.charm" value="{{system.baseStats.charm}}" placeholder="1" />
                 </div>
                 <div class="form-group">
                     <label>BLD</label>
-                    <input type="number" name="system.baseStats.build" value="{{system.baseStats.build}}" placeholder="7" />
+                    <input type="number" data-dtype="Number" name="system.baseStats.build" value="{{system.baseStats.build}}" placeholder="7" />
                 </div>
             </div>
 
@@ -264,43 +264,43 @@
             <div class="stats-grid">
                 <div class="form-group">
                     <label>HP</label>
-                    <input type="number" name="system.growthRates.hp" value="{{system.growthRates.hp}}" placeholder="4" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.hp" value="{{system.growthRates.hp}}" placeholder="4" />
                 </div>
                 <div class="form-group">
                     <label>STR</label>
-                    <input type="number" name="system.growthRates.strength" value="{{system.growthRates.strength}}" placeholder="6" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.strength" value="{{system.growthRates.strength}}" placeholder="6" />
                 </div>
                 <div class="form-group">
                     <label>MAG</label>
-                    <input type="number" name="system.growthRates.magic" value="{{system.growthRates.magic}}" placeholder="2" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.magic" value="{{system.growthRates.magic}}" placeholder="2" />
                 </div>
                 <div class="form-group">
                     <label>SKL</label>
-                    <input type="number" name="system.growthRates.skill" value="{{system.growthRates.skill}}" placeholder="6" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.skill" value="{{system.growthRates.skill}}" placeholder="6" />
                 </div>
                 <div class="form-group">
                     <label>SPD</label>
-                    <input type="number" name="system.growthRates.speed" value="{{system.growthRates.speed}}" placeholder="4" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.speed" value="{{system.growthRates.speed}}" placeholder="4" />
                 </div>
                 <div class="form-group">
                     <label>DEF</label>
-                    <input type="number" name="system.growthRates.defense" value="{{system.growthRates.defense}}" placeholder="2" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.defense" value="{{system.growthRates.defense}}" placeholder="2" />
                 </div>
                 <div class="form-group">
                     <label>RES</label>
-                    <input type="number" name="system.growthRates.resistance" value="{{system.growthRates.resistance}}" placeholder="2" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.resistance" value="{{system.growthRates.resistance}}" placeholder="2" />
                 </div>
                 <div class="form-group">
                     <label>LUK</label>
-                    <input type="number" name="system.growthRates.luck" value="{{system.growthRates.luck}}" placeholder="2" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.luck" value="{{system.growthRates.luck}}" placeholder="2" />
                 </div>
                 <div class="form-group">
                     <label>CHA</label>
-                    <input type="number" name="system.growthRates.charm" value="{{system.growthRates.charm}}" placeholder="2" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.charm" value="{{system.growthRates.charm}}" placeholder="2" />
                 </div>
                 <div class="form-group">
                     <label>BLD</label>
-                    <input type="number" name="system.growthRates.build" value="{{system.growthRates.build}}" placeholder="2" />
+                    <input type="number" data-dtype="Number" name="system.growthRates.build" value="{{system.growthRates.build}}" placeholder="2" />
                 </div>
             </div>
 
@@ -308,43 +308,43 @@
             <div class="stats-grid">
                 <div class="form-group">
                     <label>HP</label>
-                    <input type="number" name="system.statCaps.hp" value="{{system.statCaps.hp}}" placeholder="60" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.hp" value="{{system.statCaps.hp}}" placeholder="60" />
                 </div>
                 <div class="form-group">
                     <label>STR</label>
-                    <input type="number" name="system.statCaps.strength" value="{{system.statCaps.strength}}" placeholder="20" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.strength" value="{{system.statCaps.strength}}" placeholder="20" />
                 </div>
                 <div class="form-group">
                     <label>MAG</label>
-                    <input type="number" name="system.statCaps.magic" value="{{system.statCaps.magic}}" placeholder="20" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.magic" value="{{system.statCaps.magic}}" placeholder="20" />
                 </div>
                 <div class="form-group">
                     <label>SKL</label>
-                    <input type="number" name="system.statCaps.skill" value="{{system.statCaps.skill}}" placeholder="20" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.skill" value="{{system.statCaps.skill}}" placeholder="20" />
                 </div>
                 <div class="form-group">
                     <label>SPD</label>
-                    <input type="number" name="system.statCaps.speed" value="{{system.statCaps.speed}}" placeholder="20" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.speed" value="{{system.statCaps.speed}}" placeholder="20" />
                 </div>
                 <div class="form-group">
                     <label>DEF</label>
-                    <input type="number" name="system.statCaps.defense" value="{{system.statCaps.defense}}" placeholder="20" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.defense" value="{{system.statCaps.defense}}" placeholder="20" />
                 </div>
                 <div class="form-group">
                     <label>RES</label>
-                    <input type="number" name="system.statCaps.resistance" value="{{system.statCaps.resistance}}" placeholder="20" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.resistance" value="{{system.statCaps.resistance}}" placeholder="20" />
                 </div>
                 <div class="form-group">
                     <label>LUK</label>
-                    <input type="number" name="system.statCaps.luck" value="{{system.statCaps.luck}}" placeholder="30" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.luck" value="{{system.statCaps.luck}}" placeholder="30" />
                 </div>
                 <div class="form-group">
                     <label>CHA</label>
-                    <input type="number" name="system.statCaps.charm" value="{{system.statCaps.charm}}" placeholder="20" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.charm" value="{{system.statCaps.charm}}" placeholder="20" />
                 </div>
                 <div class="form-group">
                     <label>BLD</label>
-                    <input type="number" name="system.statCaps.build" value="{{system.statCaps.build}}" placeholder="20" />
+                    <input type="number" data-dtype="Number" name="system.statCaps.build" value="{{system.statCaps.build}}" placeholder="20" />
                 </div>
             </div>
 
