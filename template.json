@@ -9,19 +9,8 @@
         "attributes": {
           "physique": {
             "value": 1
-          },
-          "finesse": {
-            "value": 1
-          },
-          "mind": {
-            "value": 1
-          },
-          "presence": {
-            "value": 1
-          },
-          "soul": {
-            "value": 1
           }
+
         }
       }
     },
@@ -150,33 +139,7 @@
   },
   "Item": {
     "types": [
-      "weapon",
-      "armor",
-      "skill",
-      "path",
-      "spell",
-      "talent",
-      "clothing",
-      "species",
-      "drug",
-      "poison",
-      "biological",
-      "medical",
-      "travel",
-      "mount",
-      "vehicle",
-      "musical",
-      "potion",
-      "staff",
-      "wand",
-      "gate",
-      "communication",
-      "containment",
-      "dream",
-      "fleshcraft",
-      "magicitem",
-      "trait",
-      "precept"
+      "weapon"
     ],
     "templates": {
       "base": {
