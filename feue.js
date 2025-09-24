@@ -58,8 +58,30 @@ const FALLBACK_ACTOR_DATA = {
         base: 4,
         current: 4
     },
-    unitTypes: ["Infantry"]
+    unitTypes: ["Infantry"],
+    weaponRanks: {}
 };
+
+const DEFAULT_WEAPON_RANKS = Object.fromEntries(
+    Object.keys(FEUE.WeaponTypes).map(type => [type, ""])
+);
+
+FALLBACK_ACTOR_DATA.weaponRanks = Object.assign({}, DEFAULT_WEAPON_RANKS);
+
+function normalizeNumber(value) {
+    if (value === undefined || value === null) return null;
+    if (typeof value === "string" && value.trim() === "") return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+}
+
+function hasCustomArrayValues(values, fallback) {
+    if (!Array.isArray(values)) return false;
+    const cleaned = values.map(v => v?.trim?.() ?? v).filter(v => v !== undefined && v !== null && `${v}`.length > 0);
+    if (cleaned.length === 0) return false;
+    if (!Array.isArray(fallback) || cleaned.length !== fallback.length) return true;
+    return cleaned.some((value, index) => value !== fallback[index]);
+}
 
 // ====================================================================
 // 1. CORE ACTOR CLASSES
@@ -70,108 +92,140 @@ class FireEmblemActor extends Actor {
      * Prepare derived data for the actor
      */
     prepareDerivedData() {
-        const actorData = this;
-        const systemData = actorData.system;
-
-        // Apply class data if available
+        const systemData = this.system;
         const classItem = this.items.find(i => i.type === "class" && i.system.equipped);
-        if (classItem) {
-            this._applyClassData(systemData, classItem.system);
-        }
+        const baseSystem = foundry.utils.duplicate(this._source?.system || {});
 
-        // Calculate derived combat stats
+        systemData.classAdjusted = this._buildClassAdjustedData(baseSystem, classItem?.system);
+        systemData.weaponRanks = foundry.utils.mergeObject(foundry.utils.deepClone(DEFAULT_WEAPON_RANKS), systemData.weaponRanks || {}, {
+            inplace: false,
+            overwrite: true
+        });
+        systemData.unitTypes = Array.isArray(systemData.unitTypes) ? systemData.unitTypes : [];
+
+        // Calculate derived combat stats using the adjusted values
         this._prepareCharacterData(systemData);
     }
 
     /**
-     * Apply class-specific data
+     * Build a non-destructive snapshot of the actor's data that includes class defaults
+     * for any fields the user has not overridden manually.
      */
-    _applyClassData(systemData, classData) {
-        // Update unit types
-        const hasCustomUnitTypes = Array.isArray(systemData.unitTypes)
-            && systemData.unitTypes.length > 0
-            && (systemData.unitTypes.length !== FALLBACK_ACTOR_DATA.unitTypes.length
-                || systemData.unitTypes.some((type, index) => type !== FALLBACK_ACTOR_DATA.unitTypes[index]));
-        if (!hasCustomUnitTypes) {
-            const classUnitTypes = Array.isArray(classData.unitTypes) && classData.unitTypes.length > 0
+    _buildClassAdjustedData(baseSystem, classData) {
+        const display = foundry.utils.mergeObject(foundry.utils.deepClone(FALLBACK_ACTOR_DATA), baseSystem, {
+            inplace: false,
+            overwrite: true,
+            insertKeys: true
+        });
+
+        display.weaponRanks = foundry.utils.mergeObject(foundry.utils.deepClone(DEFAULT_WEAPON_RANKS), baseSystem.weaponRanks || {}, {
+            inplace: false,
+            overwrite: true
+        });
+
+        // Ensure nested structures exist
+        display.attributes = display.attributes || foundry.utils.deepClone(FALLBACK_ACTOR_DATA.attributes);
+        display.growthRates = display.growthRates || foundry.utils.deepClone(FALLBACK_ACTOR_DATA.growthRates);
+        display.movement = display.movement || foundry.utils.deepClone(FALLBACK_ACTOR_DATA.movement);
+        display.unitTypes = Array.isArray(display.unitTypes) ? display.unitTypes.slice() : [];
+
+        if (!classData) {
+            return display;
+        }
+
+        // Unit types are provided by the class unless the actor has customised them
+        const actorUnitTypes = baseSystem.unitTypes;
+        if (!hasCustomArrayValues(actorUnitTypes, FALLBACK_ACTOR_DATA.unitTypes)) {
+            const classUnitTypes = hasCustomArrayValues(classData.unitTypes, [])
                 ? classData.unitTypes
                 : FALLBACK_ACTOR_DATA.unitTypes;
-            systemData.unitTypes = foundry.utils.duplicate(classUnitTypes);
+            display.unitTypes = foundry.utils.duplicate(classUnitTypes);
         }
 
-        // Update movement if not manually changed
-        const usingDefaultMovement = (!systemData.movement?.base && !systemData.movement?.current)
-            || (systemData.movement?.base === FALLBACK_ACTOR_DATA.movement.base
-                && systemData.movement?.current === FALLBACK_ACTOR_DATA.movement.current);
-        if (usingDefaultMovement && classData.movement !== undefined) {
-            systemData.movement = systemData.movement || {};
-            systemData.movement.base = classData.movement;
-            systemData.movement.current = classData.movement;
+        // Apply class movement when the actor is still using the fallback values
+        const baseMovement = baseSystem.movement || {};
+        const fallbackMovement = FALLBACK_ACTOR_DATA.movement;
+        const baseMovementValues = {
+            base: normalizeNumber(baseMovement.base),
+            current: normalizeNumber(baseMovement.current)
+        };
+        const fallbackMovementValues = {
+            base: normalizeNumber(fallbackMovement.base),
+            current: normalizeNumber(fallbackMovement.current)
+        };
+        const usesFallbackMovement = (!Number.isFinite(baseMovementValues.base) && !Number.isFinite(baseMovementValues.current))
+            || (baseMovementValues.base === fallbackMovementValues.base && baseMovementValues.current === fallbackMovementValues.current);
+
+        if (usesFallbackMovement) {
+            const classMovement = normalizeNumber(classData.movement);
+            const movementValue = Number.isFinite(classMovement) ? classMovement : fallbackMovementValues.base;
+            display.movement.base = movementValue;
+            display.movement.current = movementValue;
         }
 
-        // Update stat caps from class
+        // Apply stat caps while respecting manual overrides
         if (classData.statCaps) {
             for (const [stat, cap] of Object.entries(classData.statCaps)) {
-                if (systemData.attributes[stat]) {
-                    const defaultMax = FALLBACK_ACTOR_DATA.attributes[stat]?.max;
-                    const hasCustomCap = defaultMax !== undefined && systemData.attributes[stat].max !== defaultMax;
-                    if (!hasCustomCap) {
-                        systemData.attributes[stat].max = cap;
-                    }
+                if (!display.attributes[stat]) continue;
+
+                const fallbackMax = normalizeNumber(FALLBACK_ACTOR_DATA.attributes[stat]?.max);
+                const actorMax = normalizeNumber(baseSystem.attributes?.[stat]?.max);
+                const hasCustomCap = Number.isFinite(actorMax) && actorMax !== fallbackMax;
+
+                if (!hasCustomCap) {
+                    display.attributes[stat].max = cap;
                 }
             }
         }
 
-        // Update growth rates from class
+        // Apply growth rates while respecting manual overrides
         if (classData.growthRates) {
             for (const [stat, growth] of Object.entries(classData.growthRates)) {
-                const defaultGrowth = FALLBACK_ACTOR_DATA.growthRates[stat];
-                const hasCustomGrowth = defaultGrowth !== undefined && systemData.growthRates?.[stat] !== defaultGrowth;
+                const fallbackGrowth = normalizeNumber(FALLBACK_ACTOR_DATA.growthRates?.[stat]);
+                const actorGrowth = normalizeNumber(baseSystem.growthRates?.[stat]);
+                const hasCustomGrowth = Number.isFinite(actorGrowth) && actorGrowth !== fallbackGrowth;
+
                 if (!hasCustomGrowth) {
-                    systemData.growthRates = systemData.growthRates || {};
-                    systemData.growthRates[stat] = growth;
+                    display.growthRates[stat] = growth;
+
                 }
             }
         }
 
         // Ensure weapon proficiencies exist without overwriting manual edits
-        const weaponRankDefaults = {};
-        for (const weaponType of Object.keys(FEUE.WeaponTypes)) {
-            weaponRankDefaults[weaponType] = systemData.weaponRanks?.[weaponType] || "";
-        }
-        systemData.weaponRanks = weaponRankDefaults;
-
-        if (classData.weaponProficiencies) {
+        if (Array.isArray(classData.weaponProficiencies)) {
             for (const weapon of classData.weaponProficiencies) {
-                if (!systemData.weaponRanks[weapon]) {
-                    systemData.weaponRanks[weapon] = "E";
+                if (!display.weaponRanks[weapon]) {
+                    display.weaponRanks[weapon] = "E";
                 }
             }
         }
+
+        return display;
+
     }
 
     /**
      * Prepare character-specific data
      */
     _prepareCharacterData(systemData) {
-        if (!systemData.attributes) return;
+        const source = systemData.classAdjusted || systemData;
+        if (!source.attributes) return;
 
-        const attrs = systemData.attributes;
+        const attrs = source.attributes;
+        const combat = {
+            hitRate: (attrs.skill?.value || 0) + Math.floor((attrs.luck?.value || 0) / 4),
+            critRate: Math.floor((attrs.skill?.value || 0) / 2),
+            avoid: (attrs.speed?.value || 0) + Math.floor((attrs.luck?.value || 0) / 4),
+            dodge: attrs.luck?.value || 0
+        };
 
-        // Calculate hit rate (Weapon Hit + Skill + Luck/4)
-        systemData.combat = systemData.combat || {};
-        systemData.combat.hitRate = (attrs.skill?.value || 0) + Math.floor((attrs.luck?.value || 0) / 4);
+        systemData.combat = combat;
 
-        // Calculate critical rate (Weapon Crit + Skill/2)
-        systemData.combat.critRate = Math.floor((attrs.skill?.value || 0) / 2);
+        if (systemData.classAdjusted) {
+            systemData.classAdjusted.combat = foundry.utils.deepClone(combat);
+        }
 
-        // Calculate avoid (Speed + Luck/4)
-        systemData.combat.avoid = (attrs.speed?.value || 0) + Math.floor((attrs.luck?.value || 0) / 4);
-
-        // Calculate dodge (Luck)
-        systemData.combat.dodge = attrs.luck?.value || 0;
-
-        // Calculate fate points (Luck / 5)
         if (systemData.fatePoints) {
             systemData.fatePoints.max = Math.floor((attrs.luck?.value || 0) / 5);
         }
@@ -182,7 +236,7 @@ class FireEmblemActor extends Actor {
      */
     async levelUp() {
         const systemData = this.system;
-        const growthRates = systemData.growthRates;
+        const growthRates = systemData.classAdjusted?.growthRates || systemData.growthRates;
         const gains = {};
         let totalGains = 0;
 
@@ -199,7 +253,7 @@ class FireEmblemActor extends Actor {
 
                 // Update the actual stat
                 const currentValue = systemData.attributes[stat]?.value || 0;
-                const maxValue = systemData.attributes[stat]?.max || 20;
+                const maxValue = systemData.classAdjusted?.attributes?.[stat]?.max || systemData.attributes[stat]?.max || 20;
                 const newValue = Math.min(currentValue + gain, maxValue);
 
                 await this.update({ [`system.attributes.${stat}.value`]: newValue });
@@ -245,7 +299,9 @@ class FireEmblemActor extends Actor {
     canUseWeapon(weapon) {
         if (!weapon.system.weaponType || !weapon.system.rank) return true;
 
-        const actorRank = this.system.weaponRanks?.[weapon.system.weaponType] || "";
+        const actorRank = this.system.classAdjusted?.weaponRanks?.[weapon.system.weaponType]
+            || this.system.weaponRanks?.[weapon.system.weaponType]
+            || "";
         if (!actorRank) return false; // No proficiency in this weapon type
 
         const weaponRank = weapon.system.rank;
@@ -313,6 +369,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
             data = super.getData();
             data.dtypes = ["String", "Number", "Boolean"];
             data.FEUE = FEUE;
+            data.systemDisplay = foundry.utils.deepClone(this.actor.system.classAdjusted || this.actor.system);
 
             // Get equipped class
             const allItems = Array.isArray(data.items) ? data.items : Array.from(data.items || []);
@@ -335,7 +392,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
             data.encumbrance = {
                 current: totalWeight,
-                max: (data.actor.system.attributes.build?.value || 7) * 10
+                max: (data.systemDisplay.attributes?.build?.value || data.actor.system.attributes.build?.value || 7) * 10
             };
 
             return data;
@@ -345,6 +402,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
             return {
                 actor: this.actor,
                 system: this.actor?.system || FALLBACK_ACTOR_DATA,
+                systemDisplay: foundry.utils.deepClone(this.actor?.system?.classAdjusted || this.actor?.system || FALLBACK_ACTOR_DATA),
                 items: this.actor?.items?.contents || [],
                 dtypes: ["String", "Number", "Boolean"],
                 FEUE: FEUE
@@ -368,6 +426,29 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
         // Combat rolls
         html.find('.roll-attack').click(this._onRollAttack.bind(this));
+    }
+
+    /**
+     * Ensure all FEUE item types can be dropped onto the sheet.
+     */
+    async _onDropItem(event, data) {
+        const item = await Item.implementation?.fromDropData?.(data) || await Item.fromDropData?.(data);
+        if (!item) return false;
+
+        const allowedTypes = new Set(["weapon", "item", "skill", "spell", "class"]);
+        if (!allowedTypes.has(item.type)) {
+            return super._onDropItem(event, data);
+        }
+
+        // Delegate to the core handler if the item already belongs to this actor
+        if (item.parent?.id === this.actor.id) {
+            return super._onDropItem(event, data);
+        }
+
+        const itemData = item.toObject();
+        delete itemData._id;
+
+        return this.actor.createEmbeddedDocuments("Item", [itemData]);
     }
 
     /**
