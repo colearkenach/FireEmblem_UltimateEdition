@@ -143,6 +143,7 @@ class FireEmblemActor extends Actor {
         });
         systemData.unitTypes = Array.isArray(systemData.unitTypes) ? systemData.unitTypes : [];
 
+
         // Calculate derived combat stats using the adjusted values
         this._prepareCharacterData(systemData);
     }
@@ -227,6 +228,7 @@ class FireEmblemActor extends Actor {
 
                 if (!hasCustomGrowth) {
                     display.growthRates[stat] = growth;
+
                 }
             }
         }
@@ -241,6 +243,7 @@ class FireEmblemActor extends Actor {
         }
 
         return display;
+
     }
 
     /**
