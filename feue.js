@@ -440,7 +440,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
      * Handle field changes without aggressive sanitization
      */
     async _onFieldChange(event) {
-        event.preventDefault();
+        event.stopPropagation();
         event.stopImmediatePropagation();
 
         const element = event.currentTarget;
@@ -448,7 +448,13 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
         if (!field) return;
 
-        let value = element.value;
+        let value;
+
+        if (element.type === "checkbox") {
+            value = element.checked;
+        } else {
+            value = element.value;
+        }
 
         const dtype = element.dataset.dtype;
         if (dtype === "Number" && value !== "") {
@@ -468,8 +474,10 @@ class FireEmblemCharacterSheet extends ActorSheet {
             return;
         }
 
+        const updateData = { [field]: value };
+
         try {
-            await this.actor.update({ [field]: value });
+            await this.actor.update(updateData);
         } catch (error) {
             console.error(`Failed to update field ${field}`, error);
             const errorMessage = game.i18n?.localize?.("FEUE.Errors.fieldUpdateFailed") || `Failed to update ${field}`;
