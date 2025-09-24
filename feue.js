@@ -187,6 +187,7 @@ class FireEmblemActor extends Actor {
 
                 if (!hasCustomGrowth) {
                     display.growthRates[stat] = growth;
+
                 }
             }
         }
@@ -201,6 +202,7 @@ class FireEmblemActor extends Actor {
         }
 
         return display;
+
     }
 
     /**
