@@ -43,7 +43,22 @@ const FALLBACK_ACTOR_DATA = {
         luck: { value: 2, max: 30 },
         charm: { value: 1, max: 15 },
         build: { value: 7, max: 15 }
-    }
+    },
+    growthRates: {
+        hp: 4,
+        strength: 8,
+        magic: 2,
+        skill: 6,
+        speed: 4,
+        luck: 2,
+        charm: 2,
+        build: 2
+    },
+    movement: {
+        base: 4,
+        current: 4
+    },
+    unitTypes: ["Infantry"]
 };
 
 // ====================================================================
@@ -73,19 +88,36 @@ class FireEmblemActor extends Actor {
      */
     _applyClassData(systemData, classData) {
         // Update unit types
-        systemData.unitTypes = classData.unitTypes || ["Infantry"];
+        const hasCustomUnitTypes = Array.isArray(systemData.unitTypes)
+            && systemData.unitTypes.length > 0
+            && (systemData.unitTypes.length !== FALLBACK_ACTOR_DATA.unitTypes.length
+                || systemData.unitTypes.some((type, index) => type !== FALLBACK_ACTOR_DATA.unitTypes[index]));
+        if (!hasCustomUnitTypes) {
+            const classUnitTypes = Array.isArray(classData.unitTypes) && classData.unitTypes.length > 0
+                ? classData.unitTypes
+                : FALLBACK_ACTOR_DATA.unitTypes;
+            systemData.unitTypes = foundry.utils.duplicate(classUnitTypes);
+        }
 
         // Update movement if not manually changed
-        if (!systemData.movement.current || systemData.movement.current === systemData.movement.base) {
-            systemData.movement.base = classData.movement || 4;
-            systemData.movement.current = classData.movement || 4;
+        const usingDefaultMovement = (!systemData.movement?.base && !systemData.movement?.current)
+            || (systemData.movement?.base === FALLBACK_ACTOR_DATA.movement.base
+                && systemData.movement?.current === FALLBACK_ACTOR_DATA.movement.current);
+        if (usingDefaultMovement && classData.movement !== undefined) {
+            systemData.movement = systemData.movement || {};
+            systemData.movement.base = classData.movement;
+            systemData.movement.current = classData.movement;
         }
 
         // Update stat caps from class
         if (classData.statCaps) {
             for (const [stat, cap] of Object.entries(classData.statCaps)) {
                 if (systemData.attributes[stat]) {
-                    systemData.attributes[stat].max = cap;
+                    const defaultMax = FALLBACK_ACTOR_DATA.attributes[stat]?.max;
+                    const hasCustomCap = defaultMax !== undefined && systemData.attributes[stat].max !== defaultMax;
+                    if (!hasCustomCap) {
+                        systemData.attributes[stat].max = cap;
+                    }
                 }
             }
         }
@@ -93,25 +125,29 @@ class FireEmblemActor extends Actor {
         // Update growth rates from class
         if (classData.growthRates) {
             for (const [stat, growth] of Object.entries(classData.growthRates)) {
-                if (systemData.growthRates[stat] !== undefined) {
+                const defaultGrowth = FALLBACK_ACTOR_DATA.growthRates[stat];
+                const hasCustomGrowth = defaultGrowth !== undefined && systemData.growthRates?.[stat] !== defaultGrowth;
+                if (!hasCustomGrowth) {
+                    systemData.growthRates = systemData.growthRates || {};
                     systemData.growthRates[stat] = growth;
                 }
             }
         }
 
-        // Update weapon proficiencies - clear all first
-        const weaponRanks = {
-            sword: "", lance: "", axe: "", bow: "", firearm: "",
-            unarmed: "", knife: "", anima: "", light: "", dark: "", staff: ""
-        };
+        // Ensure weapon proficiencies exist without overwriting manual edits
+        const weaponRankDefaults = {};
+        for (const weaponType of Object.keys(FEUE.WeaponTypes)) {
+            weaponRankDefaults[weaponType] = systemData.weaponRanks?.[weaponType] || "";
+        }
+        systemData.weaponRanks = weaponRankDefaults;
 
-        // Set proficiencies for class
         if (classData.weaponProficiencies) {
             for (const weapon of classData.weaponProficiencies) {
-                weaponRanks[weapon] = systemData.weaponRanks[weapon] || "E";
+                if (!systemData.weaponRanks[weapon]) {
+                    systemData.weaponRanks[weapon] = "E";
+                }
             }
         }
-        systemData.weaponRanks = weaponRanks;
     }
 
     /**
@@ -279,18 +315,21 @@ class FireEmblemCharacterSheet extends ActorSheet {
             data.FEUE = FEUE;
 
             // Get equipped class
-            const equippedClass = data.items.find(i => i.type === "class" && i.system.equipped);
+            const allItems = Array.isArray(data.items) ? data.items : Array.from(data.items || []);
+            const equippedClass = allItems.find(i => i.type === "class" && i.system.equipped);
             data.equippedClass = equippedClass;
 
-            // Organize items by type
-            data.weapons = data.items.filter(i => i.type === "weapon");
-            data.items = data.items.filter(i => i.type === "item");
-            data.skills = data.items.filter(i => i.type === "skill");
-            data.spells = data.items.filter(i => i.type === "spell");
-            data.classes = data.items.filter(i => i.type === "class");
+            // Organize items by type without losing references
+            data.weapons = allItems.filter(i => i.type === "weapon");
+            const inventoryItems = allItems.filter(i => i.type === "item");
+            data.skills = allItems.filter(i => i.type === "skill");
+            data.spells = allItems.filter(i => i.type === "spell");
+            data.classes = allItems.filter(i => i.type === "class");
+            data.items = inventoryItems;
 
-            // Calculate encumbrance
-            const totalWeight = data.items.concat(data.weapons).reduce((total, item) => {
+            // Calculate encumbrance (count weapons and carried items)
+            const carriedItems = inventoryItems.concat(data.weapons);
+            const totalWeight = carriedItems.reduce((total, item) => {
                 return total + (item.system.weight || 0) * (item.system.quantity || 1);
             }, 0);
 
