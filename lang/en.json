@@ -156,7 +156,8 @@
     "Errors": {
       "cannotUseWeapon": "Cannot use this weapon - insufficient weapon rank",
       "notEnoughFatePoints": "Not enough Fate Points",
-      "weaponBroken": "Weapon is broken and cannot be used"
+      "weaponBroken": "Weapon is broken and cannot be used",
+      "fieldUpdateFailed": "Failed to update character sheet field."
     }
   },
   "TYPES": {
