@@ -22,13 +22,7 @@
     "styles/feue.css"
   ],
   "packs": [
-    {
-      "name": "species",
-      "label": "Species",
-      "system": "thefade",
-      "path": "./packs/species.db",
-      "type": "Item"
-    }
+
   ],
   "languages": [
     {
@@ -43,9 +37,9 @@
   },
   "primaryTokenAttribute": "hp",
   "secondaryTokenAttribute": "sanity",
-  "url": "https://github.com/colearkenach/thefade-foundry",
-  "manifest": "https://github.com/colearkenach/thefade-foundry/releases/download/v13/system.json",
-  "download": "https://github.com/colearkenach/thefade-foundry/archive/refs/tags/v13.zip",
+  "url": "https://github.com/colearkenach/FireEmblem_UltimateEdition",
+  "manifest": "https://github.com/colearkenach/FireEmblem_UltimateEdition/releases/download/v13/system.json",
+  "download": "https://github.com/colearkenach/FireEmblem_UltimateEdition/archive/refs/tags/v13.zip",
   "license": "LICENSE.txt",
   "itemTypes": [
     "weapon"
