@@ -460,6 +460,15 @@ class FireEmblemCharacterSheet extends ActorSheet {
         // Weapon rank changes
         html.find('.weapon-rank').change(this._onWeaponRankChange.bind(this));
 
+        const directFieldSelectors = [
+            'select[name="system.affinity"]',
+            'input[name^="system.personalDetails"]',
+            'textarea[name="system.biography"]',
+            'textarea[name="system.appearance"]'
+        ].join(', ');
+
+        html.find(directFieldSelectors).on('change', this._onDirectFieldChange.bind(this));
+
         // Item controls
         html.find('.item-edit').click(this._onItemEdit.bind(this));
         html.find('.item-delete').click(this._onItemDelete.bind(this));
@@ -510,6 +519,45 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const newRank = element.value;
 
         await this.actor.update({ [`system.weaponRanks.${weaponType}`]: newRank });
+    }
+
+    async _onDirectFieldChange(event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const element = event.currentTarget;
+        const field = element.name;
+
+        if (!field) {
+            return;
+        }
+
+        let value = element.value;
+
+        const dtype = element.dataset.dtype;
+        if (dtype === "Number") {
+            value = value === "" ? null : Number(value);
+            if (!Number.isFinite(value)) {
+                value = null;
+            }
+        } else if (dtype === "Boolean") {
+            value = element.checked;
+        }
+
+        const systemPath = field.startsWith("system.") ? field.slice(7) : field;
+        const currentValue = foundry?.utils?.getProperty?.(this.actor.system, systemPath);
+
+        if (currentValue === value) {
+            return;
+        }
+
+        try {
+            await this.actor.update({ [field]: value });
+        } catch (error) {
+            console.error(`Failed to update field ${field}`, error);
+            const errorMessage = game.i18n?.localize?.("FEUE.Errors.fieldUpdateFailed") || `Failed to update ${field}`;
+            ui.notifications?.error?.(errorMessage);
+        }
     }
 
     /**
