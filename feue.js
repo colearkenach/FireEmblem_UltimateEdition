@@ -26,7 +26,9 @@ const FEUE = {
         "anima": "Anima",
         "light": "Light",
         "dark": "Dark",
-        "staff": "Staff"
+        "staff": "Staff",
+        "monster": "Monster",
+        "stone": "Stone"
     }
 };
 
@@ -58,9 +60,9 @@ const FALLBACK_ACTOR_DATA = {
         base: 4,
         current: 4
     },
-    unitTypes: ["Infantry"],
+    unitTypes: "",
     weaponRanks: {},
-    affinity: "Fire",
+    affinity: "",
     biography: "",
     appearance: "",
     personalDetails: {
@@ -154,7 +156,7 @@ class FireEmblemActor extends Actor {
         systemData.unitTypes = Array.isArray(systemData.unitTypes) ? systemData.unitTypes : [];
 
         // Ensure basic fields exist
-        if (!systemData.affinity) systemData.affinity = "Fire";
+        if (!systemData.affinity) systemData.affinity = "";
         if (!systemData.biography) systemData.biography = "";
         if (!systemData.appearance) systemData.appearance = "";
         if (!systemData.personalDetails) systemData.personalDetails = {};
@@ -572,7 +574,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const item = await Item.implementation?.fromDropData?.(data) || await Item.fromDropData?.(data);
         if (!item) return false;
 
-        const allowedTypes = new Set(["weapon", "item", "skill", "spell", "class"]);
+        const allowedTypes = new Set(["weapon", "item", "skill", "spell", "class", "combatArt", "battalion"]);
         if (!allowedTypes.has(item.type)) {
             return super._onDropItem(event, data);
         }
@@ -722,7 +724,7 @@ class FireEmblemItemSheet extends ItemSheet {
             height: 600,
             tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "description" }],
             closeOnSubmit: false,
-            submitOnChange: true
+            submitOnChange: false
         });
     }
 

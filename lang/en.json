@@ -36,7 +36,9 @@
       "anima": "Anima",
       "light": "Light",
       "dark": "Dark",
-      "staff": "Staff"
+      "staff": "Staff",
+      "monster": "Monster",
+      "stone": "Stone"
     },
     "WeaponRanks": {
       "E": "E",
@@ -101,7 +103,9 @@
       "weapon": "Weapon",
       "item": "Item",
       "skill": "Skill",
-      "spell": "Spell"
+      "spell": "Spell",
+      "battalion": "Battalion",
+      "combatArt": "Combat Art"
     },
     "Tabs": {
       "main": "Main",
@@ -169,7 +173,9 @@
       "item": "Item",
       "skill": "Skill",
       "spell": "Spell",
-      "class": "Class"
+      "class": "Class",
+      "battalion": "Battalion",
+      "combatArt": "Combat Art"
     }
   }
 }

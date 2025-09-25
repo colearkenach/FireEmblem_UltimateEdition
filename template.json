@@ -72,25 +72,27 @@
         "damage": 0
       },
       "weaponRanks": {
-        "sword": "",
-        "lance": "",
-        "axe": "",
-        "bow": "",
-        "firearm": "",
-        "unarmed": "",
-        "knife": "",
-        "anima": "",
-        "light": "",
-        "dark": "",
-        "staff": ""
+        "sword": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "lance": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "axe": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "bow": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "firearm": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "unarmed": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "knife": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "anima": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "light": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "dark": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "staff": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "monster": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ],
+        "stone": [ "—", "Prf", "E", "D", "C", "B", "A", "S" ]
       },
       "movement": {
         "base": 4,
         "current": 4
       },
-      "unitTypes": [ "Infantry" ],
+      "unitTypes": [ "Infantry", "Mounted", "Flying", "Dragon", "Armored", "Magician", "Beast", "Monster" ],
       "supportRanks": {},
-      "affinity": "Fire",
+      "affinity": [ "Fire", "Thunder", "Wind", "Ice", "Earth", "Dark", "Light", "Anima" ],
       "fatePoints": {
         "value": 0,
         "max": 0
@@ -109,7 +111,7 @@
     }
   },
   "Item": {
-    "types": [ "weapon", "item", "skill", "spell", "class" ],
+    "types": [ "weapon", "item", "skill", "spell", "combatArt", "battalion", "class" ],
     "templates": {
       "base": {
         "description": "",
@@ -123,25 +125,25 @@
     },
     "weapon": {
       "templates": [ "base", "physical" ],
-      "weaponType": "sword",
+      "weaponType": [ "Sword", "Lance", "Axe", "Bow", "Firearm", "Knife", "Anima", "Light", "Dark", "Unarmed", "Monster", "Staff", "Stone" ],
       "might": 5,
       "hit": 90,
       "crit": 0,
       "range": "1",
-      "rank": "E",
+      "rank": [ "Prf", "E", "D", "C", "B", "A", "S" ],
       "uses": {
         "value": 45,
         "max": 45
       },
       "properties": [],
       "weaponTriangle": {
-        "advantage": [ "axe" ],
-        "disadvantage": [ "lance" ]
+        "advantage": [ "—", "Sword", "Lance", "Axe", "Bow", "Firearm", "Knife", "Anima", "Light", "Dark", "Unarmed", "Monster", "Staff", "Stone" ],
+        "disadvantage": [ "—", "Sword", "Lance", "Axe", "Bow", "Firearm", "Knife", "Anima", "Light", "Dark", "Unarmed", "Monster", "Staff", "Stone" ]
       }
     },
     "item": {
       "templates": [ "base", "physical" ],
-      "itemType": "consumable",
+      "itemType": [ "consumable", "equippabl" ]
       "uses": {
         "value": 3,
         "max": 3
@@ -150,29 +152,50 @@
     },
     "skill": {
       "templates": [ "base" ],
-      "skillType": "passive",
-      "level": 1,
+      "skillType": [ "Passive", "Passive (Activated)", "Active" ],
+      "level": [ "Innate", 1, 5, 10, 15, 20, 30 ],
       "prerequisites": "",
       "activation": ""
     },
     "spell": {
       "templates": [ "base" ],
-      "school": "black",
+      "school": [ "Black Magic", "White Magic", "Dark Magic" ],
       "hpCost": 1,
       "might": 3,
       "hit": 80,
       "crit": 0,
       "range": "1-2",
-      "rank": "E",
+      "rank": [ "E", "D", "C", "B", "A", "S" ],
+      "special": ""
+    },
+    "combatArt": {
+      "templates": [ "base" ],
+      "prerequisites": "",
+      "weaponRestriction": [ "—", "Sword", "Lance", "Axe", "Bow", "Firearm", "Knife", "Anima", "Light", "Dark", "Unarmed", "Monster", "Staff", "Stone" ],
+      "durabilityCost": 1,
+      "effect": ""
+    },
+    "battalion": {
+      "templates": [ "base" ],
+      "endurance": {
+        "value": 0,
+        "max": 0
+      },
+      "movePenalty": 1,
+      "might": 8,
+      "hit": 50,
+      "crit": 0,
+      "range": [ "—", "3x1", "3x2", "3x3", "2L", "3L", "4L" ],
+      "rank": [ "E", "D", "C", "B", "A", "S" ],
       "special": ""
     },
     "class": {
       "templates": [ "base" ],
-      "classType": "Recruit",
+      "classType": [ "Recruit", "Standard", "Promoted", "Advanced", "Enemy Only" ],
       "maxLevel": 10,
-      "unitTypes": [ "Infantry" ],
+      "unitTypes": [ "Infantry", "Mounted", "Flying", "Dragon", "Armored", "Magician", "Beast", "Monster" ],
       "movement": 4,
-      "weaponProficiencies": [ "sword" ],
+      "weaponProficiencies": [ "Sword", "Lance", "Axe", "Bow", "Firearm", "Knife", "Anima", "Light", "Dark", "Unarmed", "Monster", "Staff", "Stone" ],
       "baseStats": {
         "hp": 15,
         "strength": 5,
@@ -208,9 +231,13 @@
         "build": 15
       },
       "classSkills": {
+        "Innate": [],
         "1": [],
         "5": [],
-        "10": []
+        "10": [],
+        "15": [],
+        "20": [],
+        "30": []
       },
       "promotesInto": []
     }
