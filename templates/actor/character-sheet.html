@@ -10,7 +10,7 @@
             <div class="resource flexrow">
                 <div class="resource-label">Level</div>
                 <div class="resource-value">
-                    <input type="text" name="system.level" value="{{systemDisplay.level}}" data-dtype="Number" />
+                    <input type="text" name="system.level" value="{{actor.system.level}}" data-dtype="Number" />
                 </div>
                 <button type="button" class="level-up">Level Up</button>
             </div>
@@ -46,7 +46,7 @@
                 <div class="attributes flexcol">
                     <h3>Attributes</h3>
                     <div class="attributes-grid">
-                        {{#each systemDisplay.attributes as |attribute key|}}
+                        {{#each actor.system.attributes as |attribute key|}}
                         <div class="attribute flexrow">
                             <label class="attribute-label">{{key}}</label>
                             <div class="attribute-value">
@@ -63,7 +63,7 @@
                 <div class="growth-rates flexcol">
                     <h3>Growth Rates</h3>
                     <div class="growth-grid">
-                        {{#each systemDisplay.growthRates as |growth key|}}
+                        {{#each actor.system.growthRates as |growth key|}}
                         <div class="growth-rate flexrow">
                             <label class="growth-label">{{key}}</label>
                             <input type="text" name="system.growthRates.{{key}}" value="{{growth}}" data-dtype="Number" />
@@ -77,7 +77,7 @@
             <div class="weapon-ranks">
                 <h3>Weapon Ranks</h3>
                 <div class="weapon-ranks-grid">
-                    {{#each systemDisplay.weaponRanks as |rank weapon|}}
+                    {{#each actor.system.weaponRanks as |rank weapon|}}
                     <div class="weapon-rank flexrow">
                         <label class="weapon-label">{{weapon}}</label>
                         <select class="weapon-rank" name="system.weaponRanks.{{weapon}}" data-weapon-type="{{weapon}}">
@@ -96,11 +96,11 @@
                     <h3>Movement</h3>
                     <div class="resource flexrow">
                         <label>Base Movement</label>
-                        <input type="text" name="system.movement.base" value="{{systemDisplay.movement.base}}" data-dtype="Number" />
+                        <input type="text" name="system.movement.base" value="{{actor.system.movement.base}}" data-dtype="Number" />
                     </div>
                     <div class="resource flexrow">
                         <label>Current Movement</label>
-                        <input type="text" name="system.movement.current" value="{{systemDisplay.movement.current}}" data-dtype="Number" />
+                        <input type="text" name="system.movement.current" value="{{actor.system.movement.current}}" data-dtype="Number" />
                     </div>
                 </div>
 
@@ -110,13 +110,13 @@
                         <label>Affinity</label>
                         <select name="system.affinity">
                             {{#each FEUE.AFFINITIES as |affinity|}}
-                            <option value="{{affinity}}" {{#ifEquals ../systemDisplay.affinity affinity}} selected{{/ifEquals}}>{{affinity}}</option>
+                            <option value="{{affinity}}" {{#ifEquals ../actor.system.affinity affinity}} selected{{/ifEquals}}>{{affinity}}</option>
                             {{/each}}
                         </select>
                     </div>
                     <div class="resource flexrow">
                         <label>Experience</label>
-                        <input type="text" name="system.experience" value="{{systemDisplay.experience}}" data-dtype="Number" />
+                        <input type="text" name="system.experience" value="{{actor.system.experience}}" data-dtype="Number" />
                     </div>
                 </div>
             </div>
@@ -127,19 +127,19 @@
             <div class="combat-stats flexrow">
                 <div class="combat-stat">
                     <label>Hit Rate</label>
-                    <span class="computed-value">{{systemDisplay.combat.hitRate}}%</span>
+                    <span class="computed-value">{{actor.system.combat.hitRate}}%</span>
                 </div>
                 <div class="combat-stat">
                     <label>Critical Rate</label>
-                    <span class="computed-value">{{systemDisplay.combat.critRate}}%</span>
+                    <span class="computed-value">{{actor.system.combat.critRate}}%</span>
                 </div>
                 <div class="combat-stat">
                     <label>Avoid</label>
-                    <span class="computed-value">{{systemDisplay.combat.avoid}}%</span>
+                    <span class="computed-value">{{actor.system.combat.avoid}}%</span>
                 </div>
                 <div class="combat-stat">
                     <label>Dodge</label>
-                    <span class="computed-value">{{systemDisplay.combat.dodge}}</span>
+                    <span class="computed-value">{{actor.system.combat.dodge}}</span>
                 </div>
             </div>
 
@@ -295,35 +295,35 @@
                 <div class="details-grid">
                     <div class="detail">
                         <label>Age</label>
-                        <input type="text" name="system.personalDetails.age" value="{{systemDisplay.personalDetails.age}}" data-dtype="Number" />
+                        <input type="text" name="system.personalDetails.age" value="{{actor.system.personalDetails.age}}" data-dtype="Number" />
                     </div>
                     <div class="detail">
                         <label>Sex</label>
-                        <input type="text" name="system.personalDetails.sex" value="{{systemDisplay.personalDetails.sex}}" />
+                        <input type="text" name="system.personalDetails.sex" value="{{actor.system.personalDetails.sex}}" />
                     </div>
                     <div class="detail">
                         <label>Height</label>
-                        <input type="text" name="system.personalDetails.height" value="{{systemDisplay.personalDetails.height}}" />
+                        <input type="text" name="system.personalDetails.height" value="{{actor.system.personalDetails.height}}" />
                     </div>
                     <div class="detail">
                         <label>Weight</label>
-                        <input type="text" name="system.personalDetails.weight" value="{{systemDisplay.personalDetails.weight}}" />
+                        <input type="text" name="system.personalDetails.weight" value="{{actor.system.personalDetails.weight}}" />
                     </div>
                     <div class="detail">
                         <label>Birthplace</label>
-                        <input type="text" name="system.personalDetails.birthplace" value="{{systemDisplay.personalDetails.birthplace}}" />
+                        <input type="text" name="system.personalDetails.birthplace" value="{{actor.system.personalDetails.birthplace}}" />
                     </div>
                 </div>
             </div>
 
             <div class="biography-text">
                 <h3>Biography</h3>
-                <textarea name="system.biography" rows="8" placeholder="Character biography...">{{systemDisplay.biography}}</textarea>
+                <textarea name="system.biography" rows="8" placeholder="Character biography...">{{actor.system.biography}}</textarea>
             </div>
 
             <div class="appearance-text">
                 <h3>Appearance</h3>
-                <textarea name="system.appearance" rows="6" placeholder="Character appearance...">{{systemDisplay.appearance}}</textarea>
+                <textarea name="system.appearance" rows="6" placeholder="Character appearance...">{{actor.system.appearance}}</textarea>
             </div>
         </div>
 
