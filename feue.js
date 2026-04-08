@@ -43,6 +43,32 @@ const DEFAULT_WEAPON_RANKS = Object.fromEntries(
 // 2. ACTOR CLASS
 // ====================================================================
 class FireEmblemActor extends Actor {
+    _blankBonuses() {
+        return {
+            attributes: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0, move: 0 },
+            maximums: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0, move: 0 },
+            growthRates: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0 },
+            combat: { hitRate: 0, critRate: 0, avoid: 0, dodge: 0, attackSpeed: 0 }
+        };
+    }
+
+    _collectBonuses() {
+        const totals = this._blankBonuses();
+        const bonusItems = this.items.filter(i => ["item", "skill", "miscBonus"].includes(i.type));
+        const equippedWeapon = this.items.find(i => i.type === "weapon" && i.system?.equipped);
+        if (equippedWeapon) bonusItems.push(equippedWeapon);
+
+        for (const item of bonusItems) {
+            const b = item.system?.bonuses || {};
+            for (const k of Object.keys(totals.attributes)) totals.attributes[k] += Number(b.attributes?.[k] || 0);
+            for (const k of Object.keys(totals.maximums)) totals.maximums[k] += Number(b.maximums?.[k] || 0);
+            for (const k of Object.keys(totals.growthRates)) totals.growthRates[k] += Number(b.growthRates?.[k] || 0);
+            for (const k of Object.keys(totals.combat)) totals.combat[k] += Number(b.combat?.[k] || 0);
+        }
+
+        return totals;
+    }
+
     prepareDerivedData() {
         const system = this.system;
 
@@ -92,15 +118,6 @@ class FireEmblemActor extends Actor {
             { inplace: false, overwrite: false }
         );
 
-        // Derived combat
-        const a = system.attributes || {};
-        system.combat = {
-            hitRate: (a.skill?.value || 0) + Math.floor((a.luck?.value || 0) / 4),
-            critRate: Math.floor((a.skill?.value || 0) / 2),
-            avoid: (a.speed?.value || 0) + Math.floor((a.luck?.value || 0) / 4),
-            dodge: a.luck?.value || 0
-        };
-
         if (!system.weaponRanks) system.weaponRanks = foundry.utils.deepClone(DEFAULT_WEAPON_RANKS);
 
         for (const key of Object.keys(DEFAULT_WEAPON_RANKS)) {
@@ -108,6 +125,34 @@ class FireEmblemActor extends Actor {
                 system.weaponRanks[key] = "";
             }
         }
+
+        const bonus = this._collectBonuses();
+        for (const k of keys) {
+            system.attributes[k].value = (system.attributes[k].value || 0) + (bonus.attributes[k] || 0);
+            system.attributes[k].max = (system.attributes[k].max || 0) + (bonus.maximums[k] || 0);
+            system.growthRates[k] = (system.growthRates?.[k] || 0) + (bonus.growthRates[k] || 0);
+        }
+
+        system.movement ??= {};
+        system.movement.base = (system.movement.base || 0) + (bonus.attributes.move || 0);
+        system.movement.current = (system.movement.current || 0) + (bonus.attributes.move || 0);
+
+        const equippedWeapon = this.items.find(i => i.type === "weapon" && i.system?.equipped);
+        const weaponHit = Number(equippedWeapon?.system?.hit || 0);
+        const weaponCrit = Number(equippedWeapon?.system?.crit || 0);
+        const weaponWeight = Number(equippedWeapon?.system?.weight || 0);
+        const build = Number(system.attributes?.build?.value || 0);
+        const attackSpeed = Number(system.attributes?.speed?.value || 0) - Math.max(weaponWeight - build, 0) + (bonus.combat.attackSpeed || 0);
+
+        // Derived combat
+        const a = system.attributes || {};
+        system.combat = {
+            attackSpeed,
+            hitRate: (a.skill?.value || 0) + Math.floor((a.luck?.value || 0) / 4) + weaponHit + (bonus.combat.hitRate || 0),
+            critRate: Math.floor((a.skill?.value || 0) / 2) + weaponCrit + (bonus.combat.critRate || 0),
+            avoid: attackSpeed + Math.floor((a.luck?.value || 0) / 4) + (bonus.combat.avoid || 0),
+            dodge: (a.luck?.value || 0) + (bonus.combat.dodge || 0)
+        };
     }
 
     async levelUp() {
@@ -168,6 +213,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
         data.skills = this.actor.items.filter(i => i.type === "skill");
         data.spells = this.actor.items.filter(i => i.type === "spell");
         data.combatArts = this.actor.items.filter(i => i.type === "combatArt");
+        data.miscBonuses = this.actor.items.filter(i => i.type === "miscBonus");
         data.weapons = this.actor.items.filter(i => i.type === "weapon");
         data.battalion = this.actor.items.find(i => i.type === "battalion") || null;
         data.items = this.actor.items.filter(i => i.type === "item");

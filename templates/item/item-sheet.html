@@ -34,6 +34,9 @@
         {{#if (eq item.type "class")}}
         <a class="item" data-tab="class">Class</a>
         {{/if}}
+        {{#if (eq item.type "miscBonus")}}
+        <a class="item" data-tab="miscBonus">Misc Bonus</a>
+        {{/if}}
     </nav>
 
     {{!-- Sheet Body --}}
@@ -72,6 +75,35 @@
             {{/unless}}
             {{/unless}}
             {{/unless}}
+
+            <div class="form-group">
+                <h3>Bonuses</h3>
+                <p>Applies to equipped weapon and all owned item/skill/misc bonus entries.</p>
+                <div class="form-row">
+                    <div class="form-group"><label>MaxHP</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.hp" value="{{item.system.bonuses.attributes.hp}}" /></div>
+                    <div class="form-group"><label>STR</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.strength" value="{{item.system.bonuses.attributes.strength}}" /></div>
+                    <div class="form-group"><label>MAG</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.magic" value="{{item.system.bonuses.attributes.magic}}" /></div>
+                    <div class="form-group"><label>SKL</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.skill" value="{{item.system.bonuses.attributes.skill}}" /></div>
+                    <div class="form-group"><label>SPD</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.speed" value="{{item.system.bonuses.attributes.speed}}" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>DEF</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.defense" value="{{item.system.bonuses.attributes.defense}}" /></div>
+                    <div class="form-group"><label>RES</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.resistance" value="{{item.system.bonuses.attributes.resistance}}" /></div>
+                    <div class="form-group"><label>LUK</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.luck" value="{{item.system.bonuses.attributes.luck}}" /></div>
+                    <div class="form-group"><label>CHA</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.charm" value="{{item.system.bonuses.attributes.charm}}" /></div>
+                    <div class="form-group"><label>BLD</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.build" value="{{item.system.bonuses.attributes.build}}" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>MOVE</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.move" value="{{item.system.bonuses.attributes.move}}" /></div>
+                    <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.bonuses.combat.hitRate" value="{{item.system.bonuses.combat.hitRate}}" /></div>
+                    <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.bonuses.combat.critRate" value="{{item.system.bonuses.combat.critRate}}" /></div>
+                    <div class="form-group"><label>Avoid</label><input type="number" data-dtype="Number" name="system.bonuses.combat.avoid" value="{{item.system.bonuses.combat.avoid}}" /></div>
+                    <div class="form-group"><label>Dodge</label><input type="number" data-dtype="Number" name="system.bonuses.combat.dodge" value="{{item.system.bonuses.combat.dodge}}" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Attack Speed</label><input type="number" data-dtype="Number" name="system.bonuses.combat.attackSpeed" value="{{item.system.bonuses.combat.attackSpeed}}" /></div>
+                </div>
+            </div>
         </div>
 
         {{!-- Weapon Tab --}}
@@ -452,6 +484,12 @@
                     <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.statCaps.build" value="{{item.system.statCaps.build}}" /></div>
                 </div>
             </div>
+        </div>
+        {{/if}}
+
+        {{#if (eq item.type "miscBonus")}}
+        <div class="tab miscBonus" data-group="primary" data-tab="miscBonus">
+            <p>Use the Description tab to configure all misc bonus values.</p>
         </div>
         {{/if}}
 

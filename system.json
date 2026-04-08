@@ -29,7 +29,8 @@
       "spell",
       "class",
       "battalion",
-      "combatArt"
+      "combatArt",
+      "miscBonus"
     ]
   },
   "styles": [
