@@ -18,6 +18,21 @@
   "esmodules": [
     "feue.js"
   ],
+  "documentTypes": {
+    "Actor": [
+      "character"
+    ],
+    "Item": [
+      "weapon",
+      "item",
+      "skill",
+      "spell",
+      "class",
+      "battalion",
+      "combatArt",
+      "miscBonus"
+    ]
+  },
   "styles": [
     "styles/feue.css"
   ],

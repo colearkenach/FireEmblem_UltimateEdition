@@ -111,11 +111,17 @@
     }
   },
   "Item": {
-    "types": [ "weapon", "item", "skill", "spell", "class", "battalion", "combatArt" ],
+    "types": [ "weapon", "item", "skill", "spell", "class", "battalion", "combatArt", "miscBonus" ],
     "templates": {
       "base": {
         "description": "",
-        "source": ""
+        "source": "",
+        "bonuses": {
+          "attributes": { "hp": 0, "strength": 0, "magic": 0, "skill": 0, "speed": 0, "defense": 0, "resistance": 0, "luck": 0, "charm": 0, "build": 0, "move": 0 },
+          "maximums": { "hp": 0, "strength": 0, "magic": 0, "skill": 0, "speed": 0, "defense": 0, "resistance": 0, "luck": 0, "charm": 0, "build": 0, "move": 0 },
+          "growthRates": { "hp": 0, "strength": 0, "magic": 0, "skill": 0, "speed": 0, "defense": 0, "resistance": 0, "luck": 0, "charm": 0, "build": 0 },
+          "combat": { "hitRate": 0, "critRate": 0, "avoid": 0, "dodge": 0, "attackSpeed": 0 }
+        }
       },
       "physical": {
         "price": 0,
@@ -134,7 +140,7 @@
     },
     "weapon": {
       "templates": [ "base", "physical" ],
-      "weaponType": "Sword",
+      "weaponType": "sword",
       "might": 5,
       "hit": 90,
       "crit": 0,
@@ -183,7 +189,7 @@
       "equipped": false,
       "unitTypes": {},
       "weaponProficiencies": {},
-      "baseAttributes": {},
+      "baseStats": {},
       "growthRates": {},
       "statCaps": {}
     },
@@ -199,6 +205,10 @@
       "crit": 0,
       "range": "1",
       "properties": ""
+    },
+    "miscBonus": {
+      "templates": [ "base" ],
+      "enabled": true
     }
   }
 }

@@ -6,6 +6,7 @@
 // ====================================================================
 const FEUE = {
     WEAPON_RANKS: {
+        "": { order: -1, label: "—" },
         "E": { order: 0, label: "E" },
         "D": { order: 1, label: "D" },
         "C": { order: 2, label: "C" },
@@ -42,6 +43,32 @@ const DEFAULT_WEAPON_RANKS = Object.fromEntries(
 // 2. ACTOR CLASS
 // ====================================================================
 class FireEmblemActor extends Actor {
+    _blankBonuses() {
+        return {
+            attributes: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0, move: 0 },
+            maximums: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0, move: 0 },
+            growthRates: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0 },
+            combat: { hitRate: 0, critRate: 0, avoid: 0, dodge: 0, attackSpeed: 0 }
+        };
+    }
+
+    _collectBonuses() {
+        const totals = this._blankBonuses();
+        const bonusItems = this.items.filter(i => ["item", "skill", "miscBonus"].includes(i.type));
+        const equippedWeapon = this.items.find(i => i.type === "weapon" && i.system?.equipped);
+        if (equippedWeapon) bonusItems.push(equippedWeapon);
+
+        for (const item of bonusItems) {
+            const b = item.system?.bonuses || {};
+            for (const k of Object.keys(totals.attributes)) totals.attributes[k] += Number(b.attributes?.[k] || 0);
+            for (const k of Object.keys(totals.maximums)) totals.maximums[k] += Number(b.maximums?.[k] || 0);
+            for (const k of Object.keys(totals.growthRates)) totals.growthRates[k] += Number(b.growthRates?.[k] || 0);
+            for (const k of Object.keys(totals.combat)) totals.combat[k] += Number(b.combat?.[k] || 0);
+        }
+
+        return totals;
+    }
+
     prepareDerivedData() {
         const system = this.system;
 
@@ -65,7 +92,7 @@ class FireEmblemActor extends Actor {
                 const standard = eq.find(c => c.system.classType === "Standard");
                 const promoted = eq.find(c => c.system.classType === "Promoted");
 
-                baseStats = foundry.utils.deepClone((recruit?.system.baseStats) || (standard?.system.baseStats) || {});
+                baseStats = foundry.utils.deepClone((recruit?.system.baseStats) || (recruit?.system.baseAttributes) || (standard?.system.baseStats) || (standard?.system.baseAttributes) || {});
                 growths = foundry.utils.deepClone((recruit?.system.growthRates) || (standard?.system.growthRates) || {});
                 caps = foundry.utils.deepClone((promoted?.system.statCaps) || (standard?.system.statCaps) || (recruit?.system.statCaps) || {});
             }
@@ -86,19 +113,10 @@ class FireEmblemActor extends Actor {
 
         // Fill missing weapon rank keys, do not overwrite existing
         system.weaponRanks = foundry.utils.mergeObject(
+            foundry.utils.deepClone(system.weaponRanks || {}),
             foundry.utils.deepClone(DEFAULT_WEAPON_RANKS),
-            system.weaponRanks || {},
             { inplace: false, overwrite: false }
         );
-
-        // Derived combat
-        const a = system.attributes || {};
-        system.combat = {
-            hitRate: (a.skill?.value || 0) + Math.floor((a.luck?.value || 0) / 4),
-            critRate: Math.floor((a.skill?.value || 0) / 2),
-            avoid: (a.speed?.value || 0) + Math.floor((a.luck?.value || 0) / 4),
-            dodge: a.luck?.value || 0
-        };
 
         if (!system.weaponRanks) system.weaponRanks = foundry.utils.deepClone(DEFAULT_WEAPON_RANKS);
 
@@ -107,6 +125,34 @@ class FireEmblemActor extends Actor {
                 system.weaponRanks[key] = "";
             }
         }
+
+        const bonus = this._collectBonuses();
+        for (const k of keys) {
+            system.attributes[k].value = (system.attributes[k].value || 0) + (bonus.attributes[k] || 0);
+            system.attributes[k].max = (system.attributes[k].max || 0) + (bonus.maximums[k] || 0);
+            system.growthRates[k] = (system.growthRates?.[k] || 0) + (bonus.growthRates[k] || 0);
+        }
+
+        system.movement ??= {};
+        system.movement.base = (system.movement.base || 0) + (bonus.attributes.move || 0);
+        system.movement.current = (system.movement.current || 0) + (bonus.attributes.move || 0);
+
+        const equippedWeapon = this.items.find(i => i.type === "weapon" && i.system?.equipped);
+        const weaponHit = Number(equippedWeapon?.system?.hit || 0);
+        const weaponCrit = Number(equippedWeapon?.system?.crit || 0);
+        const weaponWeight = Number(equippedWeapon?.system?.weight || 0);
+        const build = Number(system.attributes?.build?.value || 0);
+        const attackSpeed = Number(system.attributes?.speed?.value || 0) - Math.max(weaponWeight - build, 0) + (bonus.combat.attackSpeed || 0);
+
+        // Derived combat
+        const a = system.attributes || {};
+        system.combat = {
+            attackSpeed,
+            hitRate: (a.skill?.value || 0) + Math.floor((a.luck?.value || 0) / 4) + weaponHit + (bonus.combat.hitRate || 0),
+            critRate: Math.floor((a.skill?.value || 0) / 2) + weaponCrit + (bonus.combat.critRate || 0),
+            avoid: attackSpeed + Math.floor((a.luck?.value || 0) / 4) + (bonus.combat.avoid || 0),
+            dodge: (a.luck?.value || 0) + (bonus.combat.dodge || 0)
+        };
     }
 
     async levelUp() {
@@ -160,14 +206,18 @@ class FireEmblemCharacterSheet extends ActorSheet {
     getData() {
         const data = super.getData();
         data.FEUE = FEUE;
+        data.weaponRankOptions = Object.entries(FEUE.WEAPON_RANKS).map(([key, value]) => ({ key, label: value.label }));
 
         // Partition items by type
         data.classes = this.actor.items.filter(i => i.type === "class");
         data.skills = this.actor.items.filter(i => i.type === "skill");
         data.spells = this.actor.items.filter(i => i.type === "spell");
         data.combatArts = this.actor.items.filter(i => i.type === "combatArt");
-        data.weapons = this.actor.items.filter(i => i.type === "weapon" || i.type === "battalion");
+        data.miscBonuses = this.actor.items.filter(i => i.type === "miscBonus");
+        data.weapons = this.actor.items.filter(i => i.type === "weapon");
+        data.battalion = this.actor.items.find(i => i.type === "battalion") || null;
         data.items = this.actor.items.filter(i => i.type === "item");
+        data.inventory = this._getInventoryUsage();
 
         // Mark the "equipped" class
         data.equippedClass = data.classes.find(c => c.system.equipped);
@@ -175,9 +225,18 @@ class FireEmblemCharacterSheet extends ActorSheet {
         return data;
     }
 
+    _getInventoryUsage() {
+        const used = this.actor.items.filter(i => i.type === "item" || i.type === "weapon").length;
+        return { used, max: 5, full: used >= 5 };
+    }
+
     activateListeners(html) {
         super.activateListeners(html);
         if (!this.options.editable) return;
+
+        html.find(".level-up").click(async () => this.actor.levelUp());
+
+        html.find(".item-control.item-create").click(async (ev) => this._onItemCreate(ev));
 
         // Generic item controls
         html.find(".item-control.item-edit").click(ev => {
@@ -200,14 +259,13 @@ class FireEmblemCharacterSheet extends ActorSheet {
         });
 
         // Class equip/unequip
-        html.find(".item-control.item-equip").click(async (ev) => {
+        html.find(".item-control.class-equip").click(async (ev) => {
             const li = $(ev.currentTarget).closest(".item");
             const item = this.actor.items.get(li.data("itemId"));
             if (!item) return;
 
-            const equipped = !item.system.equipped;
-
-            if (equipped) {
+            const currentlyEquipped = !!item.system.equipped;
+            if (currentlyEquipped) {
                 const ok = await Dialog.confirm({
                     title: "Unequip Class",
                     content: "<p>Are you sure? This will erase all class-applied stats, growths, and caps.</p>"
@@ -223,7 +281,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
                 return;
             }
 
-            // Equipping
+            // Equip class
             const t = item.system.classType;
             if (t === "Promoted") {
                 const hasStd = this.actor.items.some(i => i.type === "class" && i.system.equipped && i.system.classType === "Standard");
@@ -235,6 +293,47 @@ class FireEmblemCharacterSheet extends ActorSheet {
             }
             await item.update({ "system.equipped": true });
         });
+
+        // Weapon equip/unequip
+        html.find(".item-control.weapon-equip").click(async (ev) => {
+            const li = $(ev.currentTarget).closest(".item");
+            const item = this.actor.items.get(li.data("itemId"));
+            if (!item || item.type !== "weapon") return;
+
+            const currentlyEquipped = !!item.system.equipped;
+            if (currentlyEquipped) {
+                await item.update({ "system.equipped": false });
+                return;
+            }
+
+            const equippedWeapons = this.actor.items.filter(i => i.type === "weapon" && i.system.equipped && i.id !== item.id);
+            if (equippedWeapons.length) {
+                await this.actor.updateEmbeddedDocuments("Item", equippedWeapons.map(w => ({ _id: w.id, "system.equipped": false })));
+            }
+            await item.update({ "system.equipped": true });
+        });
+    }
+
+    async _onItemCreate(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        const type = button.dataset.type;
+        if (!type) return ui.notifications.error("Missing item type on create button.");
+
+        const inventory = this._getInventoryUsage();
+        if ((type === "item" || type === "weapon") && inventory.full) {
+            return ui.notifications.error("Inventory full: characters can only hold 5 total weapons/items.");
+        }
+        if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) {
+            return ui.notifications.error("Characters can only have one battalion.");
+        }
+
+        const itemData = {
+            name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+            type
+        };
+        const [created] = await this.actor.createEmbeddedDocuments("Item", [itemData]);
+        if (created) created.sheet.render(true);
     }
 }
 
@@ -347,4 +446,42 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
     console.log("FEUE | System Ready");
+
+    const defaultWeaponType = "sword";
+
+    const worldWeaponItems = game.items.filter(i => i.type === "weapon");
+    for (const item of worldWeaponItems) {
+        if (!item.system?.weaponType) continue;
+        const normalized = String(item.system.weaponType).toLowerCase();
+        if (FEUE.WeaponTypes[normalized] && normalized !== item.system.weaponType) {
+            item.updateSource({ "system.weaponType": normalized });
+        } else if (!FEUE.WeaponTypes[normalized]) {
+            item.updateSource({ "system.weaponType": defaultWeaponType });
+        }
+    }
+});
+
+Hooks.on("preCreateItem", (item, createData) => {
+    const parent = item.parent;
+    if (!parent || parent.documentName !== "Actor") return true;
+
+    const type = createData.type ?? item.type;
+    if (!type) return false;
+
+    if (type === "item" || type === "weapon") {
+        const used = parent.items.filter(i => i.type === "item" || i.type === "weapon").length;
+        if (used >= 5) {
+            ui.notifications.error(`${parent.name} is at the 5-slot inventory limit (weapons/items).`);
+            return false;
+        }
+    }
+
+    if (type === "battalion") {
+        const hasBattalion = parent.items.some(i => i.type === "battalion");
+        if (hasBattalion) {
+            ui.notifications.error(`${parent.name} can only have one battalion.`);
+            return false;
+        }
+    }
+    return true;
 });
