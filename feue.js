@@ -11,8 +11,7 @@ const FEUE = {
         "C": { order: 2, label: "C" },
         "B": { order: 3, label: "B" },
         "A": { order: 4, label: "A" },
-        "S": { order: 5, label: "S" },
-        "Prf": { order: 6, label: "Prf" }
+        "S": { order: 5, label: "S" }
     },
     AFFINITIES: ["Fire", "Thunder", "Wind", "Ice", "Earth", "Dark", "Light", "Anima"],
     UNIT_TYPES: ["Infantry", "Mounted", "Flying", "Dragon", "Armored", "Magician", "Beast", "Monster"],

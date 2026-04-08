@@ -10,7 +10,7 @@
             <div class="resource flexrow">
                 <div class="resource-label">Level</div>
                 <div class="resource-value">
-                    <input type="text" name="system.level" value="{{actor.system.level}}" data-dtype="Number" />
+                    <input type="number" name="system.level" value="{{actor.system.level}}" data-dtype="Number" />
                 </div>
                 <button type="button" class="level-up">Level Up</button>
             </div>
@@ -50,9 +50,9 @@
                         <div class="attribute flexrow">
                             <label class="attribute-label">{{key}}</label>
                             <div class="attribute-value">
-                                <input type="text" name="system.attributes.{{key}}.value" value="{{attribute.value}}" data-dtype="Number" />
+                                <input type="number" name="system.attributes.{{key}}.value" value="{{attribute.value}}" data-dtype="Number" disabled/>
                                 <span>/</span>
-                                <input type="text" name="system.attributes.{{key}}.max" value="{{attribute.max}}" data-dtype="Number" />
+                                <input type="number" name="system.attributes.{{key}}.max" value="{{attribute.max}}" data-dtype="Number" disabled/>
                             </div>
                         </div>
                         {{/each}}
@@ -66,7 +66,7 @@
                         {{#each actor.system.growthRates as |growth key|}}
                         <div class="growth-rate flexrow">
                             <label class="growth-label">{{key}}</label>
-                            <input type="text" name="system.growthRates.{{key}}" value="{{growth}}" data-dtype="Number" />
+                            <input type="number" name="system.growthRates.{{key}}" value="{{growth}}" data-dtype="Number" />
                         </div>
                         {{/each}}
                     </div>
@@ -96,11 +96,11 @@
                     <h3>Movement</h3>
                     <div class="resource flexrow">
                         <label>Base Movement</label>
-                        <input type="text" name="system.movement.base" value="{{actor.system.movement.base}}" data-dtype="Number" />
+                        <input type="number" name="system.movement.base" value="{{actor.system.movement.base}}" data-dtype="Number" />
                     </div>
                     <div class="resource flexrow">
                         <label>Current Movement</label>
-                        <input type="text" name="system.movement.current" value="{{actor.system.movement.current}}" data-dtype="Number" />
+                        <input type="number" name="system.movement.current" value="{{actor.system.movement.current}}" data-dtype="Number" />
                     </div>
                 </div>
 
