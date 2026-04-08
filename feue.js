@@ -87,8 +87,8 @@ class FireEmblemActor extends Actor {
 
         // Fill missing weapon rank keys, do not overwrite existing
         system.weaponRanks = foundry.utils.mergeObject(
+            foundry.utils.deepClone(system.weaponRanks || {}),
             foundry.utils.deepClone(DEFAULT_WEAPON_RANKS),
-            system.weaponRanks || {},
             { inplace: false, overwrite: false }
         );
 
