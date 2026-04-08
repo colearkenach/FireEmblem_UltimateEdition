@@ -66,7 +66,7 @@
                         {{#each actor.system.growthRates as |growth key|}}
                         <div class="growth-rate flexrow">
                             <label class="growth-label">{{key}}</label>
-                            <input type="number" name="system.growthRates.{{key}}" value="{{growth}}" data-dtype="Number" />
+                            <input type="number" name="system.growthRates.{{key}}" value="{{growth}}" data-dtype="Number" disabled />
                         </div>
                         {{/each}}
                     </div>
@@ -96,7 +96,7 @@
                     <h3>Movement</h3>
                     <div class="resource flexrow">
                         <label>Base Movement</label>
-                        <input type="number" name="system.movement.base" value="{{actor.system.movement.base}}" data-dtype="Number" />
+                        <input type="number" name="system.movement.base" value="{{actor.system.movement.base}}" data-dtype="Number" disabled />
                     </div>
                     <div class="resource flexrow">
                         <label>Current Movement</label>

@@ -335,12 +335,43 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const [created] = await this.actor.createEmbeddedDocuments("Item", [itemData]);
         if (created) created.sheet.render(true);
     }
+
+    async _onItemCreate(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        const type = button.dataset.type;
+        if (!type) return ui.notifications.error("Missing item type on create button.");
+
+        const inventory = this._getInventoryUsage();
+        if ((type === "item" || type === "weapon") && inventory.full) {
+            return ui.notifications.error("Inventory full: characters can only hold 5 total weapons/items.");
+        }
+        if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) {
+            return ui.notifications.error("Characters can only have one battalion.");
+        }
+
+        const itemData = {
+            name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+            type
+        };
+        const [created] = await this.actor.createEmbeddedDocuments("Item", [itemData]);
+        if (created) created.sheet.render(true);
+    }
 }
 
 // ====================================================================
 // 4. ITEM CLASS & SHEET
 // ====================================================================
 class FireEmblemItem extends Item {
+    prepareBaseData() {
+        super.prepareBaseData();
+
+        const validTypes = Object.keys(game.system.template.Item || {});
+        if (!this.type && validTypes.length) {
+            this._source.type = validTypes[0];
+        }
+    }
+
     prepareDerivedData() {
         if (this.type === "weapon") {
             // any weapon-specific calc
