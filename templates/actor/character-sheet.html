@@ -81,8 +81,8 @@
                     <div class="weapon-rank-row flexrow">
                         <label class="weapon-label">{{weapon}}</label>
                         <select class="weapon-rank-select" name="system.weaponRanks.{{weapon}}" data-weapon-type="{{weapon}}">
-                            {{#each FEUE.WEAPON_RANKS as |rankData rankKey|}}
-                            <option value="{{rankKey}}" {{#ifEquals rank rankKey}} selected{{/ifEquals}}>{{rankData.label}}</option>
+                            {{#each ../weaponRankOptions as |opt|}}
+                            <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
                             {{/each}}
                         </select>
                     </div>
@@ -164,7 +164,7 @@
                         <span>{{weapon.system.range}} Rng</span>
                     </div>
                     <div class="item-controls">
-                        <a class="item-control item-equip" title="{{#if weapon.system.equipped}}Unequip{{else}}Equip{{/if}}">
+                        <a class="item-control weapon-equip" title="{{#if weapon.system.equipped}}Unequip{{else}}Equip{{/if}}">
                             <i class="fas {{#if weapon.system.equipped}}fa-shield-alt{{else}}fa-hand-paper{{/if}}"></i>
                         </a>
                         <a class="item-control roll-attack" data-weapon-id="{{weapon._id}}" title="Attack">
@@ -302,7 +302,7 @@
                             <p class="class-details">{{class.system.classType}} | Max Lv {{class.system.maxLevel}}</p>
                         </div>
                         <div class="item-controls">
-                            <a class="item-control item-equip {{#if class.system.equipped}}equipped{{/if}}" title="{{#if class.system.equipped}}Unequip{{else}}Equip{{/if}}">
+                            <a class="item-control class-equip {{#if class.system.equipped}}equipped{{/if}}" title="{{#if class.system.equipped}}Unequip{{else}}Equip{{/if}}">
                                 <i class="fas {{#if class.system.equipped}}fa-shield-alt{{else}}fa-hand-paper{{/if}}"></i>
                             </a>
                             <a class="item-control item-edit" title="Edit Class">

@@ -161,6 +161,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
     getData() {
         const data = super.getData();
         data.FEUE = FEUE;
+        data.weaponRankOptions = Object.entries(FEUE.WEAPON_RANKS).map(([key, value]) => ({ key, label: value.label }));
 
         // Partition items by type
         data.classes = this.actor.items.filter(i => i.type === "class");
@@ -212,14 +213,13 @@ class FireEmblemCharacterSheet extends ActorSheet {
         });
 
         // Class equip/unequip
-        html.find(".item-control.item-equip").click(async (ev) => {
+        html.find(".item-control.class-equip").click(async (ev) => {
             const li = $(ev.currentTarget).closest(".item");
             const item = this.actor.items.get(li.data("itemId"));
             if (!item) return;
 
-            const equipped = !item.system.equipped;
-
-            if (equipped) {
+            const currentlyEquipped = !!item.system.equipped;
+            if (currentlyEquipped) {
                 const ok = await Dialog.confirm({
                     title: "Unequip Class",
                     content: "<p>Are you sure? This will erase all class-applied stats, growths, and caps.</p>"
@@ -235,7 +235,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
                 return;
             }
 
-            // Equipping
+            // Equip class
             const t = item.system.classType;
             if (t === "Promoted") {
                 const hasStd = this.actor.items.some(i => i.type === "class" && i.system.equipped && i.system.classType === "Standard");
@@ -247,6 +247,47 @@ class FireEmblemCharacterSheet extends ActorSheet {
             }
             await item.update({ "system.equipped": true });
         });
+
+        // Weapon equip/unequip
+        html.find(".item-control.weapon-equip").click(async (ev) => {
+            const li = $(ev.currentTarget).closest(".item");
+            const item = this.actor.items.get(li.data("itemId"));
+            if (!item || item.type !== "weapon") return;
+
+            const currentlyEquipped = !!item.system.equipped;
+            if (currentlyEquipped) {
+                await item.update({ "system.equipped": false });
+                return;
+            }
+
+            const equippedWeapons = this.actor.items.filter(i => i.type === "weapon" && i.system.equipped && i.id !== item.id);
+            if (equippedWeapons.length) {
+                await this.actor.updateEmbeddedDocuments("Item", equippedWeapons.map(w => ({ _id: w.id, "system.equipped": false })));
+            }
+            await item.update({ "system.equipped": true });
+        });
+    }
+
+    async _onItemCreate(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        const type = button.dataset.type;
+        if (!type) return ui.notifications.error("Missing item type on create button.");
+
+        const inventory = this._getInventoryUsage();
+        if ((type === "item" || type === "weapon") && inventory.full) {
+            return ui.notifications.error("Inventory full: characters can only hold 5 total weapons/items.");
+        }
+        if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) {
+            return ui.notifications.error("Characters can only have one battalion.");
+        }
+
+        const itemData = {
+            name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+            type
+        };
+        const [created] = await this.actor.createEmbeddedDocuments("Item", [itemData]);
+        if (created) created.sheet.render(true);
     }
 
     async _onItemCreate(event) {
