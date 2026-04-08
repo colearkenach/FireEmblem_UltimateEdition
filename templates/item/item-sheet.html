@@ -72,6 +72,35 @@
             {{/unless}}
             {{/unless}}
             {{/unless}}
+
+            <div class="form-group">
+                <h3>Bonuses</h3>
+                <p>Applies to equipped weapon and all owned item/skill/misc bonus entries.</p>
+                <div class="form-row">
+                    <div class="form-group"><label>MaxHP</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.hp" value="{{item.system.bonuses.attributes.hp}}" /></div>
+                    <div class="form-group"><label>STR</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.strength" value="{{item.system.bonuses.attributes.strength}}" /></div>
+                    <div class="form-group"><label>MAG</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.magic" value="{{item.system.bonuses.attributes.magic}}" /></div>
+                    <div class="form-group"><label>SKL</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.skill" value="{{item.system.bonuses.attributes.skill}}" /></div>
+                    <div class="form-group"><label>SPD</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.speed" value="{{item.system.bonuses.attributes.speed}}" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>DEF</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.defense" value="{{item.system.bonuses.attributes.defense}}" /></div>
+                    <div class="form-group"><label>RES</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.resistance" value="{{item.system.bonuses.attributes.resistance}}" /></div>
+                    <div class="form-group"><label>LUK</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.luck" value="{{item.system.bonuses.attributes.luck}}" /></div>
+                    <div class="form-group"><label>CHA</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.charm" value="{{item.system.bonuses.attributes.charm}}" /></div>
+                    <div class="form-group"><label>BLD</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.build" value="{{item.system.bonuses.attributes.build}}" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>MOVE</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.move" value="{{item.system.bonuses.attributes.move}}" /></div>
+                    <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.bonuses.combat.hitRate" value="{{item.system.bonuses.combat.hitRate}}" /></div>
+                    <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.bonuses.combat.critRate" value="{{item.system.bonuses.combat.critRate}}" /></div>
+                    <div class="form-group"><label>Avoid</label><input type="number" data-dtype="Number" name="system.bonuses.combat.avoid" value="{{item.system.bonuses.combat.avoid}}" /></div>
+                    <div class="form-group"><label>Dodge</label><input type="number" data-dtype="Number" name="system.bonuses.combat.dodge" value="{{item.system.bonuses.combat.dodge}}" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Attack Speed</label><input type="number" data-dtype="Number" name="system.bonuses.combat.attackSpeed" value="{{item.system.bonuses.combat.attackSpeed}}" /></div>
+                </div>
+            </div>
         </div>
 
         {{!-- Weapon Tab --}}
@@ -147,6 +176,7 @@
             <select name="system.itemType">
                 <option value="consumable" {{#ifEquals item.system.itemType "consumable"}} selected{{/ifEquals}}>Consumable</option>
                 <option value="equippable" {{#ifEquals item.system.itemType "equippable"}} selected{{/ifEquals}}>Equippable</option>
+                <option value="miscBonus" {{#ifEquals item.system.itemType "miscBonus"}} selected{{/ifEquals}}>Misc Bonus</option>
             </select>
 
             <div class="form-row">
@@ -390,6 +420,62 @@
                         {{label}}
                     </label>
                     {{/each}}
+                </div>
+            </div>
+
+            {{#unless (eq item.system.classType "Promoted")}}
+            <div class="form-group">
+                <h3>Base Stats</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>HP</label><input type="number" data-dtype="Number" name="system.baseStats.hp" value="{{item.system.baseStats.hp}}" /></div>
+                    <div class="form-group"><label>Str</label><input type="number" data-dtype="Number" name="system.baseStats.strength" value="{{item.system.baseStats.strength}}" /></div>
+                    <div class="form-group"><label>Mag</label><input type="number" data-dtype="Number" name="system.baseStats.magic" value="{{item.system.baseStats.magic}}" /></div>
+                    <div class="form-group"><label>Skl</label><input type="number" data-dtype="Number" name="system.baseStats.skill" value="{{item.system.baseStats.skill}}" /></div>
+                    <div class="form-group"><label>Spd</label><input type="number" data-dtype="Number" name="system.baseStats.speed" value="{{item.system.baseStats.speed}}" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Def</label><input type="number" data-dtype="Number" name="system.baseStats.defense" value="{{item.system.baseStats.defense}}" /></div>
+                    <div class="form-group"><label>Res</label><input type="number" data-dtype="Number" name="system.baseStats.resistance" value="{{item.system.baseStats.resistance}}" /></div>
+                    <div class="form-group"><label>Lck</label><input type="number" data-dtype="Number" name="system.baseStats.luck" value="{{item.system.baseStats.luck}}" /></div>
+                    <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.baseStats.charm" value="{{item.system.baseStats.charm}}" /></div>
+                    <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.baseStats.build" value="{{item.system.baseStats.build}}" /></div>
+                </div>
+            </div>
+            {{/unless}}
+
+            <div class="form-group">
+                <h3>Growth Rates</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>HP</label><input type="number" data-dtype="Number" name="system.growthRates.hp" value="{{item.system.growthRates.hp}}" /></div>
+                    <div class="form-group"><label>Str</label><input type="number" data-dtype="Number" name="system.growthRates.strength" value="{{item.system.growthRates.strength}}" /></div>
+                    <div class="form-group"><label>Mag</label><input type="number" data-dtype="Number" name="system.growthRates.magic" value="{{item.system.growthRates.magic}}" /></div>
+                    <div class="form-group"><label>Skl</label><input type="number" data-dtype="Number" name="system.growthRates.skill" value="{{item.system.growthRates.skill}}" /></div>
+                    <div class="form-group"><label>Spd</label><input type="number" data-dtype="Number" name="system.growthRates.speed" value="{{item.system.growthRates.speed}}" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Def</label><input type="number" data-dtype="Number" name="system.growthRates.defense" value="{{item.system.growthRates.defense}}" /></div>
+                    <div class="form-group"><label>Res</label><input type="number" data-dtype="Number" name="system.growthRates.resistance" value="{{item.system.growthRates.resistance}}" /></div>
+                    <div class="form-group"><label>Lck</label><input type="number" data-dtype="Number" name="system.growthRates.luck" value="{{item.system.growthRates.luck}}" /></div>
+                    <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.growthRates.charm" value="{{item.system.growthRates.charm}}" /></div>
+                    <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.growthRates.build" value="{{item.system.growthRates.build}}" /></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <h3>Stat Caps</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>HP</label><input type="number" data-dtype="Number" name="system.statCaps.hp" value="{{item.system.statCaps.hp}}" /></div>
+                    <div class="form-group"><label>Str</label><input type="number" data-dtype="Number" name="system.statCaps.strength" value="{{item.system.statCaps.strength}}" /></div>
+                    <div class="form-group"><label>Mag</label><input type="number" data-dtype="Number" name="system.statCaps.magic" value="{{item.system.statCaps.magic}}" /></div>
+                    <div class="form-group"><label>Skl</label><input type="number" data-dtype="Number" name="system.statCaps.skill" value="{{item.system.statCaps.skill}}" /></div>
+                    <div class="form-group"><label>Spd</label><input type="number" data-dtype="Number" name="system.statCaps.speed" value="{{item.system.statCaps.speed}}" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Def</label><input type="number" data-dtype="Number" name="system.statCaps.defense" value="{{item.system.statCaps.defense}}" /></div>
+                    <div class="form-group"><label>Res</label><input type="number" data-dtype="Number" name="system.statCaps.resistance" value="{{item.system.statCaps.resistance}}" /></div>
+                    <div class="form-group"><label>Lck</label><input type="number" data-dtype="Number" name="system.statCaps.luck" value="{{item.system.statCaps.luck}}" /></div>
+                    <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.statCaps.charm" value="{{item.system.statCaps.charm}}" /></div>
+                    <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.statCaps.build" value="{{item.system.statCaps.build}}" /></div>
                 </div>
             </div>
         </div>
