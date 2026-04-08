@@ -179,6 +179,7 @@
             <select name="system.itemType">
                 <option value="consumable" {{#ifEquals item.system.itemType "consumable"}} selected{{/ifEquals}}>Consumable</option>
                 <option value="equippable" {{#ifEquals item.system.itemType "equippable"}} selected{{/ifEquals}}>Equippable</option>
+                <option value="miscBonus" {{#ifEquals item.system.itemType "miscBonus"}} selected{{/ifEquals}}>Misc Bonus</option>
             </select>
 
             <div class="form-row">
@@ -425,8 +426,7 @@
                 </div>
             </div>
 
-            <hr />
-
+            {{#unless (eq item.system.classType "Promoted")}}
             <div class="form-group">
                 <h3>Base Stats</h3>
                 <div class="form-row">
@@ -444,8 +444,7 @@
                     <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.baseStats.build" value="{{item.system.baseStats.build}}" /></div>
                 </div>
             </div>
-
-            <hr />
+            {{/unless}}
 
             <div class="form-group">
                 <h3>Growth Rates</h3>
