@@ -6,6 +6,7 @@
 // ====================================================================
 const FEUE = {
     WEAPON_RANKS: {
+        "": { order: -1, label: "—" },
         "E": { order: 0, label: "E" },
         "D": { order: 1, label: "D" },
         "C": { order: 2, label: "C" },
@@ -390,14 +391,7 @@ Hooks.once("init", () => {
 Hooks.once("ready", () => {
     console.log("FEUE | System Ready");
 
-    const itemTemplates = game.system.template.Item || {};
     const defaultWeaponType = "sword";
-
-    for (const item of game.items.contents) {
-        if (item.type) continue;
-        const fallbackType = Object.keys(itemTemplates)[0] || "item";
-        item.updateSource({ type: fallbackType });
-    }
 
     const worldWeaponItems = game.items.filter(i => i.type === "weapon");
     for (const item of worldWeaponItems) {
