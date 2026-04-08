@@ -47,7 +47,7 @@
     padding: 12px 16px; /* Increased padding */
     border-bottom: 2px solid var(--feue-accent);
     min-height: 100px; /* Increased height constraint */
-    max-height: 250px; /* Prevent expansion */
+    max-height: 175px; /* Prevent expansion */
     overflow: hidden; /* Hide any overflow */
 }
 
