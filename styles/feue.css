@@ -281,12 +281,60 @@
 
 /* ===== WEAPONS & ITEMS ===== */
 .feue .weapons-section,
-.feue .items-section {
+.feue .items-section,
+.feue .classes-section,
+.feue .skills-section,
+.feue .spells-section,
+.feue .combat-arts-section,
+.feue .battalion-section,
+.feue .inventory-limit {
     background: white;
     border: 2px solid var(--feue-border);
     border-radius: 8px;
     padding: 15px;
     margin: 15px 0;
+}
+
+.feue .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(139,115,85,0.35);
+    padding-bottom: 4px;
+}
+
+.feue .section-header h3 {
+    margin: 0;
+}
+
+.feue .item-create {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    border: 1px solid var(--feue-primary);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    color: white;
+    background: linear-gradient(180deg, var(--feue-tab-active), var(--feue-primary));
+}
+
+.feue .item-create:hover {
+    text-shadow: none;
+    background: linear-gradient(180deg, #5e83b6, #2f5485);
+}
+
+.feue .item-create.disabled {
+    opacity: 0.6;
+}
+
+.feue .limit-note,
+.feue .empty-note,
+.feue .inventory-limit p {
+    color: var(--feue-secondary);
+    font-style: italic;
+    margin: 0;
 }
 
 .feue .item {
