@@ -134,7 +134,7 @@
     },
     "weapon": {
       "templates": [ "base", "physical" ],
-      "weaponType": "Sword",
+      "weaponType": "sword",
       "might": 5,
       "hit": 90,
       "crit": 0,
@@ -183,7 +183,7 @@
       "equipped": false,
       "unitTypes": {},
       "weaponProficiencies": {},
-      "baseAttributes": {},
+      "baseStats": {},
       "growthRates": {},
       "statCaps": {}
     },

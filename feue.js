@@ -65,7 +65,7 @@ class FireEmblemActor extends Actor {
                 const standard = eq.find(c => c.system.classType === "Standard");
                 const promoted = eq.find(c => c.system.classType === "Promoted");
 
-                baseStats = foundry.utils.deepClone((recruit?.system.baseStats) || (standard?.system.baseStats) || {});
+                baseStats = foundry.utils.deepClone((recruit?.system.baseStats) || (recruit?.system.baseAttributes) || (standard?.system.baseStats) || (standard?.system.baseAttributes) || {});
                 growths = foundry.utils.deepClone((recruit?.system.growthRates) || (standard?.system.growthRates) || {});
                 caps = foundry.utils.deepClone((promoted?.system.statCaps) || (standard?.system.statCaps) || (recruit?.system.statCaps) || {});
             }
@@ -168,6 +168,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
         data.combatArts = this.actor.items.filter(i => i.type === "combatArt");
         data.weapons = this.actor.items.filter(i => i.type === "weapon" || i.type === "battalion");
         data.items = this.actor.items.filter(i => i.type === "item");
+        data.encumbrance = this._getEncumbrance();
 
         // Mark the "equipped" class
         data.equippedClass = data.classes.find(c => c.system.equipped);
@@ -175,9 +176,20 @@ class FireEmblemCharacterSheet extends ActorSheet {
         return data;
     }
 
+    _getEncumbrance() {
+        const items = this.actor.items.filter(i => ["item", "weapon", "battalion"].includes(i.type));
+        const current = items.reduce((sum, i) => sum + ((Number(i.system?.weight) || 0) * (Number(i.system?.quantity) || 1)), 0);
+        const max = (Number(this.actor.system.attributes?.build?.value) || 0) + 10;
+        return { current, max: Math.max(max, 1) };
+    }
+
     activateListeners(html) {
         super.activateListeners(html);
         if (!this.options.editable) return;
+
+        html.find(".level-up").click(async () => this.actor.levelUp());
+
+        html.find(".item-control.item-create").click(async (ev) => this._onItemCreate(ev));
 
         // Generic item controls
         html.find(".item-control.item-edit").click(ev => {
@@ -236,12 +248,35 @@ class FireEmblemCharacterSheet extends ActorSheet {
             await item.update({ "system.equipped": true });
         });
     }
+
+    async _onItemCreate(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        const type = button.dataset.type;
+        if (!type) return ui.notifications.error("Missing item type on create button.");
+
+        const itemData = {
+            name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+            type
+        };
+        const [created] = await this.actor.createEmbeddedDocuments("Item", [itemData]);
+        if (created) created.sheet.render(true);
+    }
 }
 
 // ====================================================================
 // 4. ITEM CLASS & SHEET
 // ====================================================================
 class FireEmblemItem extends Item {
+    prepareBaseData() {
+        super.prepareBaseData();
+
+        const validTypes = Object.keys(game.system.template.Item || {});
+        if (!this.type && validTypes.length) {
+            this._source.type = validTypes[0];
+        }
+    }
+
     prepareDerivedData() {
         if (this.type === "weapon") {
             // any weapon-specific calc
@@ -347,4 +382,24 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
     console.log("FEUE | System Ready");
+
+    const itemTemplates = game.system.template.Item || {};
+    const defaultWeaponType = "sword";
+
+    for (const item of game.items.contents) {
+        if (item.type) continue;
+        const fallbackType = Object.keys(itemTemplates)[0] || "item";
+        item.updateSource({ type: fallbackType });
+    }
+
+    const worldWeaponItems = game.items.filter(i => i.type === "weapon");
+    for (const item of worldWeaponItems) {
+        if (!item.system?.weaponType) continue;
+        const normalized = String(item.system.weaponType).toLowerCase();
+        if (FEUE.WeaponTypes[normalized] && normalized !== item.system.weaponType) {
+            item.updateSource({ "system.weaponType": normalized });
+        } else if (!FEUE.WeaponTypes[normalized]) {
+            item.updateSource({ "system.weaponType": defaultWeaponType });
+        }
+    }
 });

@@ -145,7 +145,12 @@
 
             {{!-- Equipped Weapons --}}
             <div class="weapons-section">
-                <h3>Weapons</h3>
+                <div class="section-header">
+                    <h3>Weapons</h3>
+                    <a class="item-control item-create" data-type="weapon" title="Create Weapon">
+                        <i class="fas fa-plus"></i> Add Weapon
+                    </a>
+                </div>
                 {{#each weapons as |weapon|}}
                 <div class="item weapon flexrow" data-item-id="{{weapon._id}}">
                     <div class="item-image">
@@ -178,7 +183,12 @@
 
             {{!-- Combat Arts --}}
             <div class="combat-arts-section">
-                <h3>Combat Arts</h3>
+                <div class="section-header">
+                    <h3>Combat Arts</h3>
+                    <a class="item-control item-create" data-type="combatArt" title="Create Combat Art">
+                        <i class="fas fa-plus"></i> Add Combat Art
+                    </a>
+                </div>
                 {{#each combatArts as |art|}}
                 <div class="item combat-art flexrow" data-item-id="{{art._id}}">
                     <div class="item-image">
@@ -211,7 +221,12 @@
             </div>
 
             <div class="items-section">
-                <h3>Items</h3>
+                <div class="section-header">
+                    <h3>Items</h3>
+                    <a class="item-control item-create" data-type="item" title="Create Item">
+                        <i class="fas fa-plus"></i> Add Item
+                    </a>
+                </div>
                 {{#each items as |item|}}
                 <div class="item flexrow" data-item-id="{{item._id}}">
                     <div class="item-image">
@@ -237,7 +252,12 @@
         <div class="tab skills" data-group="primary" data-tab="skills" data-drop-target="true">
             <div class="flexrow">
                 <div class="classes-section flexcol">
-                    <h3>Classes</h3>
+                    <div class="section-header">
+                        <h3>Classes</h3>
+                        <a class="item-control item-create" data-type="class" title="Create Class">
+                            <i class="fas fa-plus"></i> Add Class
+                        </a>
+                    </div>
                     {{#each classes as |class|}}
                     <div class="item class flexrow" data-item-id="{{class._id}}">
                         <div class="item-image">
@@ -263,7 +283,12 @@
                 </div>
 
                 <div class="skills-section flexcol">
-                    <h3>Skills</h3>
+                    <div class="section-header">
+                        <h3>Skills</h3>
+                        <a class="item-control item-create" data-type="skill" title="Create Skill">
+                            <i class="fas fa-plus"></i> Add Skill
+                        </a>
+                    </div>
                     {{#each skills as |skill|}}
                     <div class="item skill flexrow" data-item-id="{{skill._id}}">
                         <div class="item-image">
@@ -287,7 +312,12 @@
             </div>
 
             <div class="spells-section">
-                <h3>Spells</h3>
+                <div class="section-header">
+                    <h3>Spells</h3>
+                    <a class="item-control item-create" data-type="spell" title="Create Spell">
+                        <i class="fas fa-plus"></i> Add Spell
+                    </a>
+                </div>
                 {{#each spells as |spell|}}
                 <div class="item spell flexrow" data-item-id="{{spell._id}}">
                     <div class="item-image">
