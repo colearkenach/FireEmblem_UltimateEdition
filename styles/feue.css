@@ -778,3 +778,40 @@
         flex-direction: column;
     }
 }
+
+/* ===== COMBAT ARTS (add to feue.css) ===== */
+.feue .combat-arts-section {
+    background: white;
+    border: 2px solid var(--feue-border);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+    .feue .combat-arts-section h3 {
+        color: var(--feue-primary);
+        font-weight: bold;
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        border-bottom: 2px solid var(--feue-accent);
+        padding-bottom: 5px;
+    }
+
+.feue .combat-art-info {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.feue .combat-art-details {
+    margin: 0;
+    font-size: 12px;
+    color: var(--feue-secondary);
+    font-style: italic;
+}
+
+/* Fix weapon rank row naming (was .weapon-rank, now .weapon-rank-row) */
+.feue .weapon-rank-row {
+    align-items: center;
+    gap: 8px;
+}
+ 

@@ -5,55 +5,55 @@
       "base": {
         "attributes": {
           "hp": {
-            "value": 15,
-            "max": 45
+            "value": 0,
+            "max": 0
           },
           "strength": {
-            "value": 5,
-            "max": 15
+            "value": 0,
+            "max": 0
           },
           "magic": {
             "value": 0,
-            "max": 15
+            "max": 0
           },
           "skill": {
-            "value": 5,
-            "max": 15
+            "value": 0,
+            "max": 0
           },
           "speed": {
-            "value": 5,
-            "max": 15
+            "value": 0,
+            "max": 0
           },
           "defense": {
-            "value": 2,
-            "max": 15
+            "value": 0,
+            "max": 0
           },
           "resistance": {
             "value": 0,
-            "max": 15
+            "max": 0
           },
           "luck": {
-            "value": 2,
-            "max": 30
+            "value": 0,
+            "max": 0
           },
           "charm": {
-            "value": 1,
-            "max": 15
+            "value": 0,
+            "max": 0
           },
           "build": {
-            "value": 7,
-            "max": 15
+            "value": 0,
+            "max": 0
           }
         },
         "growthRates": {
-          "hp": 4,
-          "strength": 8,
-          "magic": 2,
-          "skill": 6,
-          "speed": 4,
-          "luck": 2,
-          "charm": 2,
-          "build": 2
+          "hp": 0,
+          "strength": 0,
+          "magic": 0,
+          "skill": 0,
+          "speed": 0,
+          "luck": 0,
+          "charm": 0,
+          "build": 0
         },
         "level": 1,
         "totalLevel": 1,
@@ -72,23 +72,23 @@
         "damage": 0
       },
       "weaponRanks": {
-        "sword": [],
-        "lance": [],
-        "axe": [],
-        "bow": [],
-        "firearm": [],
-        "unarmed": [],
-        "knife": [],
-        "anima": [],
-        "light": [],
-        "dark": [],
-        "staff": [],
-        "monster": [],
-        "stone": []
+        "sword": "",
+        "lance": "",
+        "axe": "",
+        "bow": "",
+        "firearm": "",
+        "unarmed": "",
+        "knife": "",
+        "anima": "",
+        "light": "",
+        "dark": "",
+        "staff": "",
+        "monster": "",
+        "stone": ""
       },
       "movement": {
-        "base": 4,
-        "current": 4
+        "base": 0,
+        "current": 0
       },
       "unitTypes": [],
       "supportRanks": {},
@@ -99,7 +99,7 @@
       },
       "statusEffects": [],
       "personalDetails": {
-        "age": 18,
+        "age": 0,
         "sex": "",
         "height": "",
         "weight": "",
@@ -111,6 +111,18 @@
     }
   },
   "Item": {
+    "types": [ "weapon", "item", "skill", "spell", "class", "battalion", "combatArt" ],
+    "templates": {
+      "base": {
+        "description": "",
+        "source": ""
+      },
+      "physical": {
+        "price": 0,
+        "weight": 0,
+        "quantity": 1
+      }
+    },
     "item": {
       "templates": [ "base", "physical" ],
       "itemType": "consumable",
@@ -156,6 +168,25 @@
       "durabilityCost": 1,
       "effect": ""
     },
+    "skill": {
+      "templates": [ "base" ],
+      "skillType": "Passive",
+      "prerequisites": "",
+      "level": "Innate",
+      "activation": ""
+    },
+    "class": {
+      "templates": [ "base" ],
+      "classType": "Standard",
+      "maxLevel": 20,
+      "movement": 5,
+      "equipped": false,
+      "unitTypes": {},
+      "weaponProficiencies": {},
+      "baseAttributes": {},
+      "growthRates": {},
+      "statCaps": {}
+    },
     "battalion": {
       "templates": [ "base" ],
       "endurance": {
@@ -164,86 +195,10 @@
       },
       "movePenalty": 1,
       "might": 8,
-      "hit": 50,
+      "hit": 10,
       "crit": 0,
-      "range": "—",
-      "rank": "E",
-      "special": ""
-    },
-    "class": {
-      "templates": [ "base" ],
-      "classType": "Recruit",
-      "maxLevel": 10,
-      "unitTypes": {
-        "Infantry": false,
-        "Mounted": false,
-        "Flying": false,
-        "Dragon": false,
-        "Armored": false,
-        "Magician": false,
-        "Beast": false,
-        "Monster": false
-      },
-      "movement": 4,
-      "weaponProficiencies": {
-        "sword": false,
-        "lance": false,
-        "axe": false,
-        "bow": false,
-        "firearm": false,
-        "unarmed": false,
-        "knife": false,
-        "anima": false,
-        "light": false,
-        "dark": false,
-        "staff": false,
-        "monster": false,
-        "stone": false
-      },
-      "baseStats": {
-        "hp": 15,
-        "strength": 5,
-        "magic": 0,
-        "skill": 5,
-        "speed": 5,
-        "defense": 2,
-        "resistance": 0,
-        "luck": 2,
-        "charm": 1,
-        "build": 7
-      },
-      "growthRates": {
-        "hp": 4,
-        "strength": 8,
-        "magic": 2,
-        "skill": 6,
-        "speed": 4,
-        "luck": 2,
-        "charm": 2,
-        "build": 2
-      },
-      "statCaps": {
-        "hp": 45,
-        "strength": 15,
-        "magic": 15,
-        "skill": 15,
-        "speed": 15,
-        "defense": 15,
-        "resistance": 15,
-        "luck": 30,
-        "charm": 15,
-        "build": 15
-      },
-      "classSkills": {
-        "Innate": [],
-        "1": [],
-        "5": [],
-        "10": [],
-        "15": [],
-        "20": [],
-        "30": []
-      },
-      "promotesInto": []
+      "range": "1",
+      "properties": ""
     }
   }
 }

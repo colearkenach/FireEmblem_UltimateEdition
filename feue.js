@@ -99,6 +99,14 @@ class FireEmblemActor extends Actor {
             avoid: (a.speed?.value || 0) + Math.floor((a.luck?.value || 0) / 4),
             dodge: a.luck?.value || 0
         };
+
+        if (!system.weaponRanks) system.weaponRanks = foundry.utils.deepClone(DEFAULT_WEAPON_RANKS);
+
+        for (const key of Object.keys(DEFAULT_WEAPON_RANKS)) {
+            if (system.weaponRanks[key] === undefined || Array.isArray(system.weaponRanks[key])) {
+                system.weaponRanks[key] = "";
+            }
+        }
     }
 
     async levelUp() {
@@ -157,10 +165,11 @@ class FireEmblemCharacterSheet extends ActorSheet {
         data.classes = this.actor.items.filter(i => i.type === "class");
         data.skills = this.actor.items.filter(i => i.type === "skill");
         data.spells = this.actor.items.filter(i => i.type === "spell");
+        data.combatArts = this.actor.items.filter(i => i.type === "combatArt");
         data.weapons = this.actor.items.filter(i => i.type === "weapon" || i.type === "battalion");
         data.items = this.actor.items.filter(i => i.type === "item");
 
-        // Optionally: mark the "equipped" class
+        // Mark the "equipped" class
         data.equippedClass = data.classes.find(c => c.system.equipped);
 
         return data;
@@ -170,7 +179,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
         super.activateListeners(html);
         if (!this.options.editable) return;
 
-        // Generic item controls: apply to all .item elements regardless of which section
+        // Generic item controls
         html.find(".item-control.item-edit").click(ev => {
             const li = $(ev.currentTarget).closest(".item");
             const item = this.actor.items.get(li.data("itemId"));
@@ -184,27 +193,19 @@ class FireEmblemCharacterSheet extends ActorSheet {
             li.slideUp(200, () => this.render(false));
         });
 
-        html.find(".item-control.item-equip").click(ev => {
-            const li = $(ev.currentTarget).closest(".item");
-            const item = this.actor.items.get(li.data("itemId"));
-            if (!item) return;
-
-            // Toggle equipped state
-            const equipped = !item.system.equipped;
-            item.update({ "system.equipped": equipped });
-        });
-
-        html.find(".weapon-rank").change(async (ev) => {
+        // Weapon rank dropdowns (target select elements specifically)
+        html.find("select.weapon-rank-select").change(async (ev) => {
             const el = ev.currentTarget;
             await this.actor.update({ [el.name]: el.value });
         });
 
+        // Class equip/unequip
         html.find(".item-control.item-equip").click(async (ev) => {
             const li = $(ev.currentTarget).closest(".item");
             const item = this.actor.items.get(li.data("itemId"));
             if (!item) return;
 
-            const equipped = !!item.system.equipped;
+            const equipped = !item.system.equipped;
 
             if (equipped) {
                 const ok = await Dialog.confirm({
@@ -235,7 +236,6 @@ class FireEmblemCharacterSheet extends ActorSheet {
             await item.update({ "system.equipped": true });
         });
     }
-
 }
 
 // ====================================================================
@@ -290,11 +290,9 @@ class FireEmblemItemSheet extends ItemSheet {
         await this.item.update({ [el.name]: value });
     }
 
-
     async _updateObject(event, formData) {
         return await this.object.update(foundry.utils.expandObject(formData));
     }
-
 }
 
 // ====================================================================
@@ -315,13 +313,26 @@ Hooks.once("init", () => {
         }[operator];
     });
 
-    Handlebars.registerHelper("ifEquals", (a, b, opts) =>
-        a == b ? opts.fn(this) : opts.inverse(this)
-    );
+    // FIXED: Use regular function, not arrow, so Handlebars `this` context works
+    Handlebars.registerHelper("ifEquals", function (a, b, opts) {
+        return a == b ? opts.fn(this) : opts.inverse(this);
+    });
 
-    Handlebars.registerHelper("join", (array, sep) =>
-        Array.isArray(array) ? array.join(sep || ", ") : ""
-    );
+    Handlebars.registerHelper("join", function (array, sep) {
+        return Array.isArray(array) ? array.join(sep || ", ") : "";
+    });
+
+    Handlebars.registerHelper("eq", function (a, b) {
+        return a === b;
+    });
+
+    Handlebars.registerHelper("checked", function (value) {
+        return value ? "checked" : "";
+    });
+
+    Handlebars.registerHelper("lookup", function (obj, key) {
+        return obj?.[key];
+    });
 
     // Register sheets
     Actors.unregisterSheet("core", ActorSheet);
