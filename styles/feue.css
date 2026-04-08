@@ -285,7 +285,9 @@
 .feue .classes-section,
 .feue .skills-section,
 .feue .spells-section,
-.feue .combat-arts-section {
+.feue .combat-arts-section,
+.feue .battalion-section,
+.feue .inventory-limit {
     background: white;
     border: 2px solid var(--feue-border);
     border-radius: 8px;
@@ -321,6 +323,18 @@
 .feue .item-create:hover {
     text-shadow: none;
     background: linear-gradient(180deg, #5e83b6, #2f5485);
+}
+
+.feue .item-create.disabled {
+    opacity: 0.6;
+}
+
+.feue .limit-note,
+.feue .empty-note,
+.feue .inventory-limit p {
+    color: var(--feue-secondary);
+    font-style: italic;
+    margin: 0;
 }
 
 .feue .item {

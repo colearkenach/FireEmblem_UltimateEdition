@@ -166,9 +166,10 @@ class FireEmblemCharacterSheet extends ActorSheet {
         data.skills = this.actor.items.filter(i => i.type === "skill");
         data.spells = this.actor.items.filter(i => i.type === "spell");
         data.combatArts = this.actor.items.filter(i => i.type === "combatArt");
-        data.weapons = this.actor.items.filter(i => i.type === "weapon" || i.type === "battalion");
+        data.weapons = this.actor.items.filter(i => i.type === "weapon");
+        data.battalion = this.actor.items.find(i => i.type === "battalion") || null;
         data.items = this.actor.items.filter(i => i.type === "item");
-        data.encumbrance = this._getEncumbrance();
+        data.inventory = this._getInventoryUsage();
 
         // Mark the "equipped" class
         data.equippedClass = data.classes.find(c => c.system.equipped);
@@ -176,11 +177,9 @@ class FireEmblemCharacterSheet extends ActorSheet {
         return data;
     }
 
-    _getEncumbrance() {
-        const items = this.actor.items.filter(i => ["item", "weapon", "battalion"].includes(i.type));
-        const current = items.reduce((sum, i) => sum + ((Number(i.system?.weight) || 0) * (Number(i.system?.quantity) || 1)), 0);
-        const max = (Number(this.actor.system.attributes?.build?.value) || 0) + 10;
-        return { current, max: Math.max(max, 1) };
+    _getInventoryUsage() {
+        const used = this.actor.items.filter(i => i.type === "item" || i.type === "weapon").length;
+        return { used, max: 5, full: used >= 5 };
     }
 
     activateListeners(html) {
@@ -254,6 +253,14 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const button = event.currentTarget;
         const type = button.dataset.type;
         if (!type) return ui.notifications.error("Missing item type on create button.");
+
+        const inventory = this._getInventoryUsage();
+        if ((type === "item" || type === "weapon") && inventory.full) {
+            return ui.notifications.error("Inventory full: characters can only hold 5 total weapons/items.");
+        }
+        if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) {
+            return ui.notifications.error("Characters can only have one battalion.");
+        }
 
         const itemData = {
             name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`,
@@ -402,4 +409,29 @@ Hooks.once("ready", () => {
             item.updateSource({ "system.weaponType": defaultWeaponType });
         }
     }
+});
+
+Hooks.on("preCreateItem", (item, createData) => {
+    const parent = item.parent;
+    if (!parent || parent.documentName !== "Actor") return true;
+
+    const type = createData.type ?? item.type;
+    if (!type) return false;
+
+    if (type === "item" || type === "weapon") {
+        const used = parent.items.filter(i => i.type === "item" || i.type === "weapon").length;
+        if (used >= 5) {
+            ui.notifications.error(`${parent.name} is at the 5-slot inventory limit (weapons/items).`);
+            return false;
+        }
+    }
+
+    if (type === "battalion") {
+        const hasBattalion = parent.items.some(i => i.type === "battalion");
+        if (hasBattalion) {
+            ui.notifications.error(`${parent.name} can only have one battalion.`);
+            return false;
+        }
+    }
+    return true;
 });
