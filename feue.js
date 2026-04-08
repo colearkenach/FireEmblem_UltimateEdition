@@ -6,6 +6,7 @@
 // ====================================================================
 const FEUE = {
     WEAPON_RANKS: {
+        "": { order: -1, label: "—" },
         "E": { order: 0, label: "E" },
         "D": { order: 1, label: "D" },
         "C": { order: 2, label: "C" },
@@ -65,7 +66,7 @@ class FireEmblemActor extends Actor {
                 const standard = eq.find(c => c.system.classType === "Standard");
                 const promoted = eq.find(c => c.system.classType === "Promoted");
 
-                baseStats = foundry.utils.deepClone((recruit?.system.baseStats) || (standard?.system.baseStats) || {});
+                baseStats = foundry.utils.deepClone((recruit?.system.baseStats) || (recruit?.system.baseAttributes) || (standard?.system.baseStats) || (standard?.system.baseAttributes) || {});
                 growths = foundry.utils.deepClone((recruit?.system.growthRates) || (standard?.system.growthRates) || {});
                 caps = foundry.utils.deepClone((promoted?.system.statCaps) || (standard?.system.statCaps) || (recruit?.system.statCaps) || {});
             }
@@ -166,8 +167,10 @@ class FireEmblemCharacterSheet extends ActorSheet {
         data.skills = this.actor.items.filter(i => i.type === "skill");
         data.spells = this.actor.items.filter(i => i.type === "spell");
         data.combatArts = this.actor.items.filter(i => i.type === "combatArt");
-        data.weapons = this.actor.items.filter(i => i.type === "weapon" || i.type === "battalion");
+        data.weapons = this.actor.items.filter(i => i.type === "weapon");
+        data.battalion = this.actor.items.find(i => i.type === "battalion") || null;
         data.items = this.actor.items.filter(i => i.type === "item");
+        data.inventory = this._getInventoryUsage();
 
         // Mark the "equipped" class
         data.equippedClass = data.classes.find(c => c.system.equipped);
@@ -175,9 +178,18 @@ class FireEmblemCharacterSheet extends ActorSheet {
         return data;
     }
 
+    _getInventoryUsage() {
+        const used = this.actor.items.filter(i => i.type === "item" || i.type === "weapon").length;
+        return { used, max: 5, full: used >= 5 };
+    }
+
     activateListeners(html) {
         super.activateListeners(html);
         if (!this.options.editable) return;
+
+        html.find(".level-up").click(async () => this.actor.levelUp());
+
+        html.find(".item-control.item-create").click(async (ev) => this._onItemCreate(ev));
 
         // Generic item controls
         html.find(".item-control.item-edit").click(ev => {
@@ -235,6 +247,28 @@ class FireEmblemCharacterSheet extends ActorSheet {
             }
             await item.update({ "system.equipped": true });
         });
+    }
+
+    async _onItemCreate(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        const type = button.dataset.type;
+        if (!type) return ui.notifications.error("Missing item type on create button.");
+
+        const inventory = this._getInventoryUsage();
+        if ((type === "item" || type === "weapon") && inventory.full) {
+            return ui.notifications.error("Inventory full: characters can only hold 5 total weapons/items.");
+        }
+        if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) {
+            return ui.notifications.error("Characters can only have one battalion.");
+        }
+
+        const itemData = {
+            name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+            type
+        };
+        const [created] = await this.actor.createEmbeddedDocuments("Item", [itemData]);
+        if (created) created.sheet.render(true);
     }
 }
 
@@ -347,4 +381,42 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
     console.log("FEUE | System Ready");
+
+    const defaultWeaponType = "sword";
+
+    const worldWeaponItems = game.items.filter(i => i.type === "weapon");
+    for (const item of worldWeaponItems) {
+        if (!item.system?.weaponType) continue;
+        const normalized = String(item.system.weaponType).toLowerCase();
+        if (FEUE.WeaponTypes[normalized] && normalized !== item.system.weaponType) {
+            item.updateSource({ "system.weaponType": normalized });
+        } else if (!FEUE.WeaponTypes[normalized]) {
+            item.updateSource({ "system.weaponType": defaultWeaponType });
+        }
+    }
+});
+
+Hooks.on("preCreateItem", (item, createData) => {
+    const parent = item.parent;
+    if (!parent || parent.documentName !== "Actor") return true;
+
+    const type = createData.type ?? item.type;
+    if (!type) return false;
+
+    if (type === "item" || type === "weapon") {
+        const used = parent.items.filter(i => i.type === "item" || i.type === "weapon").length;
+        if (used >= 5) {
+            ui.notifications.error(`${parent.name} is at the 5-slot inventory limit (weapons/items).`);
+            return false;
+        }
+    }
+
+    if (type === "battalion") {
+        const hasBattalion = parent.items.some(i => i.type === "battalion");
+        if (hasBattalion) {
+            ui.notifications.error(`${parent.name} can only have one battalion.`);
+            return false;
+        }
+    }
+    return true;
 });
