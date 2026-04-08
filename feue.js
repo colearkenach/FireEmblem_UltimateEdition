@@ -276,6 +276,15 @@ class FireEmblemCharacterSheet extends ActorSheet {
 // 4. ITEM CLASS & SHEET
 // ====================================================================
 class FireEmblemItem extends Item {
+    prepareBaseData() {
+        super.prepareBaseData();
+
+        const validTypes = Object.keys(game.system.template.Item || {});
+        if (!this.type && validTypes.length) {
+            this._source.type = validTypes[0];
+        }
+    }
+
     prepareDerivedData() {
         if (this.type === "weapon") {
             // any weapon-specific calc
