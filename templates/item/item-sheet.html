@@ -34,6 +34,9 @@
         {{#if (eq item.type "class")}}
         <a class="item" data-tab="class">Class</a>
         {{/if}}
+        {{#if (eq item.type "miscBonus")}}
+        <a class="item" data-tab="miscBonus">Misc Bonus</a>
+        {{/if}}
     </nav>
 
     {{!-- Sheet Body --}}
@@ -461,6 +464,8 @@
                 </div>
             </div>
 
+            <hr />
+
             <div class="form-group">
                 <h3>Stat Caps</h3>
                 <div class="form-row">
@@ -478,6 +483,12 @@
                     <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.statCaps.build" value="{{item.system.statCaps.build}}" /></div>
                 </div>
             </div>
+        </div>
+        {{/if}}
+
+        {{#if (eq item.type "miscBonus")}}
+        <div class="tab miscBonus" data-group="primary" data-tab="miscBonus">
+            <p>Use the Description tab to configure all misc bonus values.</p>
         </div>
         {{/if}}
 

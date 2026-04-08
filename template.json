@@ -111,7 +111,7 @@
     }
   },
   "Item": {
-    "types": [ "weapon", "item", "skill", "spell", "class", "battalion", "combatArt" ],
+    "types": [ "weapon", "item", "skill", "spell", "class", "battalion", "combatArt", "miscBonus" ],
     "templates": {
       "base": {
         "description": "",
@@ -205,6 +205,10 @@
       "crit": 0,
       "range": "1",
       "properties": ""
+    },
+    "miscBonus": {
+      "templates": [ "base" ],
+      "enabled": true
     }
   }
 }
