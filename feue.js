@@ -54,7 +54,7 @@ class FireEmblemActor extends Actor {
 
     _collectBonuses() {
         const totals = this._blankBonuses();
-        const bonusItems = this.items.filter(i => i.type === "skill" || i.type === "item");
+        const bonusItems = this.items.filter(i => ["item", "skill", "miscBonus"].includes(i.type));
         const equippedWeapon = this.items.find(i => i.type === "weapon" && i.system?.equipped);
         if (equippedWeapon) bonusItems.push(equippedWeapon);
 
@@ -213,10 +213,10 @@ class FireEmblemCharacterSheet extends ActorSheet {
         data.skills = this.actor.items.filter(i => i.type === "skill");
         data.spells = this.actor.items.filter(i => i.type === "spell");
         data.combatArts = this.actor.items.filter(i => i.type === "combatArt");
-        data.miscBonuses = this.actor.items.filter(i => i.type === "item" && i.system?.itemType === "miscBonus");
+        data.miscBonuses = this.actor.items.filter(i => i.type === "miscBonus");
         data.weapons = this.actor.items.filter(i => i.type === "weapon");
         data.battalion = this.actor.items.find(i => i.type === "battalion") || null;
-        data.items = this.actor.items.filter(i => i.type === "item" && i.system?.itemType !== "miscBonus");
+        data.items = this.actor.items.filter(i => i.type === "item");
         data.inventory = this._getInventoryUsage();
 
         // Mark the "equipped" class
@@ -226,7 +226,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
     }
 
     _getInventoryUsage() {
-        const used = this.actor.items.filter(i => i.type === "weapon" || (i.type === "item" && i.system?.itemType !== "miscBonus")).length;
+        const used = this.actor.items.filter(i => i.type === "item" || i.type === "weapon").length;
         return { used, max: 5, full: used >= 5 };
     }
 
@@ -237,10 +237,6 @@ class FireEmblemCharacterSheet extends ActorSheet {
         html.find(".level-up").click(async () => this.actor.levelUp());
 
         html.find(".item-control.item-create").click(async (ev) => this._onItemCreate(ev));
-        html.find(".item-control.roll-attack").click(async (ev) => this._rollWeapon(ev));
-        html.find(".item-control.roll-battalion").click(async (ev) => this._rollBattalion(ev));
-        html.find(".item-control.roll-spell").click(async (ev) => this._rollSpell(ev));
-        html.find(".item-control.roll-combat-art").click(async (ev) => this._rollCombatArt(ev));
 
         // Generic item controls
         html.find(".item-control.item-edit").click(ev => {
@@ -325,84 +321,41 @@ class FireEmblemCharacterSheet extends ActorSheet {
         if (!type) return ui.notifications.error("Missing item type on create button.");
 
         const inventory = this._getInventoryUsage();
-        const itemSubtype = button.dataset.itemSubtype;
-        if ((type === "item" && itemSubtype !== "miscBonus") || type === "weapon") {
-            if (inventory.full) return ui.notifications.error("Inventory full: characters can only hold 5 total weapons/items.");
+        if ((type === "item" || type === "weapon") && inventory.full) {
+            return ui.notifications.error("Inventory full: characters can only hold 5 total weapons/items.");
         }
         if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) {
             return ui.notifications.error("Characters can only have one battalion.");
         }
 
-        const defaultName = (type === "item" && itemSubtype === "miscBonus") ? "New Misc Bonus" : `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`;
         const itemData = {
-            name: defaultName,
+            name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`,
             type
         };
-        if (type === "item" && itemSubtype) itemData.system = { itemType: itemSubtype };
         const [created] = await this.actor.createEmbeddedDocuments("Item", [itemData]);
         if (created) created.sheet.render(true);
     }
 
-    async _rollWeapon(ev) {
-        const li = $(ev.currentTarget).closest(".item");
-        const weapon = this.actor.items.get(li.data("itemId"));
-        if (!weapon) return;
-        await this._rollAttackWith({ label: weapon.name, hit: weapon.system?.hit, crit: weapon.system?.crit, might: weapon.system?.might });
-    }
+    async _onItemCreate(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        const type = button.dataset.type;
+        if (!type) return ui.notifications.error("Missing item type on create button.");
 
-    async _rollBattalion(ev) {
-        const li = $(ev.currentTarget).closest(".item");
-        const battalion = this.actor.items.get(li.data("itemId"));
-        if (!battalion) return;
-        await this._rollAttackWith({ label: `${battalion.name} (Battalion)`, hit: battalion.system?.hit, crit: battalion.system?.crit, might: battalion.system?.might });
-    }
-
-    async _rollSpell(ev) {
-        const li = $(ev.currentTarget).closest(".item");
-        const spell = this.actor.items.get(li.data("itemId"));
-        if (!spell) return;
-
-        const hpCost = Number(spell.system?.hpCost || 0);
-        const currentHp = Number(this.actor.system?.attributes?.hp?.value || 0);
-        if (hpCost > 0) {
-            const newHp = Math.max(currentHp - hpCost, 0);
-            await this.actor.update({ "system.attributes.hp.value": newHp });
+        const inventory = this._getInventoryUsage();
+        if ((type === "item" || type === "weapon") && inventory.full) {
+            return ui.notifications.error("Inventory full: characters can only hold 5 total weapons/items.");
         }
-        await this._rollAttackWith({ label: `${spell.name} (Spell)`, hit: spell.system?.hit, crit: spell.system?.crit, might: spell.system?.might });
-    }
+        if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) {
+            return ui.notifications.error("Characters can only have one battalion.");
+        }
 
-    async _rollCombatArt(ev) {
-        const li = $(ev.currentTarget).closest(".item");
-        const art = this.actor.items.get(li.data("itemId"));
-        if (!art) return;
-        const weapons = this.actor.items.filter(i => i.type === "weapon");
-        if (!weapons.length) return ui.notifications.warn("No weapons available for this combat art.");
-        const choices = weapons.map(w => `<option value="${w.id}" ${w.system?.equipped ? "selected" : ""}>${w.name}</option>`).join("");
-        const selectedId = await Dialog.prompt({
-            title: "Choose Weapon",
-            content: `<div class="form-group"><label>Weapon</label><select id="combat-art-weapon">${choices}</select></div>`,
-            callback: (html) => html.find("#combat-art-weapon").val()
-        });
-        const weapon = weapons.find(w => w.id === selectedId) || weapons.find(w => w.system?.equipped) || weapons[0];
-        await this._rollAttackWith({ label: `${art.name} (${weapon.name})`, hit: weapon.system?.hit, crit: weapon.system?.crit, might: weapon.system?.might });
-    }
-
-    async _rollAttackWith({ label, hit = 0, crit = 0, might = 0 }) {
-        const roll = await (new Roll("1d100")).evaluate();
-        const totalHit = (Number(this.actor.system?.combat?.hitRate || 0) - Number((this.actor.items.find(i => i.type === "weapon" && i.system?.equipped)?.system?.hit) || 0)) + Number(hit || 0);
-        const totalCrit = (Number(this.actor.system?.combat?.critRate || 0) - Number((this.actor.items.find(i => i.type === "weapon" && i.system?.equipped)?.system?.crit) || 0)) + Number(crit || 0);
-        const isHit = roll.total <= totalHit;
-        const critRoll = await (new Roll("1d100")).evaluate();
-        const isCrit = isHit && critRoll.total <= totalCrit;
-
-        await ChatMessage.create({
-            user: game.user.id,
-            speaker: ChatMessage.getSpeaker({ actor: this.actor }),
-            content: `<h3>${label}</h3>
-            <p>Hit Roll: <strong>${roll.total}</strong> vs ${totalHit} (${isHit ? "Hit" : "Miss"})</p>
-            <p>Crit Roll: <strong>${critRoll.total}</strong> vs ${totalCrit} (${isCrit ? "Crit" : "No Crit"})</p>
-            <p>Might: <strong>${might || 0}</strong></p>`
-        });
+        const itemData = {
+            name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+            type
+        };
+        const [created] = await this.actor.createEmbeddedDocuments("Item", [itemData]);
+        if (created) created.sheet.render(true);
     }
 }
 
@@ -546,9 +499,8 @@ Hooks.on("preCreateItem", (item, createData) => {
     const type = createData.type ?? item.type;
     if (!type) return false;
 
-    const isMiscBonusItem = type === "item" && ((createData.system?.itemType === "miscBonus") || (createData["system.itemType"] === "miscBonus"));
-    if ((type === "item" && !isMiscBonusItem) || type === "weapon") {
-        const used = parent.items.filter(i => i.type === "weapon" || (i.type === "item" && i.system?.itemType !== "miscBonus")).length;
+    if (type === "item" || type === "weapon") {
+        const used = parent.items.filter(i => i.type === "item" || i.type === "weapon").length;
         if (used >= 5) {
             ui.notifications.error(`${parent.name} is at the 5-slot inventory limit (weapons/items).`);
             return false;
