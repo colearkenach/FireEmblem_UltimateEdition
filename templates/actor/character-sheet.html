@@ -85,22 +85,14 @@
 
             {{!-- Weapon Ranks --}}
             <div class="weapon-ranks">
-                <div class="section-header">
-                    <h3>Weapon Ranks</h3>
-                    {{#if hiddenWeaponRanksCount}}
-                    <a class="item-control weapon-ranks-toggle" title="Toggle all weapon ranks">
-                        <i class="fas {{#if showAllWeaponRanks}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
-                        {{#if showAllWeaponRanks}}Show Class Only{{else}}Show All ({{hiddenWeaponRanksCount}} hidden){{/if}}
-                    </a>
-                    {{/if}}
-                </div>
+                <h3>Weapon Ranks</h3>
                 <div class="weapon-ranks-grid">
-                    {{#each visibleWeaponRanks as |entry|}}
+                    {{#each actor.system.weaponRanks as |rank weapon|}}
                     <div class="weapon-rank flexrow">
-                        <label class="weapon-label">{{entry.weapon}}</label>
-                        <select name="system.weaponRanks.{{entry.weapon}}" data-weapon-type="{{entry.weapon}}">
+                        <label class="weapon-label">{{weapon}}</label>
+                        <select name="system.weaponRanks.{{weapon}}" data-weapon-type="{{weapon}}">
                             {{#each ../weaponRankOptions as |opt|}}
-                            <option value="{{opt.key}}" {{#ifEquals ../entry.rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
+                            <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
                             {{/each}}
                         </select>
                     </div>
@@ -134,10 +126,6 @@
                     <div class="resource flexrow">
                         <label>Experience</label>
                         <input type="text" name="system.experience" value="{{actor.system.experience}}" data-dtype="Number" />
-                    </div>
-                    <div class="resource flexrow">
-                        <label>Class Type(s)</label>
-                        <input type="text" value="{{highestClassType}}{{#if classTypes.length}} ({{join classTypes ", "}}){{/if}}" disabled />
                     </div>
                 </div>
             </div>
@@ -285,7 +273,7 @@
             </div>
 
             <div class="spells-section">
-                <div class="section-header"><h3>Misc Items</h3><a class="item-control item-create" data-type="miscItem" title="Create Misc Item"><i class="fas fa-plus"></i> Add Misc Item</a></div>
+                <div class="section-header"><h3>Misc Bonuses</h3><a class="item-control item-create" data-type="miscBonus" title="Create Misc Bonus"><i class="fas fa-plus"></i> Add Bonus</a></div>
                 {{#each miscBonuses as |bonus|}}
                 <div class="item bonus flexrow" data-item-id="{{bonus._id}}">
                     <div class="item-image"><img src="{{bonus.img}}" title="{{bonus.name}}" width="24" height="24" /></div>

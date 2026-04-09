@@ -15,6 +15,7 @@
         {{#if (eq item.type "combatArt")}}<a class="item" data-tab="combatArt">Combat Art</a>{{/if}}
         {{#if (eq item.type "battalion")}}<a class="item" data-tab="battalion">Battalion</a>{{/if}}
         {{#if (eq item.type "class")}}<a class="item" data-tab="class">Class</a>{{/if}}
+        {{#if (eq item.type "miscBonus")}}<a class="item" data-tab="miscBonus">Misc Bonus</a>{{/if}}
     </nav>
 
     <section class="sheet-body">
@@ -154,7 +155,7 @@
         {{#if (eq item.type "class")}}
         <div class="tab class" data-group="primary" data-tab="class">
             <div class="form-row">
-                <div class="form-group"><label>Class Type</label><select name="system.classType"><option value="Recruit" {{#ifEquals item.system.classType "Recruit"}} selected{{/ifEquals}}>Recruit</option><option value="Standard" {{#ifEquals item.system.classType "Standard"}} selected{{/ifEquals}}>Standard</option><option value="Advanced" {{#ifEquals item.system.classType "Advanced"}} selected{{/ifEquals}}>Advanced</option><option value="Enemy Only" {{#ifEquals item.system.classType "Enemy Only"}} selected{{/ifEquals}}>Enemy Only</option></select></div>
+                <div class="form-group"><label>Class Type</label><select name="system.classType"><option value="Recruit" {{#ifEquals item.system.classType "Recruit"}} selected{{/ifEquals}}>Recruit</option><option value="Standard" {{#ifEquals item.system.classType "Standard"}} selected{{/ifEquals}}>Standard</option><option value="Promoted" {{#ifEquals item.system.classType "Promoted"}} selected{{/ifEquals}}>Promoted</option><option value="Advanced" {{#ifEquals item.system.classType "Advanced"}} selected{{/ifEquals}}>Advanced</option><option value="Enemy Only" {{#ifEquals item.system.classType "Enemy Only"}} selected{{/ifEquals}}>Enemy Only</option></select></div>
                 <div class="form-group"><label>Max Level</label><input type="number" data-dtype="Number" name="system.maxLevel" value="{{item.system.maxLevel}}" /></div>
                 <div class="form-group"><label>Movement</label><input type="number" data-dtype="Number" name="system.movement" value="{{item.system.movement}}" /></div>
             </div>
@@ -232,6 +233,12 @@
                 </div>
                 <div id="promotion-tree-container"></div>
             </div>
+        </div>
+        {{/if}}
+
+        {{#if (eq item.type "miscBonus")}}
+        <div class="tab miscBonus" data-group="primary" data-tab="miscBonus">
+            <p>Use the Description tab to configure all misc bonus values.</p>
         </div>
         {{/if}}
 
