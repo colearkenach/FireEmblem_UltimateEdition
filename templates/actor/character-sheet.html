@@ -19,7 +19,7 @@
                 <div class="resource flexrow">
                     <div class="resource-label">Level</div>
                     <div class="resource-value">
-                        <input type="number" name="system.level" value="{{actor.system.level}}" data-dtype="Number" min="1" placeholder="1"/>
+                        <input type="number" name="system.level" value="{{actor.system.level}}" data-dtype="Number" min="1" placeholder="1" disabled/>
                     </div>
                     <button type="button" class="level-up">Level Up</button>
                 </div>
@@ -86,9 +86,12 @@
             {{!-- Weapon Ranks --}}
             <div class="weapon-ranks">
                 <h3>Weapon Ranks</h3>
-                <div class="weapon-ranks-grid">
-                    {{#each actor.system.weaponRanks as |rank weapon|}}
-                    <div class="weapon-rank flexrow">
+
+                {{!-- Proficient weapons from equipped class --}}
+                {{#if hasClassProficiencies}}
+                <div class="weapon-ranks-grid proficient-grid">
+                    {{#each proficientWeapons as |rank weapon|}}
+                    <div class="weapon-rank flexrow proficient">
                         <label class="weapon-label">{{weapon}}</label>
                         <select name="system.weaponRanks.{{weapon}}" data-weapon-type="{{weapon}}">
                             {{#each ../weaponRankOptions as |opt|}}
@@ -97,6 +100,30 @@
                         </select>
                     </div>
                     {{/each}}
+                </div>
+                {{else}}
+                <p class="no-proficiency-note">No class equipped or no weapon proficiencies.</p>
+                {{/if}}
+
+                {{!-- Other weapons (collapsible) --}}
+                <div class="other-weapons-section">
+                    <a class="other-weapons-toggle">
+                        <i class="fas fa-caret-right"></i> Other Weapons
+                    </a>
+                    <div class="other-weapons-content" style="display: none;">
+                        <div class="weapon-ranks-grid other-grid">
+                            {{#each otherWeapons as |rank weapon|}}
+                            <div class="weapon-rank flexrow">
+                                <label class="weapon-label">{{weapon}}</label>
+                                <select name="system.weaponRanks.{{weapon}}" data-weapon-type="{{weapon}}">
+                                    {{#each ../weaponRankOptions as |opt|}}
+                                    <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
+                                    {{/each}}
+                                </select>
+                            </div>
+                            {{/each}}
+                        </div>
+                    </div>
                 </div>
             </div>
 

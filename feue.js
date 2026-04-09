@@ -37,6 +37,12 @@ const DEFAULT_WEAPON_RANKS = Object.fromEntries(
 // ====================================================================
 class FireEmblemActor extends Actor {
 
+    async _onCreate(data, options, userId) {
+        super._onCreate(data, options, userId);
+        if (game.user.id !== userId) return;
+        await this._getOrCreateLevelUpBonus();
+    }
+
     _blankBonuses() {
         return {
             attributes: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0, move: 0 },
@@ -61,6 +67,32 @@ class FireEmblemActor extends Actor {
         return totals;
     }
 
+    /** Find or create the permanent "Bonuses from Level Up" miscBonus item. */
+    async _getOrCreateLevelUpBonus() {
+        let bonus = this.items.find(i =>
+            i.type === "miscBonus" && i.getFlag("feue", "isLevelUpBonus")
+        );
+        if (!bonus) {
+            const [created] = await this.createEmbeddedDocuments("Item", [{
+                name: "Bonuses from Level Up",
+                type: "miscBonus",
+                img: "icons/svg/upgrade.svg",
+                system: {
+                    enabled: true,
+                    bonuses: {
+                        attributes: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0, move: 0 },
+                        maximums: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0, move: 0 },
+                        growthRates: { hp: 0, strength: 0, magic: 0, skill: 0, speed: 0, defense: 0, resistance: 0, luck: 0, charm: 0, build: 0 },
+                        combat: { hitRate: 0, critRate: 0, avoid: 0, dodge: 0, attackSpeed: 0 }
+                    }
+                },
+                flags: { feue: { isLevelUpBonus: true } }
+            }]);
+            bonus = created;
+        }
+        return bonus;
+    }
+
     /** Walk the promotion tree via currentPath to find the active class node. */
     _getCurrentClassNode(classItem) {
         const sys = classItem.system;
@@ -69,6 +101,7 @@ class FireEmblemActor extends Actor {
             maxLevel: sys.maxLevel, baseStats: sys.baseStats || {},
             growthRates: sys.growthRates || {}, statCaps: sys.statCaps || {},
             unitTypes: sys.unitTypes || {}, weaponProficiencies: sys.weaponProficiencies || {},
+            classSkills: Array.isArray(sys.classSkills) ? sys.classSkills : [],
             promotions: sys.promotions || []
         };
         for (const id of (sys.currentPath || [])) {
@@ -96,8 +129,7 @@ class FireEmblemActor extends Actor {
             const node = this._getCurrentClassNode(equippedClass);
             system.activeClassName = node.name;
             system.activeClassType = node.classType;
-            const isPromoted = ["Promoted", "Advanced"].includes(node.classType);
-            baseStats = isPromoted ? {} : foundry.utils.deepClone(node.baseStats || {});
+            baseStats = foundry.utils.deepClone(node.baseStats || {});
             growths = foundry.utils.deepClone(node.growthRates || {});
             caps = foundry.utils.deepClone(node.statCaps || {});
             classMovement = Number(node.movement || 0);
@@ -152,20 +184,68 @@ class FireEmblemActor extends Actor {
 
     async levelUp() {
         const system = this.system;
+        const currentLevel = system.level || 1;
+
+        // ── Check if at max level → promotion instead of normal level up ──
+        const ec = this.items.find(i => i.type === "class" && i.system?.equipped);
+        if (ec) {
+            const node = this._getCurrentClassNode(ec);
+            const maxLevel = Number(node.maxLevel || 20);
+            const promos = node.promotions || [];
+
+            if (currentLevel >= maxLevel) {
+                if (promos.length) {
+                    await this._showPromotionDialog(ec, promos);
+                } else {
+                    ui.notifications.warn(`${this.name} is at max level (${maxLevel}) with no promotions available.`);
+                }
+                return;
+            }
+        }
+
+        // ── Normal level up ──
         const gr = system.growthRates || {};
         const gains = {};
+
         for (const [stat, growth] of Object.entries(gr)) {
             const roll = await new Roll("1d10").evaluate();
-            if (roll.total <= growth) {
-                gains[stat] = 1;
-                if (stat === "hp") {
-                    await this.update({ "system.attributes.hp.max": (system.attributes.hp?.max || 0) + 1, "system.attributes.hp.value": (system.attributes.hp?.value || 0) + 1 });
-                } else {
-                    await this.update({ [`system.attributes.${stat}.value`]: (system.attributes?.[stat]?.value || 0) + 1 });
-                }
-            } else { gains[stat] = 0; }
+            gains[stat] = (roll.total <= growth) ? 1 : 0;
         }
-        const newLevel = (system.level || 1) + 1;
+
+        // Enforce stat caps — skip gains for stats already at max
+        for (const [stat, gained] of Object.entries(gains)) {
+            if (!gained) continue;
+            if (stat === "hp") {
+                // HP cap isn't tracked the same way; skip cap check for HP
+                // (or check against a class-defined HP cap if you add one later)
+                continue;
+            }
+            const currentVal = Number(this.system.attributes?.[stat]?.value || 0);
+            const cap = Number(this.system.attributes?.[stat]?.max || 0);
+            if (cap > 0 && currentVal >= cap) {
+                gains[stat] = 0;  // Already at cap
+            }
+        }
+
+        const gainedStats = Object.entries(gains).filter(([, v]) => v > 0);
+
+        if (gainedStats.length) {
+            const bonusItem = await this._getOrCreateLevelUpBonus();
+            const updates = {};
+            for (const [stat] of gainedStats) {
+                const current = Number(bonusItem.system.bonuses?.attributes?.[stat] || 0);
+                updates[`system.bonuses.attributes.${stat}`] = current + 1;
+            }
+            await bonusItem.update(updates);
+
+            if (gains.hp) {
+                await this.update({
+                    "system.attributes.hp.value": (system.attributes?.hp?.value || 0) + 1
+                });
+            }
+        }
+
+        const newLevel = currentLevel + 1;
         await this.update({ "system.level": newLevel, "system.totalLevel": (system.totalLevel || 1) + 1 });
 
         const gainList = Object.entries(gains).filter(([, v]) => v > 0).map(([k]) => FEUE.STAT_LABELS[k] || k);
@@ -173,41 +253,85 @@ class FireEmblemActor extends Actor {
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: this }),
             content: `<div class="feue-levelup"><h3>${this.name} reached level ${newLevel}!</h3>${gainList.length ? `<div class="stat-gains">${gainList.map(s => `<span class="gain">+1 ${s}</span>`).join("")}</div>` : "<p>No stats increased.</p>"}</div>`
         });
-        await this._checkPromotion(newLevel);
-    }
 
-    async _checkPromotion(newLevel) {
-        const ec = this.items.find(i => i.type === "class" && i.system?.equipped);
-        if (!ec) return;
-        const node = this._getCurrentClassNode(ec);
-        const promos = node.promotions || [];
-        if (promos.length && newLevel >= Number(node.maxLevel || 20)) {
-            await this._showPromotionDialog(ec, promos);
+        // Grant class skills for new level
+        if (ec) {
+            const currentNode = this._getCurrentClassNode(ec);
+            await this._grantClassSkills(currentNode, { exactLevel: newLevel });
         }
     }
+
+    //async _checkPromotion(newLevel) {
+    //    const ec = this.items.find(i => i.type === "class" && i.system?.equipped);
+    //    if (!ec) return;
+    //    const node = this._getCurrentClassNode(ec);
+    //    const promos = node.promotions || [];
+    //    if (promos.length && newLevel >= Number(node.maxLevel || 20)) {
+    //        await this._showPromotionDialog(ec, promos);
+    //    }
+    //}
 
     async _showPromotionDialog(classItem, promotions) {
         const opts = promotions.map(p => `<option value="${p.id}">${p.name} (${p.classType})</option>`).join("");
         new Dialog({
             title: "Promotion Available!",
-            content: `<div style="padding:10px;"><p>Choose your promotion path:</p><div class="form-group"><select id="feue-promo-choice" style="width:100%;">${opts}</select></div></div>`,
+            content: `<div style="padding:10px;">
+                <p>Choose your promotion path:</p>
+                <div class="form-group">
+                    <select id="feue-promo-choice" style="width:100%;">${opts}</select>
+                </div>
+            </div>`,
             buttons: {
                 promote: {
-                    icon: '<i class="fas fa-arrow-up"></i>', label: "Promote", callback: async (html) => {
+                    icon: '<i class="fas fa-arrow-up"></i>',
+                    label: "Promote",
+                    callback: async (html) => {
                         const id = html.find("#feue-promo-choice").val();
                         const chosen = promotions.find(p => p.id === id);
                         if (!chosen) return;
+
                         const previousNode = this._getCurrentClassNode(classItem);
+                        const prevType = previousNode?.classType || "";
                         const newPath = [...(classItem.system.currentPath || []), id];
                         await classItem.update({ "system.currentPath": newPath });
                         await this._applyPromotionBenefits(previousNode, chosen);
-                        await this.update({ "system.level": 1 });
+
+                        if (prevType === "Recruit") {
+                            // Recruit→Standard: increment level (e.g. 10→11), keep going
+                            const currentLevel = this.system.level || 10;
+                            const newLevel = currentLevel + 1;
+                            await this.update({
+                                "system.level": newLevel,
+                                "system.totalLevel": (this.system.totalLevel || currentLevel) + 1
+                            });
+                            ChatMessage.create({
+                                user: game.user.id,
+                                speaker: ChatMessage.getSpeaker({ actor: this }),
+                                content: `<div class="feue-levelup"><h3>${this.name} promoted to ${chosen.name} at level ${newLevel}!</h3></div>`
+                            });
+                        } else {
+                            // Standard→Promoted/Advanced: reset to level 1
+                            const prevLevel = this.system.level || 20;
+                            await this.update({
+                                "system.level": 1,
+                                "system.totalLevel": (this.system.totalLevel || prevLevel) + 1
+                            });
+                            ChatMessage.create({
+                                user: game.user.id,
+                                speaker: ChatMessage.getSpeaker({ actor: this }),
+                                content: `<div class="feue-levelup"><h3>${this.name} promoted to ${chosen.name}!</h3><p>Level reset to 1.</p></div>`
+                            });
+                        }
+
                         ui.notifications.info(`${this.name} promoted to ${chosen.name}!`);
-                        ChatMessage.create({ user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: this }), content: `<div class="feue-levelup"><h3>${this.name} promoted to ${chosen.name}!</h3></div>` });
                     }
                 },
-                wait: { icon: '<i class="fas fa-clock"></i>', label: "Not Yet" }
-            }, default: "wait"
+                cancel: {
+                    icon: '<i class="fas fa-times"></i>',
+                    label: "Decide Later"
+                }
+            },
+            default: "promote"
         }).render(true);
     }
 
@@ -216,31 +340,55 @@ class FireEmblemActor extends Actor {
         const nextType = chosenNode?.classType || "";
         const promoteToAdvanced = ["Promoted", "Advanced"].includes(nextType);
         const fromBaseClass = ["Recruit", "Standard"].includes(prevType);
-        const updates = {};
+
+        // ── Adjust Level Up Bonus to account for base stat change ──
+        const bonusItem = await this._getOrCreateLevelUpBonus();
+        const bonusUpdates = {};
 
         for (const key of FEUE.STAT_KEYS) {
-            const current = key === "hp"
-                ? Number(this.system.attributes?.hp?.max || 0)
-                : Number(this.system.attributes?.[key]?.value || 0);
-            const nextBase = Number(chosenNode?.baseStats?.[key] || 0);
             const prevBase = Number(previousNode?.baseStats?.[key] || 0);
-            let result = current;
+            const nextBase = Number(chosenNode?.baseStats?.[key] || 0);
+            const currentBonus = Number(bonusItem.system.bonuses?.attributes?.[key] || 0);
 
-            // Recruit/Standard promotions floor to the target class base.
-            if (fromBaseClass && !promoteToAdvanced) result = Math.max(current, nextBase);
+            // Current total stat = prevBase + currentBonus (ignoring equipment etc.)
+            const currentTotal = prevBase + currentBonus;
 
-            // Standard->Promoted/Advanced applies stat bonuses from class-base deltas.
-            if (promoteToAdvanced) result = current + Math.max(nextBase - prevBase, 0);
+            let targetTotal = currentTotal;
 
-            if (key === "hp") {
-                const diff = result - current;
-                updates["system.attributes.hp.max"] = result;
-                updates["system.attributes.hp.value"] = Math.max(0, Number(this.system.attributes?.hp?.value || 0) + diff);
-            } else {
-                updates[`system.attributes.${key}.value`] = result;
+            if (fromBaseClass && !promoteToAdvanced) {
+                // Recruit→Standard: floor to new base
+                targetTotal = Math.max(currentTotal, nextBase);
+            } else if (promoteToAdvanced) {
+                // Standard→Promoted/Advanced: add delta between bases
+                targetTotal = currentTotal + Math.max(nextBase - prevBase, 0);
             }
+
+            // New bonus = target total - new base
+            const newBonus = Math.max(targetTotal - nextBase, 0);
+            bonusUpdates[`system.bonuses.attributes.${key}`] = newBonus;
         }
 
+        await bonusItem.update(bonusUpdates);
+
+        // ── Bump current HP to match new max ──
+        // (prepareDerivedData will recalculate hp.max, but we need to adjust hp.value)
+        const oldHpMax = Number(this.system.attributes?.hp?.max || 0);
+        const prevHpBase = Number(previousNode?.baseStats?.hp || 0);
+        const nextHpBase = Number(chosenNode?.baseStats?.hp || 0);
+        const oldHpBonus = Number(bonusItem.system.bonuses?.attributes?.hp || 0);
+        const oldTotal = prevHpBase + oldHpBonus;  // use pre-update bonus for old total
+        let newHpTotal = oldTotal;
+        if (fromBaseClass && !promoteToAdvanced) newHpTotal = Math.max(oldTotal, nextHpBase);
+        else if (promoteToAdvanced) newHpTotal = oldTotal + Math.max(nextHpBase - prevHpBase, 0);
+        const hpDiff = newHpTotal - oldTotal;
+        if (hpDiff > 0) {
+            await this.update({
+                "system.attributes.hp.value": (this.system.attributes?.hp?.value || 0) + hpDiff
+            });
+        }
+
+        // ── Unit types & weapon proficiencies (unchanged) ──
+        const updates = {};
         const unitTypes = Object.entries(chosenNode?.unitTypes || {})
             .filter(([, enabled]) => Boolean(enabled))
             .map(([name]) => name);
@@ -254,6 +402,82 @@ class FireEmblemActor extends Actor {
         }
 
         await this.update(updates);
+
+        // ── Grant skills from new class node ──
+        const fromRecruit = prevType === "Recruit";
+        if (fromRecruit) {
+            await this._grantClassSkills(chosenNode, { all: true });
+        } else {
+            await this._grantClassSkills(chosenNode, { upToLevel: 1 });
+        }
+        await this._removeInnateSkills(previousNode);
+    }
+
+    /**
+ * Grant class skills from a node to this actor.
+ * @param {Object} node - The class/promotion node with classSkills[]
+ * @param {Object} options
+ * @param {number}  [options.exactLevel]  - Grant skills at exactly this level
+ * @param {number}  [options.upToLevel]   - Grant skills at or below this level
+ * @param {boolean} [options.all]         - Grant ALL skills regardless of level
+ */
+    async _grantClassSkills(node, { exactLevel, upToLevel, all } = {}) {
+        const classSkills = Array.isArray(node.classSkills) ? node.classSkills : [];
+
+        if (!classSkills.length) return;
+
+        const toGrant = classSkills.filter(cs => {
+            if (cs.level === "Innate") return true;
+            if (all) return true;
+            const lv = Number(cs.level);
+            if (exactLevel !== undefined) return lv === exactLevel;
+            if (upToLevel !== undefined) return lv <= upToLevel;
+            return false;
+        });
+
+        if (!toGrant.length) return;
+
+        // Avoid duplicates — check by name
+        const existingNames = new Set(
+            this.items.filter(i => i.type === "skill").map(i => i.name)
+        );
+
+        const newSkills = toGrant
+            .filter(cs => !existingNames.has(cs.skillData.name))
+            .map(cs => ({
+                name: cs.skillData.name,
+                type: "skill",
+                img: cs.skillData.img || "icons/svg/book.svg",
+                system: foundry.utils.deepClone(cs.skillData.system || {})
+            }));
+
+        if (newSkills.length) {
+            await this.createEmbeddedDocuments("Item", newSkills);
+            for (const s of newSkills) {
+                ui.notifications.info(`${this.name} learned ${s.name}!`);
+            }
+        }
+    }
+
+    /**
+     * Remove innate skills that came from a specific class node.
+     * @param {Object} node - The class/promotion node
+     */
+    async _removeInnateSkills(node) {
+        const classSkills = Array.isArray(node.classSkills) ? node.classSkills : [];
+        const innateNames = new Set(
+            classSkills.filter(cs => cs.level === "Innate").map(cs => cs.skillData.name)
+        );
+        if (!innateNames.size) return;
+
+        const toRemove = this.items
+            .filter(i => i.type === "skill" && innateNames.has(i.name))
+            .map(i => i.id);
+
+        if (toRemove.length) {
+            await this.deleteEmbeddedDocuments("Item", toRemove);
+            ui.notifications.info(`${this.name} lost innate skills from previous class.`);
+        }
     }
 
     canUseWeapon(weapon) {
@@ -306,11 +530,33 @@ class FireEmblemCharacterSheet extends ActorSheet {
             data.currentClassType = node.classType;
         }
 
+        // Split weapon ranks into proficient vs other
+        const classNode = data.equippedClass
+            ? this.actor._getCurrentClassNode(data.equippedClass)
+            : null;
+            const classProficiencies = classNode?.weaponProficiencies || {};
+            data.proficientWeapons = {};
+            data.otherWeapons = {};
+            for (const [weapon, rank] of Object.entries(this.actor.system.weaponRanks || {})) {
+            if (classProficiencies[weapon]) {
+            data.proficientWeapons[weapon] = rank;
+            } else {
+            data.otherWeapons[weapon] = rank;
+            }
+        }
+        data.hasClassProficiencies = Object.keys(data.proficientWeapons).length > 0;
+
         // Non-HP attributes for grid
         data.nonHpAttributes = {};
         for (const [key, val] of Object.entries(this.actor.system.attributes || {})) {
             if (key !== "hp") data.nonHpAttributes[key] = val;
         }
+
+        // Ensure Level Up Bonus item exists (migration for pre-existing actors)
+        if (!this.actor.items.find(i => i.type === "miscBonus" && i.getFlag("feue", "isLevelUpBonus"))) {
+            this.actor._getOrCreateLevelUpBonus();  // fire-and-forget, sheet will re-render
+        }
+
         return data;
     }
 
@@ -325,17 +571,50 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
         html.find(".level-up").click(async () => this.actor.levelUp());
         html.find(".item-control.item-create").click(async (ev) => this._onItemCreate(ev));
-        html.find(".item-control.item-edit").click(ev => { const id = $(ev.currentTarget).closest(".item").data("item-id"); const item = this.actor.items.get(id); if (item) item.sheet.render(true); });
-        html.find(".item-control.item-delete").click(async ev => { const id = $(ev.currentTarget).closest(".item").data("item-id"); const item = this.actor.items.get(id); if (item) await item.delete(); });
+        html.find(".item-control.item-edit").click(ev => {
+            const id = $(ev.currentTarget).closest(".item").data("item-id");
+            const item = this.actor.items.get(id);
+            if (item) item.sheet.render(true);
+        });
+
+        html.find(".item-control.item-delete").click(async ev => {
+            const id = $(ev.currentTarget).closest(".item").data("item-id");
+            const item = this.actor.items.get(id);
+            if (!item) return;
+            if (item.getFlag("feue", "isLevelUpBonus")) {
+                ui.notifications.warn("The Level Up Bonus cannot be deleted.");
+                return;
+            }
+            await item.delete();
+        });
 
         html.find(".item-control.class-equip").click(async ev => {
             const id = $(ev.currentTarget).closest(".item").data("item-id");
             const item = this.actor.items.get(id);
             if (!item) return;
-            if (item.system.equipped) { await item.update({ "system.equipped": false }); return; }
-            const others = this.actor.items.filter(i => i.type === "class" && i.system.equipped && i.id !== item.id);
-            if (others.length) await this.actor.updateEmbeddedDocuments("Item", others.map(c => ({ _id: c.id, "system.equipped": false })));
+
+            if (item.system.equipped) {
+                // ── Unequip: remove innate skills ──
+                const node = this.actor._getCurrentClassNode(item);
+                await this.actor._removeInnateSkills(node);
+                await item.update({ "system.equipped": false });
+                return;
+            }
+
+            // Unequip all other classes first
+            for (const c of this.actor.items.filter(i => i.type === "class" && i.system.equipped)) {
+                const oldNode = this.actor._getCurrentClassNode(c);
+                await this.actor._removeInnateSkills(oldNode);
+                await c.update({ "system.equipped": false });
+            }
+
+            // Equip the new class
             await item.update({ "system.equipped": true });
+
+            // ── Grant skills up to current level ──
+            const node = this.actor._getCurrentClassNode(item);
+            const currentLevel = this.actor.system.level || 1;
+            await this.actor._grantClassSkills(node, { upToLevel: currentLevel });
         });
 
         html.find(".item-control.weapon-equip").click(async ev => {
@@ -352,6 +631,23 @@ class FireEmblemCharacterSheet extends ActorSheet {
         html.find(".roll-battalion").click(async (ev) => this._onRollBattalion(ev));
         html.find(".roll-spell").click(async (ev) => this._onRollSpell(ev));
         html.find(".roll-combat-art").click(async (ev) => this._onRollCombatArt(ev));
+
+        html.find(".other-weapons-toggle").click(ev => {
+            const toggle = $(ev.currentTarget);
+            const content = toggle.next(".other-weapons-content");
+            content.slideToggle(200);
+            toggle.find("i.fas").toggleClass("fa-caret-right fa-caret-down");
+        });
+
+        // Mark the Level Up Bonus item as non-deletable and visually distinct
+        const lubId = this.actor.items.find(i =>
+            i.type === "miscBonus" && i.getFlag("feue", "isLevelUpBonus")
+        )?._id;
+        if (lubId) {
+            const lubEl = html.find(`.item[data-item-id="${lubId}"]`);
+            lubEl.addClass("level-up-bonus-item");
+            lubEl.find(".item-delete").remove();
+        }
     }
 
     async _onRollAttack(event) {
@@ -467,7 +763,6 @@ class FireEmblemItemSheet extends ItemSheet {
         data.FEUE = FEUE;
         if (data.item.type === "class") {
             const ct = (data.item.system.classType || "").toLowerCase();
-            data.hideBaseStats = (ct === "promoted" || ct === "advanced");
         }
         return data;
     }
@@ -485,6 +780,29 @@ class FireEmblemItemSheet extends ItemSheet {
             html.on("click", ".promo-delete", async (ev) => {
                 const ok = await Dialog.confirm({ title: "Delete Promotion", content: "<p>Delete this promotion and all sub-promotions?</p>" });
                 if (ok) this._deletePromotion($(ev.currentTarget).data("path").toString().split(","));
+            });
+
+            // ── Class Skills: drag-and-drop, level change, removal ──
+            const skillList = html.find(".class-skills-list");
+            if (skillList.length) {
+                skillList[0].addEventListener("dragover", (e) => e.preventDefault());
+                skillList[0].addEventListener("drop", this._onDropClassSkill.bind(this));
+            }
+
+            html.find(".class-skill-level").change(async (ev) => {
+                const idx = Number($(ev.currentTarget).data("skill-index"));
+                const classSkills = foundry.utils.deepClone(this.item.system.classSkills || []);
+                if (classSkills[idx]) {
+                    classSkills[idx].level = ev.currentTarget.value;
+                    await this.item.update({ "system.classSkills": classSkills });
+                }
+            });
+
+            html.find(".class-skill-remove").click(async (ev) => {
+                const idx = Number($(ev.currentTarget).data("skill-index"));
+                const classSkills = foundry.utils.deepClone(this.item.system.classSkills || []);
+                classSkills.splice(idx, 1);
+                await this.item.update({ "system.classSkills": classSkills });
             });
         }
     }
@@ -538,7 +856,7 @@ class FireEmblemItemSheet extends ItemSheet {
     async _addPromotion(parentPath) {
         const newP = {
             id: foundry.utils.randomID(), name: "New Class", classType: parentPath.length ? "Promoted" : "Standard",
-            movement: 5, maxLevel: 20, unitTypes: {}, weaponProficiencies: {}, baseStats: {}, growthRates: {}, statCaps: {}, promotions: []
+            movement: 5, maxLevel: 20, unitTypes: {}, weaponProficiencies: {}, baseStats: {}, growthRates: {}, statCaps: {}, classSkills: [], promotions: []
         };
         this._openPromotionDialog(newP, async (data) => {
             const promos = foundry.utils.deepClone(this.item.system.promotions || []);
@@ -586,24 +904,50 @@ class FireEmblemItemSheet extends ItemSheet {
         const weaponProficiencies = promo.weaponProficiencies || {};
         const unitTypeChecks = FEUE.UNIT_TYPES.map(type => `<label style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;"><input type="checkbox" data-key="ut.${type}" ${unitTypes[type] ? "checked" : ""}/> ${type}</label>`).join("");
         const weaponChecks = Object.entries(FEUE.WeaponTypes).map(([key, label]) => `<label style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;"><input type="checkbox" data-key="wp.${key}" ${weaponProficiencies[key] ? "checked" : ""}/> ${label}</label>`).join("");
+        let promoSkills = foundry.utils.deepClone(promo.classSkills || []);
+
+        const buildSkillListHTML = (skills) => {
+            if (!skills.length) return '<p class="promo-skills-empty" style="color:#888; font-style:italic; font-size:11px; margin:4px 0;">Drag skill items here</p>';
+            return skills.map((cs, idx) => `
+                <div class="promo-skill-entry" style="display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px solid rgba(0,0,0,0.1);">
+                    <img src="${cs.skillData.img || 'icons/svg/book.svg'}" width="20" height="20" style="border:1px solid #999; border-radius:2px;" />
+                    <span style="flex:1; font-size:12px;">${cs.skillData.name}</span>
+                    <select class="promo-skill-level" data-skill-idx="${idx}" style="width:70px; font-size:11px;">
+                        <option value="Innate" ${cs.level === "Innate" ? "selected" : ""}>Innate</option>
+                        <option value="1" ${cs.level === "1" ? "selected" : ""}>1</option>
+                        <option value="5" ${cs.level === "5" ? "selected" : ""}>5</option>
+                        <option value="10" ${cs.level === "10" ? "selected" : ""}>10</option>
+                        <option value="15" ${cs.level === "15" ? "selected" : ""}>15</option>
+                        <option value="20" ${cs.level === "20" ? "selected" : ""}>20</option>
+                        <option value="30" ${cs.level === "30" ? "selected" : ""}>30</option>
+                    </select>
+                    <a class="promo-skill-remove" data-skill-idx="${idx}" style="cursor:pointer; color:#a0522d;" title="Remove"><i class="fas fa-times"></i></a>
+                </div>
+            `).join("");
+        };
 
         new Dialog({
             title: `Edit: ${promo.name}`,
             content: `<form style="padding:8px;">
                 <div class="form-group"><label>Name</label><input type="text" id="pn" value="${promo.name}"/></div>
-                <div class="form-group"><label>Class Type</label><select id="pct">${FEUE.CLASS_TYPES.map(t => `<option value="${t}" ${promo.classType === t ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+                <div class="form-group"><label>Class Type</label><select id="pct">${FEUE.CLASS_TYPES.filter(t => ["Standard", "Promoted"].includes(t)).map(t => `<option value="${t}" ${promo.classType === t ? "selected" : ""}>${t}</option>`).join("")}</select></div>
                 <div style="display:flex;gap:8px;"><div class="form-group" style="flex:1;"><label>Max Level</label><input type="number" id="pml" value="${promo.maxLevel || 20}"/></div><div class="form-group" style="flex:1;"><label>Movement</label><input type="number" id="pmv" value="${promo.movement || 5}"/></div></div>
                 <hr/><h4>Unit Types</h4><div>${unitTypeChecks}</div>
                 <hr/><h4>Weapon Proficiencies</h4><div>${weaponChecks}</div>
-                <hr/><div id="pbs" ${isProm ? 'style="display:none;"' : ''}><h4>Base Stats</h4><div>${sr("bs", bs)}</div><hr/></div>
+                <hr/><div id="pbs"><h4>${isProm ? "Base Stats (Promotion Targets)" : "Base Stats"}</h4><div>${sr("bs", bs)}</div><hr/></div>
                 <h4>Growth Rates</h4><div>${sr("gr", gr)}</div><hr/>
-                <h4>Stat Caps</h4><div>${sr("sc", sc)}</div></form>`,
+                <h4>Stat Caps</h4><div>${sr("sc", sc)}</div>
+                <hr/><h4>Class Skills</h4>
+                <div class="promo-skills-drop" style="min-height:40px; border:1px dashed #b8a080; padding:6px; border-radius:4px; background:rgba(139,115,85,0.05);">
+                    <div class="promo-skills-list">${buildSkillListHTML(promoSkills)}</div>
+                </div>
+                </form>`,
             buttons: {
                 save: {
                     icon: '<i class="fas fa-save"></i>', label: "Save", callback: (h) => {
                         const d = {
                             id: promo.id, name: h.find("#pn").val() || "Unnamed", classType: h.find("#pct").val(), maxLevel: Number(h.find("#pml").val()) || 20, movement: Number(h.find("#pmv").val()) || 5,
-                            unitTypes: {}, weaponProficiencies: {}, baseStats: {}, growthRates: {}, statCaps: {}, promotions: promo.promotions || []
+                            unitTypes: {}, weaponProficiencies: {}, baseStats: {}, growthRates: {}, statCaps: {}, classSkills: promoSkills, promotions: promo.promotions || []
                         };
                         h.find("input[type='number'][data-key]").each((_, el) => { const [g, s] = el.dataset.key.split("."); const map = { bs: "baseStats", gr: "growthRates", sc: "statCaps" }; d[map[g]][s] = Number(el.value) || 0; });
                         h.find("input[type='checkbox'][data-key^='ut.']").each((_, el) => { const key = el.dataset.key.slice(3); d.unitTypes[key] = el.checked; });
@@ -612,8 +956,98 @@ class FireEmblemItemSheet extends ItemSheet {
                     }
                 }, cancel: { label: "Cancel" }
             }, default: "save",
-            render: (h) => { h.find("#pct").change(e => { h.find("#pbs").toggle(!["Promoted", "Advanced"].includes(e.currentTarget.value)); }); }
+            render: (h) => {
+                // ── Existing: Class type change toggles base stats visibility ──
+                h.find("#pct").change(ev => {
+                    const v = ev.currentTarget.value;
+                    const isProm = ["Promoted", "Advanced"].includes(v);
+                    h.find("#pbs h4").text(isProm ? "Base Stats (Promotion Targets)" : "Base Stats");
+                });
+
+                // ── Skills: drop zone ──
+                const dropZone = h.find(".promo-skills-drop")[0];
+                if (dropZone) {
+                    dropZone.addEventListener("dragover", (e) => e.preventDefault());
+                    dropZone.addEventListener("drop", async (e) => {
+                        e.preventDefault();
+                        let data;
+                        try { data = JSON.parse(e.dataTransfer.getData("text/plain")); } catch { return; }
+                        if (data.type !== "Item") return;
+                        const item = await Item.implementation.fromDropData(data);
+                        if (!item || item.type !== "skill") {
+                            ui.notifications.warn("Only skill items can be dropped here.");
+                            return;
+                        }
+                        if (promoSkills.some(cs => cs.skillData.name === item.name)) {
+                            ui.notifications.warn(`${item.name} is already listed.`);
+                            return;
+                        }
+                        promoSkills.push({
+                            id: foundry.utils.randomID(),
+                            level: item.system.level || "1",
+                            skillData: {
+                                name: item.name,
+                                img: item.img,
+                                system: foundry.utils.deepClone(item.system)
+                            }
+                        });
+                        h.find(".promo-skills-list").html(buildSkillListHTML(promoSkills));
+                        bindSkillListEvents(h);
+                    });
+                }
+
+                // ── Skills: level change & remove ──
+                const bindSkillListEvents = (html) => {
+                    html.find(".promo-skill-level").off("change").on("change", (ev) => {
+                        const idx = Number($(ev.currentTarget).data("skill-idx"));
+                        if (promoSkills[idx]) promoSkills[idx].level = ev.currentTarget.value;
+                    });
+                    html.find(".promo-skill-remove").off("click").on("click", (ev) => {
+                        const idx = Number($(ev.currentTarget).data("skill-idx"));
+                        promoSkills.splice(idx, 1);
+                        html.find(".promo-skills-list").html(buildSkillListHTML(promoSkills));
+                        bindSkillListEvents(html);
+                    });
+                };
+                bindSkillListEvents(html);
+            },
         }, { width: 500 }).render(true);
+    }
+
+    async _onDropClassSkill(event) {
+        event.preventDefault();
+        let data;
+        try {
+            data = JSON.parse(event.dataTransfer.getData("text/plain"));
+        } catch { return; }
+
+        if (data.type !== "Item") return;
+
+        const item = await Item.implementation.fromDropData(data);
+        if (!item || item.type !== "skill") {
+            ui.notifications.warn("Only skill items can be dropped here.");
+            return;
+        }
+
+        const classSkills = foundry.utils.deepClone(this.item.system.classSkills || []);
+
+        // Check for duplicate by name
+        if (classSkills.some(cs => cs.skillData.name === item.name)) {
+            ui.notifications.warn(`${item.name} is already on this class.`);
+            return;
+        }
+
+        classSkills.push({
+            id: foundry.utils.randomID(),
+            level: item.system.level || "1",   // Pre-fill from skill's own level field
+            skillData: {
+                name: item.name,
+                img: item.img,
+                system: foundry.utils.deepClone(item.system)
+            }
+        });
+
+        await this.item.update({ "system.classSkills": classSkills });
     }
 }
 

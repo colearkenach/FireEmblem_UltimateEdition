@@ -233,6 +233,7 @@
       "baseStats": {},
       "growthRates": {},
       "statCaps": {},
+      "classSkills": [],
       "promotions": [],
       "currentPath": []
     },

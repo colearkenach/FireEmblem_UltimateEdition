@@ -958,3 +958,119 @@
     letter-spacing: 1px;
     text-transform: uppercase;
 }
+
+/* ===== PROFICIENT WEAPON RANKS ===== */
+.feue .weapon-rank.proficient {
+    background: rgba(46, 125, 50, 0.08);
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+.feue .no-proficiency-note {
+    color: #8b4513;
+    font-style: italic;
+    font-size: 12px;
+    margin: 4px 0 8px;
+}
+
+/* ===== OTHER WEAPONS COLLAPSIBLE ===== */
+.feue .other-weapons-section {
+    margin-top: 10px;
+    border-top: 1px solid rgba(139, 115, 85, 0.3);
+    padding-top: 8px;
+}
+
+.feue .other-weapons-toggle {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--feue-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    user-select: none;
+}
+
+.feue .other-weapons-toggle:hover {
+    color: var(--feue-primary);
+}
+
+.feue .other-weapons-content {
+    margin-top: 8px;
+}
+
+.feue .other-weapons-content .weapon-rank {
+    opacity: 0.7;
+}
+
+.feue .other-weapons-content .weapon-rank:hover {
+    opacity: 1;
+}
+
+/* ===== CLASS SKILLS (Item Sheet) ===== */
+.feue .class-skills-list {
+    min-height: 40px;
+}
+
+.feue .class-skill-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 2px;
+    border-bottom: 1px solid rgba(139, 115, 85, 0.2);
+}
+
+    .feue .class-skill-entry:last-child {
+        border-bottom: none;
+    }
+
+    .feue .class-skill-entry img {
+        border: 1px solid var(--feue-border);
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+
+.feue .class-skill-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--feue-secondary);
+}
+
+.feue .class-skill-level {
+    width: 75px;
+    font-size: 12px;
+    border: 1px solid var(--feue-border);
+    border-radius: 3px;
+    padding: 2px 4px;
+}
+
+.feue .class-skill-remove {
+    cursor: pointer;
+    color: #a0522d;
+    flex-shrink: 0;
+}
+
+    .feue .class-skill-remove:hover {
+        color: #c0392b;
+    }
+
+.feue .class-skills-empty {
+    color: #8b4513;
+    font-style: italic;
+    font-size: 12px;
+    margin: 4px 0;
+}
+
+/* ===== LEVEL UP BONUS (permanent misc bonus) ===== */
+.feue .level-up-bonus-item {
+    background: rgba(218, 165, 32, 0.08);
+    border-left: 3px solid var(--feue-accent);
+    border-radius: 4px;
+    padding-left: 6px;
+}
+
+    .feue .level-up-bonus-item .item-name {
+        font-weight: bold;
+        color: var(--feue-accent);
+    }
