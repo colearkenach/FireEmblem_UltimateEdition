@@ -11,7 +11,7 @@
                 <div class="resource flexrow">
                     <div class="resource-label">HP</div>
                     <div class="resource-value hp-fields">
-                        <input type="number" name="system.attributes.hp.value" value="{{actor.system.attributes.hp.value}}" data-dtype="Number" class="hp-current" />
+                        <input type="number" name="system.attributes.hp.value" value="{{actor.system.attributes.hp.value}}" data-dtype="Number" class="hp-current" min="0" max="{{actor.system.attributes.hp.max}}" placeholder="0" />
                         <span>/</span>
                         <span class="hp-max">{{actor.system.attributes.hp.max}}</span>
                     </div>
@@ -19,7 +19,7 @@
                 <div class="resource flexrow">
                     <div class="resource-label">Level</div>
                     <div class="resource-value">
-                        <input type="number" name="system.level" value="{{actor.system.level}}" data-dtype="Number" />
+                        <input type="number" name="system.level" value="{{actor.system.level}}" data-dtype="Number" min="1" placeholder="1"/>
                     </div>
                     <button type="button" class="level-up">Level Up</button>
                 </div>

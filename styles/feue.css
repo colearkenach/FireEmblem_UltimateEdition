@@ -71,7 +71,7 @@
 
     .feue .sheet-header.flexrow {
         align-items: center;
-        gap: 16px; /* Increased gap */
+        gap: 16px;
     }
 
 .feue .profile-img {
@@ -113,9 +113,10 @@
 
 .feue .resource-label {
     font-weight: bold;
-    min-width: 60px; /* Back to original width */
-    color: var(--feue-accent);
-    font-size: 13px; /* Slightly larger font */
+    min-width: 60px;
+    color: antiquewhite;
+    font-size: 18px;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
 }
 
 .feue .resource-value input,
@@ -125,8 +126,8 @@
     color: white;
     padding: 2px 4px;
     border-radius: 3px;
-    width: 120px; /* Back to original width */
-    font-size: 13px; /* Slightly larger font */
+    width: 120px;
+    font-size: 13px;
 }
 
 /* ===== TABS ===== */
@@ -135,8 +136,8 @@
     border: none;
     border-bottom: 2px solid var(--feue-accent);
     padding: 0 16px;
-    min-height: 40px; /* Slightly increased height */
-    max-height: 40px; /* Prevent expansion */
+    min-height: 40px;
+    max-height: 40px;
     display: flex;
     align-items: center;
 }
@@ -145,11 +146,12 @@
         background: transparent;
         color: white;
         border: none;
-        padding: 8px 12px; /* More padding for better balance */
+        padding: 8px 12px;
         font-weight: normal;
-        font-size: 22px; /* Slightly larger font */
+        font-size: 28px;
         transition: all 0.2s ease;
         line-height: 0.5;
+        text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
     }
 
         .feue .tabs .item:hover {
@@ -811,6 +813,13 @@
             width: 100%;
             padding: 0;
             margin: 0;
+        }
+
+        .feue .class-type
+        {
+            flex: 1;
+            margin: 0 10px;
+            color: var(--feue-text);
         }
 
 /* ===== COMPACT FORM STYLING ===== */
