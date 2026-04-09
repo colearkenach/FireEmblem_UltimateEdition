@@ -105,7 +105,8 @@
       "skill": "Skill",
       "spell": "Spell",
       "battalion": "Battalion",
-      "combatArt": "Combat Art"
+      "combatArt": "Combat Art",
+      "miscBonus": "Misc Bonus"
     },
     "Tabs": {
       "main": "Main",
@@ -175,7 +176,8 @@
       "spell": "Spell",
       "class": "Class",
       "battalion": "Battalion",
-      "combatArt": "Combat Art"
+      "combatArt": "Combat Art",
+      "miscBonus": "Misc Bonus"
     }
   }
 }

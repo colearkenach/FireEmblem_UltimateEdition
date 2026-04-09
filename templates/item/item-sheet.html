@@ -1,80 +1,38 @@
 ﻿<form class="feue {{cssClass}} flexcol" autocomplete="off">
-
-    {{!-- Sheet Header --}}
     <header class="sheet-header flexrow">
         <img class="item-img" src="{{item.img}}" data-edit="img" title="{{item.name}}" />
         <div class="header-fields flexcol">
-            <h1 class="item-name">
-                <input name="name" type="text" value="{{item.name}}" placeholder="Item Name" />
-            </h1>
+            <h1 class="item-name"><input name="name" type="text" value="{{item.name}}" placeholder="Item Name" /></h1>
         </div>
     </header>
 
-    {{!-- Sheet Tab Navigation --}}
     <nav class="sheet-tabs tabs" data-group="primary">
         <a class="item" data-tab="description">Description</a>
-        {{#if (eq item.type "weapon")}}
-        <a class="item" data-tab="weapon">Weapon</a>
-        {{/if}}
-        {{#if (eq item.type "spell")}}
-        <a class="item" data-tab="spell">Spell</a>
-        {{/if}}
-        {{#if (eq item.type "item")}}
-        <a class="item" data-tab="item">Item</a>
-        {{/if}}
-        {{#if (eq item.type "skill")}}
-        <a class="item" data-tab="skill">Skill</a>
-        {{/if}}
-        {{#if (eq item.type "combatArt")}}
-        <a class="item" data-tab="combatArt">Combat Art</a>
-        {{/if}}
-        {{#if (eq item.type "battalion")}}
-        <a class="item" data-tab="battalion">Battalion</a>
-        {{/if}}
-        {{#if (eq item.type "class")}}
-        <a class="item" data-tab="class">Class</a>
-        {{/if}}
-        {{#if (eq item.type "miscBonus")}}
-        <a class="item" data-tab="miscBonus">Misc Bonus</a>
-        {{/if}}
+        {{#if (eq item.type "weapon")}}<a class="item" data-tab="weapon">Weapon</a>{{/if}}
+        {{#if (eq item.type "spell")}}<a class="item" data-tab="spell">Spell</a>{{/if}}
+        {{#if (eq item.type "item")}}<a class="item" data-tab="item">Item</a>{{/if}}
+        {{#if (eq item.type "skill")}}<a class="item" data-tab="skill">Skill</a>{{/if}}
+        {{#if (eq item.type "combatArt")}}<a class="item" data-tab="combatArt">Combat Art</a>{{/if}}
+        {{#if (eq item.type "battalion")}}<a class="item" data-tab="battalion">Battalion</a>{{/if}}
+        {{#if (eq item.type "class")}}<a class="item" data-tab="class">Class</a>{{/if}}
+        {{#if (eq item.type "miscBonus")}}<a class="item" data-tab="miscBonus">Misc Bonus</a>{{/if}}
     </nav>
 
-    {{!-- Sheet Body --}}
     <section class="sheet-body">
 
-        {{!-- Description Tab (shared by all types) --}}
+        {{!-- Description Tab --}}
         <div class="tab description" data-group="primary" data-tab="description">
             <div class="form-group">
                 <label>Description</label>
                 <textarea name="system.description" rows="6" placeholder="Item description...">{{item.system.description}}</textarea>
             </div>
-
-            {{!-- Price/Weight/Quantity only for physical item types --}}
-            {{#unless (eq item.type "skill")}}
-            {{#unless (eq item.type "spell")}}
-            {{#unless (eq item.type "class")}}
-            {{#unless (eq item.type "combatArt")}}
+            {{#unless (eq item.type "skill")}}{{#unless (eq item.type "spell")}}{{#unless (eq item.type "class")}}{{#unless (eq item.type "combatArt")}}{{#unless (eq item.type "miscBonus")}}
             <div class="form-row">
-                <div class="form-group">
-                    <label>Price</label>
-                    <input type="number" data-dtype="Number" name="system.price" value="{{item.system.price}}" placeholder="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Weight</label>
-                    <input type="number" data-dtype="Number" name="system.weight" value="{{item.system.weight}}" placeholder="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Quantity</label>
-                    <input type="number" data-dtype="Number" name="system.quantity" value="{{item.system.quantity}}" placeholder="1" />
-                </div>
-
+                <div class="form-group"><label>Price</label><input type="number" data-dtype="Number" name="system.price" value="{{item.system.price}}" placeholder="0" /></div>
+                <div class="form-group"><label>Weight</label><input type="number" data-dtype="Number" name="system.weight" value="{{item.system.weight}}" placeholder="0" /></div>
+                <div class="form-group"><label>Quantity</label><input type="number" data-dtype="Number" name="system.quantity" value="{{item.system.quantity}}" placeholder="1" /></div>
             </div>
-            {{/unless}}
-            {{/unless}}
-            {{/unless}}
-            {{/unless}}
+            {{/unless}}{{/unless}}{{/unless}}{{/unless}}{{/unless}}
 
             <div class="form-group">
                 <h3>Bonuses</h3>
@@ -110,92 +68,28 @@
         {{#if (eq item.type "weapon")}}
         <div class="tab weapon" data-group="primary" data-tab="weapon">
             <div class="form-row">
-                <div class="form-group">
-                    <label>Weapon Type</label>
-                    <select name="system.weaponType">
-                        {{#each FEUE.WeaponTypes as |label key|}}
-                        <option value="{{key}}" {{#ifEquals ../item.system.weaponType key}} selected{{/ifEquals}}>{{label}}</option>
-                        {{/each}}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Weapon Rank</label>
-                    <select name="system.rank">
-                        {{#each FEUE.WEAPON_RANKS as |rankData rankKey|}}
-                        {{#unless (eq rankKey "")}}
-                        <option value="{{rankKey}}" {{#ifEquals ../item.system.rank rankKey}} selected{{/ifEquals}}>{{rankData.label}}</option>
-                        {{/unless}}
-                        {{/each}}
-                    </select>
-                </div>
+                <div class="form-group"><label>Weapon Type</label><select name="system.weaponType">{{#each FEUE.WeaponTypes as |label key|}}<option value="{{key}}" {{#ifEquals ../item.system.weaponType key}} selected{{/ifEquals}}>{{label}}</option>{{/each}}</select></div>
+                <div class="form-group"><label>Weapon Rank</label><select name="system.rank">{{#each FEUE.WEAPON_RANKS as |rd rk|}}{{#unless (eq rk "")}}<option value="{{rk}}" {{#ifEquals ../item.system.rank rk}} selected{{/ifEquals}}>{{rd.label}}</option>{{/unless}}{{/each}}</select></div>
             </div>
-
             <div class="form-row">
-                <div class="form-group">
-                    <label>Might</label>
-                    <input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Hit Rate</label>
-                    <input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Crit Rate</label>
-                    <input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" placeholder="0" />
-                </div>
+                <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" /></div>
+                <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" /></div>
+                <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" placeholder="0" /></div>
             </div>
-
             <div class="form-row">
-                <div class="form-group">
-                    <label>Range</label>
-                    <input type="text" name="system.range" value="{{item.system.range}}" placeholder="1" />
-                </div>
-
-                <div class="form-group">
-                    <label>Uses</label>
-                    <div class="uses-group">
-                        <input type="number" data-dtype="Number" name="system.uses.value" value="{{item.system.uses.value}}" placeholder="0" />
-                        <span>/</span>
-                        <input type="number" data-dtype="Number" name="system.uses.max" value="{{item.system.uses.max}}" placeholder="0" />
-                    </div>
-                </div>
+                <div class="form-group"><label>Range</label><input type="text" name="system.range" value="{{item.system.range}}" placeholder="1" /></div>
+                <div class="form-group"><label>Uses</label><div class="uses-group"><input type="number" data-dtype="Number" name="system.uses.value" value="{{item.system.uses.value}}" placeholder="0" /><span>/</span><input type="number" data-dtype="Number" name="system.uses.max" value="{{item.system.uses.max}}" placeholder="0" /></div></div>
             </div>
-
-            <div class="form-group">
-                <label>Weapon Properties</label>
-                <textarea name="system.properties" rows="2" placeholder="List weapon properties...">{{item.system.properties}}</textarea>
-            </div>
+            <div class="form-group"><label>Weapon Properties</label><textarea name="system.properties" rows="2" placeholder="List weapon properties...">{{item.system.properties}}</textarea></div>
         </div>
         {{/if}}
 
         {{!-- Item Tab --}}
         {{#if (eq item.type "item")}}
         <div class="tab item" data-group="primary" data-tab="item">
-
-            <label>Type</label>
-            <select name="system.itemType">
-                <option value="consumable" {{#ifEquals item.system.itemType "consumable"}} selected{{/ifEquals}}>Consumable</option>
-                <option value="equippable" {{#ifEquals item.system.itemType "equippable"}} selected{{/ifEquals}}>Equippable</option>
-            </select>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Uses</label>
-                    <div class="uses-group">
-                        <input type="number" data-dtype="Number" name="system.uses.value" value="{{item.system.uses.value}}" placeholder="0" />
-                        <span>/</span>
-                        <input type="number" data-dtype="Number" name="system.uses.max" value="{{item.system.uses.max}}" placeholder="0" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Effect</label>
-                <textarea name="system.effect" rows="2" placeholder="List item properties...">{{item.system.effect}}</textarea>
-            </div>
+            <label>Type</label><select name="system.itemType"><option value="consumable" {{#ifEquals item.system.itemType "consumable"}} selected{{/ifEquals}}>Consumable</option><option value="equippable" {{#ifEquals item.system.itemType "equippable"}} selected{{/ifEquals}}>Equippable</option></select>
+            <div class="form-row"><div class="form-group"><label>Uses</label><div class="uses-group"><input type="number" data-dtype="Number" name="system.uses.value" value="{{item.system.uses.value}}" /><span>/</span><input type="number" data-dtype="Number" name="system.uses.max" value="{{item.system.uses.max}}" /></div></div></div>
+            <div class="form-group"><label>Effect</label><textarea name="system.effect" rows="2">{{item.system.effect}}</textarea></div>
         </div>
         {{/if}}
 
@@ -203,38 +97,11 @@
         {{#if (eq item.type "skill")}}
         <div class="tab skill" data-group="primary" data-tab="skill">
             <div class="form-row">
-                <div class="form-group">
-                    <label>Type</label>
-                    <select name="system.skillType">
-                        <option value="Passive" {{#ifEquals item.system.skillType "Passive"}} selected{{/ifEquals}}>Passive</option>
-                        <option value="Passive (Activated)" {{#ifEquals item.system.skillType "Passive (Activated)"}} selected{{/ifEquals}}>Passive (Activated)</option>
-                        <option value="Active" {{#ifEquals item.system.skillType "Active"}} selected{{/ifEquals}}>Active</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Prerequisites</label>
-                    <input type="text" name="system.prerequisites" value="{{item.system.prerequisites}}" placeholder="If any..." />
-                </div>
-
-                <div class="form-group">
-                    <label>Level</label>
-                    <select name="system.level">
-                        <option value="Innate" {{#ifEquals item.system.level "Innate"}} selected{{/ifEquals}}>Innate</option>
-                        <option value="1" {{#ifEquals item.system.level "1"}} selected{{/ifEquals}}>1</option>
-                        <option value="5" {{#ifEquals item.system.level "5"}} selected{{/ifEquals}}>5</option>
-                        <option value="10" {{#ifEquals item.system.level "10"}} selected{{/ifEquals}}>10</option>
-                        <option value="15" {{#ifEquals item.system.level "15"}} selected{{/ifEquals}}>15</option>
-                        <option value="20" {{#ifEquals item.system.level "20"}} selected{{/ifEquals}}>20</option>
-                        <option value="30" {{#ifEquals item.system.level "30"}} selected{{/ifEquals}}>30</option>
-                    </select>
-                </div>
+                <div class="form-group"><label>Type</label><select name="system.skillType"><option value="Passive" {{#ifEquals item.system.skillType "Passive"}} selected{{/ifEquals}}>Passive</option><option value="Passive (Activated)" {{#ifEquals item.system.skillType "Passive (Activated)"}} selected{{/ifEquals}}>Passive (Activated)</option><option value="Active" {{#ifEquals item.system.skillType "Active"}} selected{{/ifEquals}}>Active</option></select></div>
+                <div class="form-group"><label>Prerequisites</label><input type="text" name="system.prerequisites" value="{{item.system.prerequisites}}" placeholder="If any..." /></div>
+                <div class="form-group"><label>Level</label><select name="system.level"><option value="Innate" {{#ifEquals item.system.level "Innate"}} selected{{/ifEquals}}>Innate</option><option value="1" {{#ifEquals item.system.level "1"}} selected{{/ifEquals}}>1</option><option value="5" {{#ifEquals item.system.level "5"}} selected{{/ifEquals}}>5</option><option value="10" {{#ifEquals item.system.level "10"}} selected{{/ifEquals}}>10</option><option value="15" {{#ifEquals item.system.level "15"}} selected{{/ifEquals}}>15</option><option value="20" {{#ifEquals item.system.level "20"}} selected{{/ifEquals}}>20</option><option value="30" {{#ifEquals item.system.level "30"}} selected{{/ifEquals}}>30</option></select></div>
             </div>
-
-            <div class="form-group">
-                <label>Effects</label>
-                <textarea name="system.activation" rows="2" placeholder="What does this skill do...">{{item.system.activation}}</textarea>
-            </div>
+            <div class="form-group"><label>Effects</label><textarea name="system.activation" rows="2">{{item.system.activation}}</textarea></div>
         </div>
         {{/if}}
 
@@ -242,136 +109,45 @@
         {{#if (eq item.type "spell")}}
         <div class="tab spell" data-group="primary" data-tab="spell">
             <div class="form-row">
-                <div class="form-group">
-                    <label>School</label>
-                    <select name="system.school">
-                        <option value="Black Magic" {{#ifEquals item.system.school "Black Magic"}} selected{{/ifEquals}}>Black Magic</option>
-                        <option value="White Magic" {{#ifEquals item.system.school "White Magic"}} selected{{/ifEquals}}>White Magic</option>
-                        <option value="Dark Magic" {{#ifEquals item.system.school "Dark Magic"}} selected{{/ifEquals}}>Dark Magic</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Weapon Rank</label>
-                    <select name="system.rank">
-                        {{#each FEUE.WEAPON_RANKS as |rankData rankKey|}}
-                        {{#unless (eq rankKey "")}}
-                        <option value="{{rankKey}}" {{#ifEquals ../item.system.rank rankKey}} selected{{/ifEquals}}>{{rankData.label}}</option>
-                        {{/unless}}
-                        {{/each}}
-                    </select>
-                </div>
+                <div class="form-group"><label>School</label><select name="system.school"><option value="Black Magic" {{#ifEquals item.system.school "Black Magic"}} selected{{/ifEquals}}>Black Magic</option><option value="White Magic" {{#ifEquals item.system.school "White Magic"}} selected{{/ifEquals}}>White Magic</option><option value="Dark Magic" {{#ifEquals item.system.school "Dark Magic"}} selected{{/ifEquals}}>Dark Magic</option></select></div>
+                <div class="form-group"><label>Weapon Rank</label><select name="system.rank">{{#each FEUE.WEAPON_RANKS as |rd rk|}}{{#unless (eq rk "")}}<option value="{{rk}}" {{#ifEquals ../item.system.rank rk}} selected{{/ifEquals}}>{{rd.label}}</option>{{/unless}}{{/each}}</select></div>
             </div>
-
             <div class="form-row">
-                <div class="form-group">
-                    <label>HP Cost</label>
-                    <input type="number" data-dtype="Number" name="system.hpCost" value="{{item.system.hpCost}}" placeholder="1" />
-                </div>
-
-                <div class="form-group">
-                    <label>Might</label>
-                    <input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Hit Rate</label>
-                    <input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" />
-                </div>
+                <div class="form-group"><label>HP Cost</label><input type="number" data-dtype="Number" name="system.hpCost" value="{{item.system.hpCost}}" /></div>
+                <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" /></div>
+                <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" /></div>
             </div>
-
             <div class="form-row">
-                <div class="form-group">
-                    <label>Crit Rate</label>
-                    <input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" placeholder="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Range</label>
-                    <input type="text" name="system.range" value="{{item.system.range}}" placeholder="1-2" />
-                </div>
+                <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" /></div>
+                <div class="form-group"><label>Range</label><input type="text" name="system.range" value="{{item.system.range}}" placeholder="1-2" /></div>
             </div>
-
-            <div class="form-group">
-                <label>Special Effects</label>
-                <textarea name="system.special" rows="2" placeholder="Special spell effects...">{{item.system.special}}</textarea>
-            </div>
+            <div class="form-group"><label>Special Effects</label><textarea name="system.special" rows="2">{{item.system.special}}</textarea></div>
         </div>
         {{/if}}
 
         {{!-- Combat Art Tab --}}
         {{#if (eq item.type "combatArt")}}
         <div class="tab combatArt" data-group="primary" data-tab="combatArt">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Weapon Restriction</label>
-                    <select name="system.weaponType">
-                        <option value="—" {{#ifEquals item.system.weaponType "—"}} selected{{/ifEquals}}>Any</option>
-                        {{#each FEUE.WeaponTypes as |label key|}}
-                        <option value="{{key}}" {{#ifEquals ../item.system.weaponType key}} selected{{/ifEquals}}>{{label}}</option>
-                        {{/each}}
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Durability Cost</label>
-                <input type="number" data-dtype="Number" name="system.durabilityCost" value="{{item.system.durabilityCost}}" placeholder="1" />
-            </div>
-
-            <div class="form-group">
-                <label>Effects</label>
-                <textarea name="system.effect" rows="2" placeholder="Combat Art effect...">{{item.system.effect}}</textarea>
-            </div>
+            <div class="form-row"><div class="form-group"><label>Weapon Restriction</label><select name="system.weaponRestriction"><option value="—" {{#ifEquals item.system.weaponRestriction "—"}} selected{{/ifEquals}}>Any</option>{{#each FEUE.WeaponTypes as |label key|}}<option value="{{key}}" {{#ifEquals ../item.system.weaponRestriction key}} selected{{/ifEquals}}>{{label}}</option>{{/each}}</select></div></div>
+            <div class="form-group"><label>Durability Cost</label><input type="number" data-dtype="Number" name="system.durabilityCost" value="{{item.system.durabilityCost}}" /></div>
+            <div class="form-group"><label>Effects</label><textarea name="system.effect" rows="2">{{item.system.effect}}</textarea></div>
         </div>
         {{/if}}
 
         {{!-- Battalion Tab --}}
         {{#if (eq item.type "battalion")}}
         <div class="tab battalion" data-group="primary" data-tab="battalion">
-
             <div class="form-row">
-                <div class="form-group">
-                    <label>Might</label>
-                    <input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Hit Rate</label>
-                    <input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Crit Rate</label>
-                    <input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" placeholder="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Move Penalty</label>
-                    <input type="number" data-dtype="Number" name="system.movePenalty" value="{{item.system.movePenalty}}" placeholder="—" />
-                </div>
+                <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" /></div>
+                <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" /></div>
+                <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" /></div>
+                <div class="form-group"><label>Move Penalty</label><input type="number" data-dtype="Number" name="system.movePenalty" value="{{item.system.movePenalty}}" /></div>
             </div>
-
             <div class="form-row">
-                <div class="form-group">
-                    <label>Range</label>
-                    <input type="text" name="system.range" value="{{item.system.range}}" placeholder="1" />
-                </div>
-
-                <div class="form-group">
-                    <label>Endurance</label>
-                    <div class="uses-group">
-                        <input type="number" data-dtype="Number" name="system.endurance.value" value="{{item.system.endurance.value}}" placeholder="0" />
-                        <span>/</span>
-                        <input type="number" data-dtype="Number" name="system.endurance.max" value="{{item.system.endurance.max}}" placeholder="0" />
-                    </div>
-                </div>
+                <div class="form-group"><label>Range</label><input type="text" name="system.range" value="{{item.system.range}}" /></div>
+                <div class="form-group"><label>Endurance</label><div class="uses-group"><input type="number" data-dtype="Number" name="system.endurance.value" value="{{item.system.endurance.value}}" /><span>/</span><input type="number" data-dtype="Number" name="system.endurance.max" value="{{item.system.endurance.max}}" /></div></div>
             </div>
-
-            <div class="form-group">
-                <label>Battalion Properties</label>
-                <textarea name="system.properties" rows="2" placeholder="List battalion properties...">{{item.system.properties}}</textarea>
-            </div>
+            <div class="form-group"><label>Properties</label><textarea name="system.properties" rows="2">{{item.system.properties}}</textarea></div>
         </div>
         {{/if}}
 
@@ -379,54 +155,17 @@
         {{#if (eq item.type "class")}}
         <div class="tab class" data-group="primary" data-tab="class">
             <div class="form-row">
-                <div class="form-group">
-                    <label>Class Type</label>
-                    <select name="system.classType">
-                        <option value="Recruit" {{#ifEquals item.system.classType "Recruit"}} selected{{/ifEquals}}>Recruit</option>
-                        <option value="Standard" {{#ifEquals item.system.classType "Standard"}} selected{{/ifEquals}}>Standard</option>
-                        <option value="Promoted" {{#ifEquals item.system.classType "Promoted"}} selected{{/ifEquals}}>Promoted</option>
-                        <option value="Advanced" {{#ifEquals item.system.classType "Advanced"}} selected{{/ifEquals}}>Advanced</option>
-                        <option value="Enemy Only" {{#ifEquals item.system.classType "Enemy Only"}} selected{{/ifEquals}}>Enemy Only</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Max Level</label>
-                    <input type="number" data-dtype="Number" name="system.maxLevel" value="{{item.system.maxLevel}}" />
-                </div>
-
-                <div class="form-group">
-                    <label>Movement</label>
-                    <input type="number" data-dtype="Number" name="system.movement" value="{{item.system.movement}}" />
-                </div>
+                <div class="form-group"><label>Class Type</label><select name="system.classType"><option value="Recruit" {{#ifEquals item.system.classType "Recruit"}} selected{{/ifEquals}}>Recruit</option><option value="Standard" {{#ifEquals item.system.classType "Standard"}} selected{{/ifEquals}}>Standard</option><option value="Promoted" {{#ifEquals item.system.classType "Promoted"}} selected{{/ifEquals}}>Promoted</option><option value="Advanced" {{#ifEquals item.system.classType "Advanced"}} selected{{/ifEquals}}>Advanced</option><option value="Enemy Only" {{#ifEquals item.system.classType "Enemy Only"}} selected{{/ifEquals}}>Enemy Only</option></select></div>
+                <div class="form-group"><label>Max Level</label><input type="number" data-dtype="Number" name="system.maxLevel" value="{{item.system.maxLevel}}" /></div>
+                <div class="form-group"><label>Movement</label><input type="number" data-dtype="Number" name="system.movement" value="{{item.system.movement}}" /></div>
             </div>
 
-            <div class="form-group">
-                <div class="unit-types">
-                    <h3>Unit Types</h3>
-                    {{#each FEUE.UNIT_TYPES as |type|}}
-                    <label>
-                        <input type="checkbox" name="system.unitTypes.{{type}}" {{checked (lookup ../item.system.unitTypes type)}} />
-                        {{type}}
-                    </label>
-                    {{/each}}
-                </div>
-            </div>
-
-            <div class="form-group">
-                <div class="weapon-proficiencies">
-                    <h3>Weapon Proficiencies</h3>
-                    {{#each FEUE.WeaponTypes as |label key|}}
-                    <label>
-                        <input type="checkbox" name="system.weaponProficiencies.{{key}}" {{checked (lookup ../item.system.weaponProficiencies key)}} />
-                        {{label}}
-                    </label>
-                    {{/each}}
-                </div>
-            </div>
+            <div class="form-group"><div class="unit-types"><h3>Unit Types</h3>{{#each FEUE.UNIT_TYPES as |type|}}<label><input type="checkbox" name="system.unitTypes.{{type}}" {{checked (lookup ../item.system.unitTypes type)}} /> {{type}}</label>{{/each}}</div></div>
+            <div class="form-group"><div class="weapon-proficiencies"><h3>Weapon Proficiencies</h3>{{#each FEUE.WeaponTypes as |label key|}}<label><input type="checkbox" name="system.weaponProficiencies.{{key}}" {{checked (lookup ../item.system.weaponProficiencies key)}} /> {{label}}</label>{{/each}}</div></div>
 
             <hr />
 
+            {{#unless hideBaseStats}}
             <div class="form-group">
                 <h3>Base Stats</h3>
                 <div class="form-row">
@@ -444,8 +183,8 @@
                     <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.baseStats.build" value="{{item.system.baseStats.build}}" /></div>
                 </div>
             </div>
-
             <hr />
+            {{/unless}}
 
             <div class="form-group">
                 <h3>Growth Rates</h3>
@@ -464,9 +203,7 @@
                     <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.growthRates.build" value="{{item.system.growthRates.build}}" /></div>
                 </div>
             </div>
-
             <hr />
-
             <div class="form-group">
                 <h3>Stat Caps</h3>
                 <div class="form-row">
@@ -483,6 +220,18 @@
                     <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.statCaps.charm" value="{{item.system.statCaps.charm}}" /></div>
                     <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.statCaps.build" value="{{item.system.statCaps.build}}" /></div>
                 </div>
+            </div>
+
+            {{!-- Promotion Tree --}}
+            <hr />
+            <div class="form-group">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                    <h3 style="margin:0;">Promotion Tree</h3>
+                    <a class="promo-add-root" style="cursor:pointer; background:linear-gradient(180deg,#4a6fa5,#2c4875); color:white; border:1px solid #2c4875; border-radius:4px; padding:2px 8px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                        <i class="fas fa-plus"></i> Add Promotion
+                    </a>
+                </div>
+                <div id="promotion-tree-container"></div>
             </div>
         </div>
         {{/if}}

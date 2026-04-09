@@ -117,10 +117,51 @@
         "description": "",
         "source": "",
         "bonuses": {
-          "attributes": { "hp": 0, "strength": 0, "magic": 0, "skill": 0, "speed": 0, "defense": 0, "resistance": 0, "luck": 0, "charm": 0, "build": 0, "move": 0 },
-          "maximums": { "hp": 0, "strength": 0, "magic": 0, "skill": 0, "speed": 0, "defense": 0, "resistance": 0, "luck": 0, "charm": 0, "build": 0, "move": 0 },
-          "growthRates": { "hp": 0, "strength": 0, "magic": 0, "skill": 0, "speed": 0, "defense": 0, "resistance": 0, "luck": 0, "charm": 0, "build": 0 },
-          "combat": { "hitRate": 0, "critRate": 0, "avoid": 0, "dodge": 0, "attackSpeed": 0 }
+          "attributes": {
+            "hp": 0,
+            "strength": 0,
+            "magic": 0,
+            "skill": 0,
+            "speed": 0,
+            "defense": 0,
+            "resistance": 0,
+            "luck": 0,
+            "charm": 0,
+            "build": 0,
+            "move": 0
+          },
+          "maximums": {
+            "hp": 0,
+            "strength": 0,
+            "magic": 0,
+            "skill": 0,
+            "speed": 0,
+            "defense": 0,
+            "resistance": 0,
+            "luck": 0,
+            "charm": 0,
+            "build": 0,
+            "move": 0
+          },
+          "growthRates": {
+            "hp": 0,
+            "strength": 0,
+            "magic": 0,
+            "skill": 0,
+            "speed": 0,
+            "defense": 0,
+            "resistance": 0,
+            "luck": 0,
+            "charm": 0,
+            "build": 0
+          },
+          "combat": {
+            "hitRate": 0,
+            "critRate": 0,
+            "avoid": 0,
+            "dodge": 0,
+            "attackSpeed": 0
+          }
         }
       },
       "physical": {
@@ -191,7 +232,9 @@
       "weaponProficiencies": {},
       "baseStats": {},
       "growthRates": {},
-      "statCaps": {}
+      "statCaps": {},
+      "promotions": [],
+      "currentPath": []
     },
     "battalion": {
       "templates": [ "base" ],
