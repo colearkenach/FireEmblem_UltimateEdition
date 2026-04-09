@@ -227,13 +227,14 @@ class FireEmblemActor extends Actor {
                 ? Number(this.system.attributes?.hp?.max || 0)
                 : Number(this.system.attributes?.[key]?.value || 0);
             const nextBase = Number(chosenNode?.baseStats?.[key] || 0);
+            const prevBase = Number(previousNode?.baseStats?.[key] || 0);
             let result = current;
 
             // Recruit/Standard promotions floor to the target class base.
             if (fromBaseClass && !promoteToAdvanced) result = Math.max(current, nextBase);
 
-            // Standard->Promoted/Advanced applies explicit promotion stat bonuses.
-            if (promoteToAdvanced) result = current + Math.max(nextBase, 0);
+            // Standard->Promoted/Advanced applies stat bonuses from class-base deltas.
+            if (promoteToAdvanced) result = current + Math.max(nextBase - prevBase, 0);
 
             if (key === "hp") {
                 const diff = result - current;
@@ -646,7 +647,7 @@ class FireEmblemItemSheet extends ItemSheet {
                 <div style="display:flex;gap:8px;"><div class="form-group" style="flex:1;"><label>Max Level</label><input type="number" id="pml" value="${promo.maxLevel || 20}"/></div><div class="form-group" style="flex:1;"><label>Movement</label><input type="number" id="pmv" value="${promo.movement || 5}"/></div></div>
                 <hr/><h4>Unit Types</h4><div>${unitTypeChecks}</div>
                 <hr/><h4>Weapon Proficiencies</h4><div>${weaponChecks}</div>
-                <hr/><div id="pbs"><h4>${isProm ? "Stat Bonuses" : "Base Stats"}</h4><div>${sr("bs", bs)}</div><hr/></div>
+                <hr/><div id="pbs" ${isProm ? 'style="display:none;"' : ''}><h4>Base Stats</h4><div>${sr("bs", bs)}</div><hr/></div>
                 <h4>Growth Rates</h4><div>${sr("gr", gr)}</div><hr/>
                 <h4>Stat Caps</h4><div>${sr("sc", sc)}</div></form>`,
             buttons: {
