@@ -248,6 +248,50 @@
     background: white;
 }
 
+/* ===== PROMOTION TREE ===== */
+.promo-tree-list {
+    list-style: none;
+    margin: 0 0 0 14px;
+    padding: 0 0 0 12px;
+    border-left: 1px solid rgba(44, 72, 117, 0.35);
+}
+
+.promo-tree-node {
+    margin: 6px 0;
+}
+
+.promo-tree-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border: 1px solid var(--feue-border);
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.promo-tree-label {
+    flex: 1;
+}
+
+.promo-tree-type {
+    font-size: 11px;
+}
+
+.promo-tree-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    font-size: 11px;
+    color: #1f6b2c;
+}
+
+.promo-tree-node.is-selected .promo-tree-row {
+    background: #edf8ef;
+    border-color: #2e7d32;
+}
+
 /* ===== COMBAT STATS ===== */
 .feue .combat-stats {
     background: white;
