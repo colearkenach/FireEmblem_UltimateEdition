@@ -31,6 +31,10 @@ const FEUE = {
 const DEFAULT_WEAPON_RANKS = Object.fromEntries(
     Object.keys(FEUE.WeaponTypes).map(type => [type, ""])
 );
+const CLASS_TYPE_ORDER = FEUE.CLASS_TYPES.reduce((out, type, index) => {
+    out[type] = index;
+    return out;
+}, {});
 
 // ====================================================================
 // 2. ACTOR CLASS
@@ -68,6 +72,7 @@ class FireEmblemActor extends Actor {
             name: classItem.name, classType: sys.classType, movement: sys.movement,
             maxLevel: sys.maxLevel, baseStats: sys.baseStats || {},
             growthRates: sys.growthRates || {}, statCaps: sys.statCaps || {},
+            unitTypes: sys.unitTypes || {}, weaponProficiencies: sys.weaponProficiencies || {},
             promotions: sys.promotions || []
         };
         for (const id of (sys.currentPath || [])) {
@@ -196,10 +201,11 @@ class FireEmblemActor extends Actor {
                         const id = html.find("#feue-promo-choice").val();
                         const chosen = promotions.find(p => p.id === id);
                         if (!chosen) return;
+                        const previousNode = this._getCurrentClassNode(classItem);
                         const newPath = [...(classItem.system.currentPath || []), id];
                         await classItem.update({ "system.currentPath": newPath });
+                        await this._applyPromotionBenefits(previousNode, chosen);
                         await this.update({ "system.level": 1 });
-                        if (chosen.baseStats?.hp) await this.update({ "system.attributes.hp.max": chosen.baseStats.hp, "system.attributes.hp.value": chosen.baseStats.hp });
                         ui.notifications.info(`${this.name} promoted to ${chosen.name}!`);
                         ChatMessage.create({ user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: this }), content: `<div class="feue-levelup"><h3>${this.name} promoted to ${chosen.name}!</h3></div>` });
                     }
@@ -207,6 +213,50 @@ class FireEmblemActor extends Actor {
                 wait: { icon: '<i class="fas fa-clock"></i>', label: "Not Yet" }
             }, default: "wait"
         }).render(true);
+    }
+
+    async _applyPromotionBenefits(previousNode, chosenNode) {
+        const prevType = previousNode?.classType || "";
+        const nextType = chosenNode?.classType || "";
+        const promoteToAdvanced = ["Promoted", "Advanced"].includes(nextType);
+        const fromBaseClass = ["Recruit", "Standard"].includes(prevType);
+        const updates = {};
+
+        for (const key of FEUE.STAT_KEYS) {
+            const current = key === "hp"
+                ? Number(this.system.attributes?.hp?.max || 0)
+                : Number(this.system.attributes?.[key]?.value || 0);
+            const nextBase = Number(chosenNode?.baseStats?.[key] || 0);
+            let result = current;
+
+            // Recruit/Standard promotions floor to the target class base.
+            if (fromBaseClass && !promoteToAdvanced) result = Math.max(current, nextBase);
+
+            // Standard->Promoted/Advanced applies explicit promotion stat bonuses.
+            if (promoteToAdvanced) result = current + Math.max(nextBase, 0);
+
+            if (key === "hp") {
+                const diff = result - current;
+                updates["system.attributes.hp.max"] = result;
+                updates["system.attributes.hp.value"] = Math.max(0, Number(this.system.attributes?.hp?.value || 0) + diff);
+            } else {
+                updates[`system.attributes.${key}.value`] = result;
+            }
+        }
+
+        const unitTypes = Object.entries(chosenNode?.unitTypes || {})
+            .filter(([, enabled]) => Boolean(enabled))
+            .map(([name]) => name);
+        updates["system.unitTypes"] = unitTypes;
+
+        const existingRanks = this.system.weaponRanks || {};
+        for (const wt of Object.keys(FEUE.WeaponTypes)) {
+            if (chosenNode?.weaponProficiencies?.[wt] && !existingRanks[wt]) {
+                updates[`system.weaponRanks.${wt}`] = "E";
+            }
+        }
+
+        await this.update(updates);
     }
 
     canUseWeapon(weapon) {
@@ -259,6 +309,28 @@ class FireEmblemCharacterSheet extends ActorSheet {
             data.currentClassType = node.classType;
         }
 
+        const classTypes = data.classes
+            .map(c => this.actor._getCurrentClassNode(c)?.classType)
+            .filter(Boolean);
+        const uniqueClassTypes = [...new Set(classTypes)]
+            .sort((a, b) => (CLASS_TYPE_ORDER[a] ?? -1) - (CLASS_TYPE_ORDER[b] ?? -1));
+        data.classTypes = uniqueClassTypes;
+        data.highestClassType = uniqueClassTypes.length ? uniqueClassTypes[uniqueClassTypes.length - 1] : "—";
+
+        const classProficiencies = (data.equippedClass ? this.actor._getCurrentClassNode(data.equippedClass)?.weaponProficiencies : null) || {};
+        const visibleRankKeys = Object.keys(classProficiencies).filter(k => classProficiencies[k]);
+        const showAllRanks = this._showAllWeaponRanks ?? false;
+        const allRanks = this.actor.system.weaponRanks || {};
+        const buildEntry = (weapon) => ({ weapon, rank: allRanks[weapon] ?? "" });
+        if (showAllRanks || !visibleRankKeys.length) {
+            data.visibleWeaponRanks = Object.keys(allRanks).map(buildEntry);
+            data.hiddenWeaponRanksCount = 0;
+        } else {
+            data.visibleWeaponRanks = visibleRankKeys.map(buildEntry);
+            data.hiddenWeaponRanksCount = Math.max(Object.keys(allRanks).length - visibleRankKeys.length, 0);
+        }
+        data.showAllWeaponRanks = showAllRanks;
+
         // Non-HP attributes for grid
         data.nonHpAttributes = {};
         for (const [key, val] of Object.entries(this.actor.system.attributes || {})) {
@@ -305,6 +377,11 @@ class FireEmblemCharacterSheet extends ActorSheet {
         html.find(".roll-battalion").click(async (ev) => this._onRollBattalion(ev));
         html.find(".roll-spell").click(async (ev) => this._onRollSpell(ev));
         html.find(".roll-combat-art").click(async (ev) => this._onRollCombatArt(ev));
+        html.find(".weapon-ranks-toggle").click(async (ev) => {
+            ev.preventDefault();
+            this._showAllWeaponRanks = !Boolean(this._showAllWeaponRanks);
+            this.render(false);
+        });
     }
 
     async _onRollAttack(event) {
@@ -390,11 +467,13 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
     async _onItemCreate(event) {
         event.preventDefault();
-        const type = event.currentTarget.dataset.type;
-        if (!type) return ui.notifications.error("Missing item type.");
+        const requestedType = event.currentTarget.dataset.type;
+        if (!requestedType) return ui.notifications.error("Missing item type.");
+        const type = requestedType === "miscItem" ? "miscBonus" : requestedType;
         if ((type === "item" || type === "weapon") && this._getInventoryUsage().full) return ui.notifications.error("Inventory full (5 max).");
         if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) return ui.notifications.error("Only one battalion allowed.");
-        const [created] = await this.actor.createEmbeddedDocuments("Item", [{ name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`, type }]);
+        const typeLabel = type === "miscBonus" ? "Misc Item" : `${type.charAt(0).toUpperCase()}${type.slice(1)}`;
+        const [created] = await this.actor.createEmbeddedDocuments("Item", [{ name: `New ${typeLabel}`, type }]);
         if (created) created.sheet.render(true);
     }
 }
@@ -459,28 +538,57 @@ class FireEmblemItemSheet extends ItemSheet {
         const c = html.find("#promotion-tree-container");
         if (!c.length) return;
         const promos = this.item.system.promotions || [];
-        c.html(promos.length ? this._buildTreeHTML(promos, 0, []) : '<p style="color:#8b4513; font-style:italic;">No promotions defined.</p>');
+        const currentPath = this.item.system.currentPath || [];
+        c.html(promos.length ? this._buildTreeHTML(promos, [], currentPath) : '<p style="color:#8b4513; font-style:italic;">No promotions defined.</p>');
     }
 
-    _buildTreeHTML(promos, depth, parentPath) {
-        let html = '';
+    _buildTreeHTML(promos, parentPath, currentPath) {
+        let html = '<ul class="promo-tree-list">';
         for (const p of promos) {
-            const path = [...parentPath, p.id].join(",");
+            const nodePath = [...parentPath, p.id];
+            const path = nodePath.join(",");
             const isProm = ["Promoted", "Advanced"].includes(p.classType);
-            html += `<div style="margin-left:${depth * 24}px; display:flex; align-items:center; gap:8px; padding:4px 8px; margin:3px 0; background:#f9f9f9; border:1px solid #8b7355; border-radius:4px;">
-                <span style="flex:1;"><b>${p.name}</b> <span style="color:${isProm ? "#8b4513" : "#2c4875"}; font-size:11px;">(${p.classType})</span></span>
-                <a class="promo-edit" data-path="${path}" title="Edit" style="cursor:pointer;"><i class="fas fa-edit"></i></a>
-                <a class="promo-delete" data-path="${path}" title="Delete" style="cursor:pointer;color:#a0522d;"><i class="fas fa-trash"></i></a>
-                <a class="promo-add-sub" data-path="${path}" title="Add Sub-Promotion" style="cursor:pointer;color:#2c4875;"><i class="fas fa-plus"></i></a>
-            </div>`;
-            if (p.promotions?.length) html += this._buildTreeHTML(p.promotions, depth + 1, [...parentPath, p.id]);
+            const checked = nodePath.length === currentPath.length && nodePath.every((id, idx) => id === currentPath[idx]);
+            html += `<li class="promo-tree-node${checked ? " is-selected" : ""}">
+                <div class="promo-tree-row">
+                    <span class="promo-tree-label" style="color:${isProm ? "#8b4513" : "#2c4875"};">
+                        <b>${p.name}</b>
+                        <span class="promo-tree-type">(${p.classType})</span>
+                        ${checked ? '<span class="promo-tree-check"><i class="fas fa-check-circle"></i> Active</span>' : ""}
+                    </span>
+                    <a class="promo-edit" data-path="${path}" title="Edit" style="cursor:pointer;"><i class="fas fa-edit"></i></a>
+                    <a class="promo-delete" data-path="${path}" title="Delete" style="cursor:pointer;color:#a0522d;"><i class="fas fa-trash"></i></a>
+                    <a class="promo-add-sub" data-path="${path}" title="Add Sub-Promotion" style="cursor:pointer;color:#2c4875;"><i class="fas fa-plus"></i></a>
+                </div>
+                ${p.promotions?.length ? this._buildTreeHTML(p.promotions, nodePath, currentPath) : ""}
+            </li>`;
         }
+        html += "</ul>";
         return html;
     }
 
     async _addPromotion(parentPath) {
+        const getTypeForPath = (path) => {
+            if (!path.length) return this.item.system.classType || "Standard";
+            let node = {
+                classType: this.item.system.classType,
+                promotions: this.item.system.promotions || []
+            };
+            for (const id of path) {
+                const next = (node.promotions || []).find(p => p.id === id);
+                if (!next) break;
+                node = next;
+            }
+            return node.classType || "Standard";
+        };
+        const parentType = getTypeForPath(parentPath);
+        const nextClassType = parentType === "Recruit"
+            ? "Standard"
+            : parentType === "Standard"
+                ? "Promoted"
+                : "Advanced";
         const newP = {
-            id: foundry.utils.randomID(), name: "New Class", classType: parentPath.length ? "Promoted" : "Standard",
+            id: foundry.utils.randomID(), name: "New Class", classType: nextClassType,
             movement: 5, maxLevel: 20, unitTypes: {}, weaponProficiencies: {}, baseStats: {}, growthRates: {}, statCaps: {}, promotions: []
         };
         this._openPromotionDialog(newP, async (data) => {
@@ -525,6 +633,10 @@ class FireEmblemItemSheet extends ItemSheet {
         const isProm = ["Promoted", "Advanced"].includes(promo.classType);
         const bs = promo.baseStats || {}, gr = promo.growthRates || {}, sc = promo.statCaps || {};
         const sr = (pfx, obj) => FEUE.STAT_KEYS.map(k => `<div style="display:inline-block;width:18%;margin:2px;"><label style="font-size:11px;">${FEUE.STAT_LABELS[k]}</label><input type="number" data-key="${pfx}.${k}" value="${obj[k] || 0}" style="width:100%;"/></div>`).join("");
+        const unitTypes = promo.unitTypes || {};
+        const weaponProficiencies = promo.weaponProficiencies || {};
+        const unitTypeChecks = FEUE.UNIT_TYPES.map(type => `<label style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;"><input type="checkbox" data-key="ut.${type}" ${unitTypes[type] ? "checked" : ""}/> ${type}</label>`).join("");
+        const weaponChecks = Object.entries(FEUE.WeaponTypes).map(([key, label]) => `<label style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;"><input type="checkbox" data-key="wp.${key}" ${weaponProficiencies[key] ? "checked" : ""}/> ${label}</label>`).join("");
 
         new Dialog({
             title: `Edit: ${promo.name}`,
@@ -532,7 +644,9 @@ class FireEmblemItemSheet extends ItemSheet {
                 <div class="form-group"><label>Name</label><input type="text" id="pn" value="${promo.name}"/></div>
                 <div class="form-group"><label>Class Type</label><select id="pct">${FEUE.CLASS_TYPES.map(t => `<option value="${t}" ${promo.classType === t ? "selected" : ""}>${t}</option>`).join("")}</select></div>
                 <div style="display:flex;gap:8px;"><div class="form-group" style="flex:1;"><label>Max Level</label><input type="number" id="pml" value="${promo.maxLevel || 20}"/></div><div class="form-group" style="flex:1;"><label>Movement</label><input type="number" id="pmv" value="${promo.movement || 5}"/></div></div>
-                <hr/><div id="pbs" ${isProm ? 'style="display:none;"' : ''}><h4>Base Stats</h4><div>${sr("bs", bs)}</div><hr/></div>
+                <hr/><h4>Unit Types</h4><div>${unitTypeChecks}</div>
+                <hr/><h4>Weapon Proficiencies</h4><div>${weaponChecks}</div>
+                <hr/><div id="pbs"><h4>${isProm ? "Stat Bonuses" : "Base Stats"}</h4><div>${sr("bs", bs)}</div><hr/></div>
                 <h4>Growth Rates</h4><div>${sr("gr", gr)}</div><hr/>
                 <h4>Stat Caps</h4><div>${sr("sc", sc)}</div></form>`,
             buttons: {
@@ -540,14 +654,16 @@ class FireEmblemItemSheet extends ItemSheet {
                     icon: '<i class="fas fa-save"></i>', label: "Save", callback: (h) => {
                         const d = {
                             id: promo.id, name: h.find("#pn").val() || "Unnamed", classType: h.find("#pct").val(), maxLevel: Number(h.find("#pml").val()) || 20, movement: Number(h.find("#pmv").val()) || 5,
-                            unitTypes: promo.unitTypes || {}, weaponProficiencies: promo.weaponProficiencies || {}, baseStats: {}, growthRates: {}, statCaps: {}, promotions: promo.promotions || []
+                            unitTypes: {}, weaponProficiencies: {}, baseStats: {}, growthRates: {}, statCaps: {}, promotions: promo.promotions || []
                         };
-                        h.find("input[data-key]").each((_, el) => { const [g, s] = el.dataset.key.split("."); const map = { bs: "baseStats", gr: "growthRates", sc: "statCaps" }; d[map[g]][s] = Number(el.value) || 0; });
+                        h.find("input[type='number'][data-key]").each((_, el) => { const [g, s] = el.dataset.key.split("."); const map = { bs: "baseStats", gr: "growthRates", sc: "statCaps" }; d[map[g]][s] = Number(el.value) || 0; });
+                        h.find("input[type='checkbox'][data-key^='ut.']").each((_, el) => { const key = el.dataset.key.slice(3); d.unitTypes[key] = el.checked; });
+                        h.find("input[type='checkbox'][data-key^='wp.']").each((_, el) => { const key = el.dataset.key.slice(3); d.weaponProficiencies[key] = el.checked; });
                         onSave(d);
                     }
                 }, cancel: { label: "Cancel" }
             }, default: "save",
-            render: (h) => { h.find("#pct").change(e => { h.find("#pbs").toggle(!["Promoted", "Advanced"].includes(e.currentTarget.value)); }); }
+            render: (h) => { h.find("#pct").change(e => { h.find("#pbs h4").text(["Promoted", "Advanced"].includes(e.currentTarget.value) ? "Stat Bonuses" : "Base Stats"); }); }
         }, { width: 500 }).render(true);
     }
 }
