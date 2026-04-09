@@ -28,38 +28,37 @@
             </div>
             {{#unless (eq item.type "skill")}}{{#unless (eq item.type "spell")}}{{#unless (eq item.type "class")}}{{#unless (eq item.type "combatArt")}}{{#unless (eq item.type "miscBonus")}}
             <div class="form-row">
-                <div class="form-group"><label>Price</label><input type="number" data-dtype="Number" name="system.price" value="{{item.system.price}}" placeholder="0" /></div>
-                <div class="form-group"><label>Weight</label><input type="number" data-dtype="Number" name="system.weight" value="{{item.system.weight}}" placeholder="0" /></div>
-                <div class="form-group"><label>Quantity</label><input type="number" data-dtype="Number" name="system.quantity" value="{{item.system.quantity}}" placeholder="1" /></div>
+                <div class="form-group"><label>Price</label><input type="number" data-dtype="Number" name="system.price" value="{{item.system.price}}" placeholder="0" min="0" /></div>
+                <div class="form-group"><label>Weight</label><input type="number" data-dtype="Number" name="system.weight" value="{{item.system.weight}}" placeholder="0" min="0" /></div>
+                <div class="form-group"><label>Quantity</label><input type="number" data-dtype="Number" name="system.quantity" value="{{item.system.quantity}}" placeholder="1" min="0" /></div>
             </div>
             {{/unless}}{{/unless}}{{/unless}}{{/unless}}{{/unless}}
 
             <div class="form-group">
-                <h3>Bonuses</h3>
-                <p>Applies to equipped weapon and all owned item/skill/misc bonus entries.</p>
+                <h3>Stat Bonuses (if any)</h3>
                 <div class="form-row">
-                    <div class="form-group"><label>MaxHP</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.hp" value="{{item.system.bonuses.attributes.hp}}" /></div>
-                    <div class="form-group"><label>STR</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.strength" value="{{item.system.bonuses.attributes.strength}}" /></div>
-                    <div class="form-group"><label>MAG</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.magic" value="{{item.system.bonuses.attributes.magic}}" /></div>
-                    <div class="form-group"><label>SKL</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.skill" value="{{item.system.bonuses.attributes.skill}}" /></div>
-                    <div class="form-group"><label>SPD</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.speed" value="{{item.system.bonuses.attributes.speed}}" /></div>
+                    <div class="form-group"><label>MaxHP</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.hp" value="{{item.system.bonuses.attributes.hp}}" placeholder="0" /></div>
+                    <div class="form-group"><label>STR</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.strength" value="{{item.system.bonuses.attributes.strength}}" placeholder="0" /></div>
+                    <div class="form-group"><label>MAG</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.magic" value="{{item.system.bonuses.attributes.magic}}" placeholder="0" /></div>
+                    <div class="form-group"><label>SKL</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.skill" value="{{item.system.bonuses.attributes.skill}}" placeholder="0" /></div>
+                    <div class="form-group"><label>SPD</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.speed" value="{{item.system.bonuses.attributes.speed}}" placeholder="0" /></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>DEF</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.defense" value="{{item.system.bonuses.attributes.defense}}" /></div>
-                    <div class="form-group"><label>RES</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.resistance" value="{{item.system.bonuses.attributes.resistance}}" /></div>
-                    <div class="form-group"><label>LUK</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.luck" value="{{item.system.bonuses.attributes.luck}}" /></div>
-                    <div class="form-group"><label>CHA</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.charm" value="{{item.system.bonuses.attributes.charm}}" /></div>
-                    <div class="form-group"><label>BLD</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.build" value="{{item.system.bonuses.attributes.build}}" /></div>
+                    <div class="form-group"><label>DEF</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.defense" value="{{item.system.bonuses.attributes.defense}}" placeholder="0" /></div>
+                    <div class="form-group"><label>RES</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.resistance" value="{{item.system.bonuses.attributes.resistance}}" placeholder="0" /></div>
+                    <div class="form-group"><label>LUK</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.luck" value="{{item.system.bonuses.attributes.luck}}" placeholder="0" /></div>
+                    <div class="form-group"><label>CHA</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.charm" value="{{item.system.bonuses.attributes.charm}}" placeholder="0" /></div>
+                    <div class="form-group"><label>BLD</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.build" value="{{item.system.bonuses.attributes.build}}" placeholder="0" /></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>MOVE</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.move" value="{{item.system.bonuses.attributes.move}}" /></div>
-                    <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.bonuses.combat.hitRate" value="{{item.system.bonuses.combat.hitRate}}" /></div>
-                    <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.bonuses.combat.critRate" value="{{item.system.bonuses.combat.critRate}}" /></div>
-                    <div class="form-group"><label>Avoid</label><input type="number" data-dtype="Number" name="system.bonuses.combat.avoid" value="{{item.system.bonuses.combat.avoid}}" /></div>
-                    <div class="form-group"><label>Dodge</label><input type="number" data-dtype="Number" name="system.bonuses.combat.dodge" value="{{item.system.bonuses.combat.dodge}}" /></div>
+                    <div class="form-group"><label>MOVE</label><input type="number" data-dtype="Number" name="system.bonuses.attributes.move" value="{{item.system.bonuses.attributes.move}}" placeholder="0" /></div>
+                    <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.bonuses.combat.hitRate" value="{{item.system.bonuses.combat.hitRate}}" placeholder="0" /></div>
+                    <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.bonuses.combat.critRate" value="{{item.system.bonuses.combat.critRate}}" placeholder="0" /></div>
+                    <div class="form-group"><label>Avoid</label><input type="number" data-dtype="Number" name="system.bonuses.combat.avoid" value="{{item.system.bonuses.combat.avoid}}" placeholder="0" /></div>
+                    <div class="form-group"><label>Dodge</label><input type="number" data-dtype="Number" name="system.bonuses.combat.dodge" value="{{item.system.bonuses.combat.dodge}}" placeholder="0" /></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Attack Speed</label><input type="number" data-dtype="Number" name="system.bonuses.combat.attackSpeed" value="{{item.system.bonuses.combat.attackSpeed}}" /></div>
+                    <div class="form-group"><label>Attack Speed</label><input type="number" data-dtype="Number" name="system.bonuses.combat.attackSpeed" value="{{item.system.bonuses.combat.attackSpeed}}" placeholder="0" /></div>
                 </div>
             </div>
         </div>
@@ -78,7 +77,7 @@
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Range</label><input type="text" name="system.range" value="{{item.system.range}}" placeholder="1" /></div>
-                <div class="form-group"><label>Uses</label><div class="uses-group"><input type="number" data-dtype="Number" name="system.uses.value" value="{{item.system.uses.value}}" placeholder="0" /><span>/</span><input type="number" data-dtype="Number" name="system.uses.max" value="{{item.system.uses.max}}" placeholder="0" /></div></div>
+                <div class="form-group"><label>Uses</label><div class="uses-group"><input type="number" data-dtype="Number" name="system.uses.value" value="{{item.system.uses.value}}" placeholder="0" min="0" /><span>/</span><input type="number" data-dtype="Number" name="system.uses.max" value="{{item.system.uses.max}}" placeholder="0" min="0" /></div></div>
             </div>
             <div class="form-group"><label>Weapon Properties</label><textarea name="system.properties" rows="2" placeholder="List weapon properties...">{{item.system.properties}}</textarea></div>
         </div>
@@ -87,8 +86,21 @@
         {{!-- Item Tab --}}
         {{#if (eq item.type "item")}}
         <div class="tab item" data-group="primary" data-tab="item">
-            <label>Type</label><select name="system.itemType"><option value="consumable" {{#ifEquals item.system.itemType "consumable"}} selected{{/ifEquals}}>Consumable</option><option value="equippable" {{#ifEquals item.system.itemType "equippable"}} selected{{/ifEquals}}>Equippable</option></select>
-            <div class="form-row"><div class="form-group"><label>Uses</label><div class="uses-group"><input type="number" data-dtype="Number" name="system.uses.value" value="{{item.system.uses.value}}" /><span>/</span><input type="number" data-dtype="Number" name="system.uses.max" value="{{item.system.uses.max}}" /></div></div></div>
+            <label>Type</label>
+            <select name="system.itemType">
+                <option value="consumable" {{#ifEquals item.system.itemType "consumable"}} selected{{/ifEquals}}>Consumable</option>
+                <option value="equippable" {{#ifEquals item.system.itemType "equippable"}} selected{{/ifEquals}}>Equippable</option>
+            </select>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Uses</label>
+                    <div class="uses-group">
+                        <input type="number" data-dtype="Number" name="system.uses.value" value="{{item.system.uses.value}}" min="0" placeholder="0" />
+                        <span>/</span>
+                        <input type="number" data-dtype="Number" name="system.uses.max" value="{{item.system.uses.max}}" min="0" placeholder="0" />
+                    </div>
+                </div>
+            </div>
             <div class="form-group"><label>Effect</label><textarea name="system.effect" rows="2">{{item.system.effect}}</textarea></div>
         </div>
         {{/if}}
@@ -97,7 +109,14 @@
         {{#if (eq item.type "skill")}}
         <div class="tab skill" data-group="primary" data-tab="skill">
             <div class="form-row">
-                <div class="form-group"><label>Type</label><select name="system.skillType"><option value="Passive" {{#ifEquals item.system.skillType "Passive"}} selected{{/ifEquals}}>Passive</option><option value="Passive (Activated)" {{#ifEquals item.system.skillType "Passive (Activated)"}} selected{{/ifEquals}}>Passive (Activated)</option><option value="Active" {{#ifEquals item.system.skillType "Active"}} selected{{/ifEquals}}>Active</option></select></div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <select name="system.skillType">
+                        <option value="Passive" {{#ifEquals item.system.skillType "Passive"}} selected{{/ifEquals}}>Passive</option>
+                        <option value="Passive (Activated)" {{#ifEquals item.system.skillType "Passive (Activated)"}} selected{{/ifEquals}}>Passive (Activated)</option>
+                        <option value="Active" {{#ifEquals item.system.skillType "Active"}} selected{{/ifEquals}}>Active</option>
+                    </select>
+                </div>
                 <div class="form-group"><label>Prerequisites</label><input type="text" name="system.prerequisites" value="{{item.system.prerequisites}}" placeholder="If any..." /></div>
                 <div class="form-group"><label>Level</label><select name="system.level"><option value="Innate" {{#ifEquals item.system.level "Innate"}} selected{{/ifEquals}}>Innate</option><option value="1" {{#ifEquals item.system.level "1"}} selected{{/ifEquals}}>1</option><option value="5" {{#ifEquals item.system.level "5"}} selected{{/ifEquals}}>5</option><option value="10" {{#ifEquals item.system.level "10"}} selected{{/ifEquals}}>10</option><option value="15" {{#ifEquals item.system.level "15"}} selected{{/ifEquals}}>15</option><option value="20" {{#ifEquals item.system.level "20"}} selected{{/ifEquals}}>20</option><option value="30" {{#ifEquals item.system.level "30"}} selected{{/ifEquals}}>30</option></select></div>
             </div>
@@ -109,28 +128,54 @@
         {{#if (eq item.type "spell")}}
         <div class="tab spell" data-group="primary" data-tab="spell">
             <div class="form-row">
-                <div class="form-group"><label>School</label><select name="system.school"><option value="Black Magic" {{#ifEquals item.system.school "Black Magic"}} selected{{/ifEquals}}>Black Magic</option><option value="White Magic" {{#ifEquals item.system.school "White Magic"}} selected{{/ifEquals}}>White Magic</option><option value="Dark Magic" {{#ifEquals item.system.school "Dark Magic"}} selected{{/ifEquals}}>Dark Magic</option></select></div>
-                <div class="form-group"><label>Weapon Rank</label><select name="system.rank">{{#each FEUE.WEAPON_RANKS as |rd rk|}}{{#unless (eq rk "")}}<option value="{{rk}}" {{#ifEquals ../item.system.rank rk}} selected{{/ifEquals}}>{{rd.label}}</option>{{/unless}}{{/each}}</select></div>
+                <div class="form-group">
+                    <label>School</label>
+                    <select name="system.school">
+                        <option value="Black Magic" {{#ifEquals item.system.school "Black Magic"}} selected{{/ifEquals}}>Black Magic</option>
+                        <option value="White Magic" {{#ifEquals item.system.school "White Magic"}} selected{{/ifEquals}}>White Magic</option>
+                        <option value="Dark Magic" {{#ifEquals item.system.school "Dark Magic"}} selected{{/ifEquals}}>Dark Magic</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Weapon Rank</label>
+                    <select name="system.rank">
+                        {{#each FEUE.WEAPON_RANKS as |rd rk|}}{{#unless (eq rk "")}}
+                        <option value="{{rk}}" {{#ifEquals ../item.system.rank rk}} selected{{/ifEquals}}>{{rd.label}}</option>
+                        {{/unless}}{{/each}}
+                    </select>
+                </div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>HP Cost</label><input type="number" data-dtype="Number" name="system.hpCost" value="{{item.system.hpCost}}" /></div>
-                <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" /></div>
-                <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" /></div>
+                <div class="form-group"><label>HP Cost</label><input type="number" data-dtype="Number" name="system.hpCost" value="{{item.system.hpCost}}" min="0" placeholder="0" /></div>
+                <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" /></div>
+                <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" /></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" /></div>
+                <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" placeholder="0" /></div>
                 <div class="form-group"><label>Range</label><input type="text" name="system.range" value="{{item.system.range}}" placeholder="1-2" /></div>
             </div>
-            <div class="form-group"><label>Special Effects</label><textarea name="system.special" rows="2">{{item.system.special}}</textarea></div>
+            <div class="form-group"><label>Special Effects</label><textarea name="system.special" rows="2" placeholder="Special...">{{item.system.special}}</textarea></div>
         </div>
         {{/if}}
 
         {{!-- Combat Art Tab --}}
         {{#if (eq item.type "combatArt")}}
         <div class="tab combatArt" data-group="primary" data-tab="combatArt">
-            <div class="form-row"><div class="form-group"><label>Weapon Restriction</label><select name="system.weaponRestriction"><option value="—" {{#ifEquals item.system.weaponRestriction "—"}} selected{{/ifEquals}}>Any</option>{{#each FEUE.WeaponTypes as |label key|}}<option value="{{key}}" {{#ifEquals ../item.system.weaponRestriction key}} selected{{/ifEquals}}>{{label}}</option>{{/each}}</select></div></div>
-            <div class="form-group"><label>Durability Cost</label><input type="number" data-dtype="Number" name="system.durabilityCost" value="{{item.system.durabilityCost}}" /></div>
-            <div class="form-group"><label>Effects</label><textarea name="system.effect" rows="2">{{item.system.effect}}</textarea></div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Weapon Restriction</label>
+                    <select name="system.weaponRestriction">
+                        <option value="—" {{#ifEquals item.system.weaponRestriction "—"}} selected{{/ifEquals}}>Any</option>
+                        {{#each FEUE.WeaponTypes as |label key|}}
+                        <option value="{{key}}" {{#ifEquals ../item.system.weaponRestriction key}} selected{{/ifEquals}}>
+                            {{label}}
+                        </option>
+                        {{/each}}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Durability Cost</label><input type="number" data-dtype="Number" name="system.durabilityCost" value="{{item.system.durabilityCost}}" placeholder="0" min="0" /></div>
+            <div class="form-group"><label>Effects</label><textarea name="system.effect" rows="2" placeholder="Effect...">{{item.system.effect}}</textarea></div>
         </div>
         {{/if}}
 
@@ -138,16 +183,23 @@
         {{#if (eq item.type "battalion")}}
         <div class="tab battalion" data-group="primary" data-tab="battalion">
             <div class="form-row">
-                <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" /></div>
-                <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" /></div>
-                <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" /></div>
-                <div class="form-group"><label>Move Penalty</label><input type="number" data-dtype="Number" name="system.movePenalty" value="{{item.system.movePenalty}}" /></div>
+                <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" /></div>
+                <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" /></div>
+                <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" placeholder="0" /></div>
+                <div class="form-group"><label>Move Penalty</label><input type="number" data-dtype="Number" name="system.movePenalty" value="{{item.system.movePenalty}}" max="0" placeholder="0" /></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Range</label><input type="text" name="system.range" value="{{item.system.range}}" /></div>
-                <div class="form-group"><label>Endurance</label><div class="uses-group"><input type="number" data-dtype="Number" name="system.endurance.value" value="{{item.system.endurance.value}}" /><span>/</span><input type="number" data-dtype="Number" name="system.endurance.max" value="{{item.system.endurance.max}}" /></div></div>
+                <div class="form-group"><label>Range</label><input type="text" name="system.range" value="{{item.system.range}}" placeholder="0" /></div>
+                <div class="form-group">
+                    <label>Endurance</label>
+                    <div class="uses-group">
+                        <input type="number" data-dtype="Number" name="system.endurance.value" value="{{item.system.endurance.value}}" min="0" placeholder="0" />
+                        <span>/</span>
+                        <input type="number" data-dtype="Number" name="system.endurance.max" value="{{item.system.endurance.max}}" min="0" placeholder="0" />
+                    </div>
+                </div>
             </div>
-            <div class="form-group"><label>Properties</label><textarea name="system.properties" rows="2">{{item.system.properties}}</textarea></div>
+            <div class="form-group"><label>Properties</label><textarea name="system.properties" rows="2" placeholder="Properties...">{{item.system.properties}}</textarea></div>
         </div>
         {{/if}}
 
@@ -155,13 +207,40 @@
         {{#if (eq item.type "class")}}
         <div class="tab class" data-group="primary" data-tab="class">
             <div class="form-row">
-                <div class="form-group"><label>Class Type</label><select name="system.classType"><option value="Recruit" {{#ifEquals item.system.classType "Recruit"}} selected{{/ifEquals}}>Recruit</option><option value="Standard" {{#ifEquals item.system.classType "Standard"}} selected{{/ifEquals}}>Standard</option><option value="Promoted" {{#ifEquals item.system.classType "Promoted"}} selected{{/ifEquals}}>Promoted</option><option value="Advanced" {{#ifEquals item.system.classType "Advanced"}} selected{{/ifEquals}}>Advanced</option><option value="Enemy Only" {{#ifEquals item.system.classType "Enemy Only"}} selected{{/ifEquals}}>Enemy Only</option></select></div>
-                <div class="form-group"><label>Max Level</label><input type="number" data-dtype="Number" name="system.maxLevel" value="{{item.system.maxLevel}}" /></div>
-                <div class="form-group"><label>Movement</label><input type="number" data-dtype="Number" name="system.movement" value="{{item.system.movement}}" /></div>
+                <div class="form-group">
+                    <label>Class Type</label>
+                    <select name="system.classType">
+                        <option value="Recruit" {{#ifEquals item.system.classType "Recruit"}} selected{{/ifEquals}}>Recruit</option>
+                        <option value="Standard" {{#ifEquals item.system.classType "Standard"}} selected{{/ifEquals}}>Standard</option>
+                        <!--<option value="Promoted" {{#ifEquals item.system.classType "Promoted"}} selected{{/ifEquals}}>Promoted</option>-->
+                        <option value="Advanced" {{#ifEquals item.system.classType "Advanced"}} selected{{/ifEquals}}>Advanced</option>
+                        <option value="Enemy Only" {{#ifEquals item.system.classType "Enemy Only"}} selected{{/ifEquals}}>Enemy Only</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Max Level</label><input type="number" data-dtype="Number" name="system.maxLevel" value="{{item.system.maxLevel}}" max="40" min="1" placeholder="10" /></div>
+                <div class="form-group"><label>Movement</label><input type="number" data-dtype="Number" name="system.movement" value="{{item.system.movement}}" min="0" placeholder="4" /></div>
             </div>
 
-            <div class="form-group"><div class="unit-types"><h3>Unit Types</h3>{{#each FEUE.UNIT_TYPES as |type|}}<label><input type="checkbox" name="system.unitTypes.{{type}}" {{checked (lookup ../item.system.unitTypes type)}} /> {{type}}</label>{{/each}}</div></div>
-            <div class="form-group"><div class="weapon-proficiencies"><h3>Weapon Proficiencies</h3>{{#each FEUE.WeaponTypes as |label key|}}<label><input type="checkbox" name="system.weaponProficiencies.{{key}}" {{checked (lookup ../item.system.weaponProficiencies key)}} /> {{label}}</label>{{/each}}</div></div>
+            <div class="form-group">
+                <div class="unit-types">
+                    <h3>Unit Types</h3>
+                    {{#each FEUE.UNIT_TYPES as |type|}}
+                    <label>
+                        <input type="checkbox" name="system.unitTypes.{{type}}" {{checked (lookup ../item.system.unitTypes type)}} /> {{type}}
+                    </label>
+                    {{/each}}
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="weapon-proficiencies">
+                    <h3>Weapon Proficiencies</h3>
+                    {{#each FEUE.WeaponTypes as |label key|}}
+                    <label>
+                        <input type="checkbox" name="system.weaponProficiencies.{{key}}" {{checked (lookup ../item.system.weaponProficiencies key)}} /> {{label}}
+                    </label>
+                    {{/each}}
+                </div>
+            </div>
 
             <hr />
 
@@ -169,18 +248,18 @@
             <div class="form-group">
                 <h3>Base Stats</h3>
                 <div class="form-row">
-                    <div class="form-group"><label>HP</label><input type="number" data-dtype="Number" name="system.baseStats.hp" value="{{item.system.baseStats.hp}}" /></div>
-                    <div class="form-group"><label>Str</label><input type="number" data-dtype="Number" name="system.baseStats.strength" value="{{item.system.baseStats.strength}}" /></div>
-                    <div class="form-group"><label>Mag</label><input type="number" data-dtype="Number" name="system.baseStats.magic" value="{{item.system.baseStats.magic}}" /></div>
-                    <div class="form-group"><label>Skl</label><input type="number" data-dtype="Number" name="system.baseStats.skill" value="{{item.system.baseStats.skill}}" /></div>
-                    <div class="form-group"><label>Spd</label><input type="number" data-dtype="Number" name="system.baseStats.speed" value="{{item.system.baseStats.speed}}" /></div>
+                    <div class="form-group"><label>HP</label><input type="number" data-dtype="Number" name="system.baseStats.hp" value="{{item.system.baseStats.hp}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Str</label><input type="number" data-dtype="Number" name="system.baseStats.strength" value="{{item.system.baseStats.strength}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Mag</label><input type="number" data-dtype="Number" name="system.baseStats.magic" value="{{item.system.baseStats.magic}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Skl</label><input type="number" data-dtype="Number" name="system.baseStats.skill" value="{{item.system.baseStats.skill}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Spd</label><input type="number" data-dtype="Number" name="system.baseStats.speed" value="{{item.system.baseStats.speed}}" min="0" placeholder="0" /></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Def</label><input type="number" data-dtype="Number" name="system.baseStats.defense" value="{{item.system.baseStats.defense}}" /></div>
-                    <div class="form-group"><label>Res</label><input type="number" data-dtype="Number" name="system.baseStats.resistance" value="{{item.system.baseStats.resistance}}" /></div>
-                    <div class="form-group"><label>Lck</label><input type="number" data-dtype="Number" name="system.baseStats.luck" value="{{item.system.baseStats.luck}}" /></div>
-                    <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.baseStats.charm" value="{{item.system.baseStats.charm}}" /></div>
-                    <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.baseStats.build" value="{{item.system.baseStats.build}}" /></div>
+                    <div class="form-group"><label>Def</label><input type="number" data-dtype="Number" name="system.baseStats.defense" value="{{item.system.baseStats.defense}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Res</label><input type="number" data-dtype="Number" name="system.baseStats.resistance" value="{{item.system.baseStats.resistance}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Lck</label><input type="number" data-dtype="Number" name="system.baseStats.luck" value="{{item.system.baseStats.luck}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.baseStats.charm" value="{{item.system.baseStats.charm}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.baseStats.build" value="{{item.system.baseStats.build}}" min="0" placeholder="0" /></div>
                 </div>
             </div>
             <hr />
@@ -189,36 +268,36 @@
             <div class="form-group">
                 <h3>Growth Rates</h3>
                 <div class="form-row">
-                    <div class="form-group"><label>HP</label><input type="number" data-dtype="Number" name="system.growthRates.hp" value="{{item.system.growthRates.hp}}" /></div>
-                    <div class="form-group"><label>Str</label><input type="number" data-dtype="Number" name="system.growthRates.strength" value="{{item.system.growthRates.strength}}" /></div>
-                    <div class="form-group"><label>Mag</label><input type="number" data-dtype="Number" name="system.growthRates.magic" value="{{item.system.growthRates.magic}}" /></div>
-                    <div class="form-group"><label>Skl</label><input type="number" data-dtype="Number" name="system.growthRates.skill" value="{{item.system.growthRates.skill}}" /></div>
-                    <div class="form-group"><label>Spd</label><input type="number" data-dtype="Number" name="system.growthRates.speed" value="{{item.system.growthRates.speed}}" /></div>
+                    <div class="form-group"><label>HP</label><input type="number" data-dtype="Number" name="system.growthRates.hp" value="{{item.system.growthRates.hp}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Str</label><input type="number" data-dtype="Number" name="system.growthRates.strength" value="{{item.system.growthRates.strength}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Mag</label><input type="number" data-dtype="Number" name="system.growthRates.magic" value="{{item.system.growthRates.magic}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Skl</label><input type="number" data-dtype="Number" name="system.growthRates.skill" value="{{item.system.growthRates.skill}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Spd</label><input type="number" data-dtype="Number" name="system.growthRates.speed" value="{{item.system.growthRates.speed}}" min="0" placeholder="0" /></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Def</label><input type="number" data-dtype="Number" name="system.growthRates.defense" value="{{item.system.growthRates.defense}}" /></div>
-                    <div class="form-group"><label>Res</label><input type="number" data-dtype="Number" name="system.growthRates.resistance" value="{{item.system.growthRates.resistance}}" /></div>
-                    <div class="form-group"><label>Lck</label><input type="number" data-dtype="Number" name="system.growthRates.luck" value="{{item.system.growthRates.luck}}" /></div>
-                    <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.growthRates.charm" value="{{item.system.growthRates.charm}}" /></div>
-                    <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.growthRates.build" value="{{item.system.growthRates.build}}" /></div>
+                    <div class="form-group"><label>Def</label><input type="number" data-dtype="Number" name="system.growthRates.defense" value="{{item.system.growthRates.defense}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Res</label><input type="number" data-dtype="Number" name="system.growthRates.resistance" value="{{item.system.growthRates.resistance}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Lck</label><input type="number" data-dtype="Number" name="system.growthRates.luck" value="{{item.system.growthRates.luck}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.growthRates.charm" value="{{item.system.growthRates.charm}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.growthRates.build" value="{{item.system.growthRates.build}}" min="0" placeholder="0" /></div>
                 </div>
             </div>
             <hr />
             <div class="form-group">
                 <h3>Stat Caps</h3>
                 <div class="form-row">
-                    <div class="form-group"><label>HP</label><input type="number" data-dtype="Number" name="system.statCaps.hp" value="{{item.system.statCaps.hp}}" /></div>
-                    <div class="form-group"><label>Str</label><input type="number" data-dtype="Number" name="system.statCaps.strength" value="{{item.system.statCaps.strength}}" /></div>
-                    <div class="form-group"><label>Mag</label><input type="number" data-dtype="Number" name="system.statCaps.magic" value="{{item.system.statCaps.magic}}" /></div>
-                    <div class="form-group"><label>Skl</label><input type="number" data-dtype="Number" name="system.statCaps.skill" value="{{item.system.statCaps.skill}}" /></div>
-                    <div class="form-group"><label>Spd</label><input type="number" data-dtype="Number" name="system.statCaps.speed" value="{{item.system.statCaps.speed}}" /></div>
+                    <div class="form-group"><label>HP</label><input type="number" data-dtype="Number" name="system.statCaps.hp" value="{{item.system.statCaps.hp}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Str</label><input type="number" data-dtype="Number" name="system.statCaps.strength" value="{{item.system.statCaps.strength}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Mag</label><input type="number" data-dtype="Number" name="system.statCaps.magic" value="{{item.system.statCaps.magic}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Skl</label><input type="number" data-dtype="Number" name="system.statCaps.skill" value="{{item.system.statCaps.skill}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Spd</label><input type="number" data-dtype="Number" name="system.statCaps.speed" value="{{item.system.statCaps.speed}}" min="0" placeholder="0" /></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Def</label><input type="number" data-dtype="Number" name="system.statCaps.defense" value="{{item.system.statCaps.defense}}" /></div>
-                    <div class="form-group"><label>Res</label><input type="number" data-dtype="Number" name="system.statCaps.resistance" value="{{item.system.statCaps.resistance}}" /></div>
-                    <div class="form-group"><label>Lck</label><input type="number" data-dtype="Number" name="system.statCaps.luck" value="{{item.system.statCaps.luck}}" /></div>
-                    <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.statCaps.charm" value="{{item.system.statCaps.charm}}" /></div>
-                    <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.statCaps.build" value="{{item.system.statCaps.build}}" /></div>
+                    <div class="form-group"><label>Def</label><input type="number" data-dtype="Number" name="system.statCaps.defense" value="{{item.system.statCaps.defense}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Res</label><input type="number" data-dtype="Number" name="system.statCaps.resistance" value="{{item.system.statCaps.resistance}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Lck</label><input type="number" data-dtype="Number" name="system.statCaps.luck" value="{{item.system.statCaps.luck}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Cha</label><input type="number" data-dtype="Number" name="system.statCaps.charm" value="{{item.system.statCaps.charm}}" min="0" placeholder="0" /></div>
+                    <div class="form-group"><label>Bld</label><input type="number" data-dtype="Number" name="system.statCaps.build" value="{{item.system.statCaps.build}}" min="0" placeholder="0" /></div>
                 </div>
             </div>
 
@@ -227,6 +306,7 @@
             <div class="form-group">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
                     <h3 style="margin:0;">Promotion Tree</h3>
+                    <br />
                     <a class="promo-add-root" style="cursor:pointer; background:linear-gradient(180deg,#4a6fa5,#2c4875); color:white; border:1px solid #2c4875; border-radius:4px; padding:2px 8px; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
                         <i class="fas fa-plus"></i> Add Promotion
                     </a>
@@ -241,6 +321,5 @@
             <p>Use the Description tab to configure all misc bonus values.</p>
         </div>
         {{/if}}
-
     </section>
 </form>
