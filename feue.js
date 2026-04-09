@@ -31,6 +31,10 @@ const FEUE = {
 const DEFAULT_WEAPON_RANKS = Object.fromEntries(
     Object.keys(FEUE.WeaponTypes).map(type => [type, ""])
 );
+const CLASS_TYPE_ORDER = FEUE.CLASS_TYPES.reduce((out, type, index) => {
+    out[type] = index;
+    return out;
+}, {});
 
 // ====================================================================
 // 2. ACTOR CLASS
@@ -306,6 +310,28 @@ class FireEmblemCharacterSheet extends ActorSheet {
             data.currentClassType = node.classType;
         }
 
+        const classTypes = data.classes
+            .map(c => this.actor._getCurrentClassNode(c)?.classType)
+            .filter(Boolean);
+        const uniqueClassTypes = [...new Set(classTypes)]
+            .sort((a, b) => (CLASS_TYPE_ORDER[a] ?? -1) - (CLASS_TYPE_ORDER[b] ?? -1));
+        data.classTypes = uniqueClassTypes;
+        data.highestClassType = uniqueClassTypes.length ? uniqueClassTypes[uniqueClassTypes.length - 1] : "—";
+
+        const classProficiencies = (data.equippedClass ? this.actor._getCurrentClassNode(data.equippedClass)?.weaponProficiencies : null) || {};
+        const visibleRankKeys = Object.keys(classProficiencies).filter(k => classProficiencies[k]);
+        const showAllRanks = this._showAllWeaponRanks ?? false;
+        const allRanks = this.actor.system.weaponRanks || {};
+        const buildEntry = (weapon) => ({ weapon, rank: allRanks[weapon] ?? "" });
+        if (showAllRanks || !visibleRankKeys.length) {
+            data.visibleWeaponRanks = Object.keys(allRanks).map(buildEntry);
+            data.hiddenWeaponRanksCount = 0;
+        } else {
+            data.visibleWeaponRanks = visibleRankKeys.map(buildEntry);
+            data.hiddenWeaponRanksCount = Math.max(Object.keys(allRanks).length - visibleRankKeys.length, 0);
+        }
+        data.showAllWeaponRanks = showAllRanks;
+
         // Non-HP attributes for grid
         data.nonHpAttributes = {};
         for (const [key, val] of Object.entries(this.actor.system.attributes || {})) {
@@ -352,6 +378,11 @@ class FireEmblemCharacterSheet extends ActorSheet {
         html.find(".roll-battalion").click(async (ev) => this._onRollBattalion(ev));
         html.find(".roll-spell").click(async (ev) => this._onRollSpell(ev));
         html.find(".roll-combat-art").click(async (ev) => this._onRollCombatArt(ev));
+        html.find(".weapon-ranks-toggle").click(async (ev) => {
+            ev.preventDefault();
+            this._showAllWeaponRanks = !Boolean(this._showAllWeaponRanks);
+            this.render(false);
+        });
     }
 
     async _onRollAttack(event) {
@@ -437,11 +468,13 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
     async _onItemCreate(event) {
         event.preventDefault();
-        const type = event.currentTarget.dataset.type;
-        if (!type) return ui.notifications.error("Missing item type.");
+        const requestedType = event.currentTarget.dataset.type;
+        if (!requestedType) return ui.notifications.error("Missing item type.");
+        const type = requestedType === "miscItem" ? "miscBonus" : requestedType;
         if ((type === "item" || type === "weapon") && this._getInventoryUsage().full) return ui.notifications.error("Inventory full (5 max).");
         if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) return ui.notifications.error("Only one battalion allowed.");
-        const [created] = await this.actor.createEmbeddedDocuments("Item", [{ name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`, type }]);
+        const typeLabel = type === "miscBonus" ? "Misc Item" : `${type.charAt(0).toUpperCase()}${type.slice(1)}`;
+        const [created] = await this.actor.createEmbeddedDocuments("Item", [{ name: `New ${typeLabel}`, type }]);
         if (created) created.sheet.render(true);
     }
 }
@@ -536,8 +569,27 @@ class FireEmblemItemSheet extends ItemSheet {
     }
 
     async _addPromotion(parentPath) {
+        const getTypeForPath = (path) => {
+            if (!path.length) return this.item.system.classType || "Standard";
+            let node = {
+                classType: this.item.system.classType,
+                promotions: this.item.system.promotions || []
+            };
+            for (const id of path) {
+                const next = (node.promotions || []).find(p => p.id === id);
+                if (!next) break;
+                node = next;
+            }
+            return node.classType || "Standard";
+        };
+        const parentType = getTypeForPath(parentPath);
+        const nextClassType = parentType === "Recruit"
+            ? "Standard"
+            : parentType === "Standard"
+                ? "Promoted"
+                : "Advanced";
         const newP = {
-            id: foundry.utils.randomID(), name: "New Class", classType: parentPath.length ? "Promoted" : "Standard",
+            id: foundry.utils.randomID(), name: "New Class", classType: nextClassType,
             movement: 5, maxLevel: 20, unitTypes: {}, weaponProficiencies: {}, baseStats: {}, growthRates: {}, statCaps: {}, promotions: []
         };
         this._openPromotionDialog(newP, async (data) => {
@@ -612,7 +664,7 @@ class FireEmblemItemSheet extends ItemSheet {
                     }
                 }, cancel: { label: "Cancel" }
             }, default: "save",
-            render: (h) => { h.find("#pct").change(e => { h.find("#pbs").toggle(!["Promoted", "Advanced"].includes(e.currentTarget.value)); }); }
+            render: (h) => { h.find("#pct").change(e => { h.find("#pbs h4").text(["Promoted", "Advanced"].includes(e.currentTarget.value) ? "Stat Bonuses" : "Base Stats"); }); }
         }, { width: 500 }).render(true);
     }
 }
