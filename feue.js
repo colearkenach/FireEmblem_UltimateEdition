@@ -145,7 +145,7 @@ class FireEmblemActor extends Actor {
             attackSpeed: as,
             hitRate: skl + Math.floor(lck / 4) + wHit + (bonus.combat.hitRate || 0),
             critRate: Math.floor(skl / 2) + wCrit + (bonus.combat.critRate || 0),
-            avoid: as + Math.floor(lck / 4) + (bonus.combat.avoid || 0),
+            avoid: spd + Math.floor(lck / 4) + (bonus.combat.avoid || 0),
             dodge: lck + (bonus.combat.dodge || 0)
         };
     }
@@ -292,7 +292,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
         data.skills = this.actor.items.filter(i => i.type === "skill");
         data.spells = this.actor.items.filter(i => i.type === "spell");
         data.combatArts = this.actor.items.filter(i => i.type === "combatArt");
-        data.miscBonuses = this.actor.items.filter(i => i.type === "miscBonus");
+        data.miscBonus = this.actor.items.filter(i => i.type === "miscBonus");
         data.weapons = this.actor.items.filter(i => i.type === "weapon");
         data.battalion = this.actor.items.find(i => i.type === "battalion") || null;
         data.items = this.actor.items.filter(i => i.type === "item");
