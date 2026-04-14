@@ -54,7 +54,10 @@ class FireEmblemActor extends Actor {
 
     _collectBonuses() {
         const totals = this._blankBonuses();
-        const bonusItems = this.items.filter(i => ["item", "skill", "miscBonus"].includes(i.type));
+        const bonusItems = this.items.filter(i =>
+            ["item", "skill"].includes(i.type) ||
+            (i.type === "miscBonus" && i.system?.enabled !== false)
+        );
         const equippedWeapon = this.items.find(i => i.type === "weapon" && i.system?.equipped);
         if (equippedWeapon) bonusItems.push(equippedWeapon);
         for (const item of bonusItems) {
@@ -160,9 +163,10 @@ class FireEmblemActor extends Actor {
             system.growthRates[k] = (growths[k] || 0) + (bonus.growthRates[k] || 0);
         }
 
+        const battalion = this.items.find(i => i.type === "battalion");
+        const batPenalty = Number(battalion?.system?.movePenalty || 0);
         system.movement ??= { base: 0, current: 0 };
-        system.movement.base = classMovement + (bonus.attributes.move || 0);
-        system.movement.current = classMovement + (bonus.attributes.move || 0);
+        system.movement.base = classMovement + (bonus.attributes.move || 0) + batPenalty;
 
         // Combat stats
         const ew = this.items.find(i => i.type === "weapon" && i.system?.equipped);
@@ -173,10 +177,14 @@ class FireEmblemActor extends Actor {
         const lck = Number(system.attributes.luck?.value || 0);
         const as = spd - Math.max(wWeight - bld, 0) + (bonus.combat.attackSpeed || 0);
 
+        const baseHitRate = skl + Math.floor(lck / 4) + (bonus.combat.hitRate || 0);
+        const baseCritRate = Math.floor(skl / 2) + (bonus.combat.critRate || 0);
         system.combat = {
             attackSpeed: as,
-            hitRate: skl + Math.floor(lck / 4) + wHit + (bonus.combat.hitRate || 0),
-            critRate: Math.floor(skl / 2) + wCrit + (bonus.combat.critRate || 0),
+            baseHitRate,
+            baseCritRate,
+            hitRate: baseHitRate + wHit,
+            critRate: baseCritRate + wCrit,
             avoid: spd + Math.floor(lck / 4) + (bonus.combat.avoid || 0),
             dodge: lck + (bonus.combat.dodge || 0)
         };
@@ -216,8 +224,14 @@ class FireEmblemActor extends Actor {
         for (const [stat, gained] of Object.entries(gains)) {
             if (!gained) continue;
             if (stat === "hp") {
-                // HP cap isn't tracked the same way; skip cap check for HP
-                // (or check against a class-defined HP cap if you add one later)
+                const ecHp = this.items.find(i => i.type === "class" && i.system?.equipped);
+                if (ecHp) {
+                    const nodeHp = this._getCurrentClassNode(ecHp);
+                    const hpCap = Number(nodeHp.statCaps?.hp || 0);
+                    if (hpCap > 0 && Number(this.system.attributes?.hp?.max || 0) >= hpCap) {
+                        gains[stat] = 0;
+                    }
+                }
                 continue;
             }
             const currentVal = Number(this.system.attributes?.[stat]?.value || 0);
@@ -260,16 +274,6 @@ class FireEmblemActor extends Actor {
             await this._grantClassSkills(currentNode, { exactLevel: newLevel });
         }
     }
-
-    //async _checkPromotion(newLevel) {
-    //    const ec = this.items.find(i => i.type === "class" && i.system?.equipped);
-    //    if (!ec) return;
-    //    const node = this._getCurrentClassNode(ec);
-    //    const promos = node.promotions || [];
-    //    if (promos.length && newLevel >= Number(node.maxLevel || 20)) {
-    //        await this._showPromotionDialog(ec, promos);
-    //    }
-    //}
 
     async _showPromotionDialog(classItem, promotions) {
         const opts = promotions.map(p => `<option value="${p.id}">${p.name} (${p.classType})</option>`).join("");
@@ -688,7 +692,8 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const a = this.actor, cost = Number(sp.system.hpCost || 0), curHp = a.system.attributes?.hp?.value || 0;
         if (cost > 0 && curHp <= cost) return ui.notifications.warn("Not enough HP.");
         const mag = a.system.attributes?.magic?.value || 0, dmg = Number(sp.system.might || 0) + mag;
-        const hr = a.system.combat?.hitRate || 0, cr = a.system.combat?.critRate || 0;
+        const hr = (a.system.combat?.baseHitRate || 0) + Number(sp.system.hit || 0);
+        const cr = (a.system.combat?.baseCritRate || 0) + Number(sp.system.crit || 0);
         const hR = await new Roll("1d100").evaluate(); const hit = hR.total <= hr;
         let crit = false; if (hit && cr > 0) { const cR = await new Roll("1d100").evaluate(); crit = cR.total <= cr; }
         if (cost > 0) await a.update({ "system.attributes.hp.value": curHp - cost });
@@ -720,7 +725,8 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const a = this.actor, dc = Number(art.system.durabilityCost || 0), uses = weapon.system.uses;
         if (uses && dc > 0 && uses.value < dc) return ui.notifications.warn(`Not enough durability on ${weapon.name}.`);
         const di = a.getDamageStat(weapon.system.weaponType), dmg = Number(weapon.system.might || 0) + di.value;
-        const hr = a.system.combat?.hitRate || 0, cr = a.system.combat?.critRate || 0;
+        const hr = (a.system.combat?.baseHitRate || 0) + Number(weapon.system.hit || 0);
+        const cr = (a.system.combat?.baseCritRate || 0) + Number(weapon.system.crit || 0);
         const hR = await new Roll("1d100").evaluate(); const hit = hR.total <= hr;
         let crit = false; if (hit && cr > 0) { const cR = await new Roll("1d100").evaluate(); crit = cR.total <= cr; }
         if (uses && dc > 0) await weapon.update({ "system.uses.value": Math.max(uses.value - dc, 0) });
@@ -761,9 +767,6 @@ class FireEmblemItemSheet extends ItemSheet {
     getData() {
         const data = super.getData();
         data.FEUE = FEUE;
-        if (data.item.type === "class") {
-            const ct = (data.item.system.classType || "").toLowerCase();
-        }
         return data;
     }
 

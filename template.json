@@ -51,6 +51,8 @@
           "magic": 0,
           "skill": 0,
           "speed": 0,
+          "defense": 0,
+          "resistance": 0,
           "luck": 0,
           "charm": 0,
           "build": 0
@@ -92,7 +94,7 @@
       },
       "unitTypes": [],
       "supportRanks": {},
-      "affinity": [],
+      "affinity": "",
       "fatePoints": {
         "value": 0,
         "max": 0
@@ -181,6 +183,7 @@
     },
     "weapon": {
       "templates": [ "base", "physical" ],
+      "equipped": false,
       "weaponType": "sword",
       "might": 5,
       "hit": 90,
@@ -243,7 +246,7 @@
         "value": 0,
         "max": 0
       },
-      "movePenalty": 1,
+      "movePenalty": 0,
       "might": 8,
       "hit": 10,
       "crit": 0,
