@@ -175,6 +175,16 @@
                 </div>
             </div>
             <div class="form-group"><label>Durability Cost</label><input type="number" data-dtype="Number" name="system.durabilityCost" value="{{item.system.durabilityCost}}" placeholder="0" min="0" /></div>
+            <div class="form-row">
+                <div class="form-group"><label>Might Bonus</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" /></div>
+                <div class="form-group"><label>Hit Bonus</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" /></div>
+                <div class="form-group"><label>Crit Bonus</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" placeholder="0" /></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Avoid Bonus</label><input type="number" data-dtype="Number" name="system.avoid" value="{{item.system.avoid}}" placeholder="0" /></div>
+                <div class="form-group"><label>Dodge Bonus</label><input type="number" data-dtype="Number" name="system.dodge" value="{{item.system.dodge}}" placeholder="0" /></div>
+            </div>
+            <div class="form-group"><label>Prerequisites</label><input type="text" name="system.prerequisites" value="{{item.system.prerequisites}}" placeholder="e.g. STR 13, any D" /></div>
             <div class="form-group"><label>Effects</label><textarea name="system.effect" rows="2" placeholder="Effect...">{{item.system.effect}}</textarea></div>
         </div>
         {{/if}}

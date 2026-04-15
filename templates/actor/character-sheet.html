@@ -23,6 +23,12 @@
                     </div>
                     <button type="button" class="level-up">Level Up</button>
                 </div>
+                <div class="resource flexrow">
+                    <div class="resource-label">Total Lv</div>
+                    <div class="resource-value">
+                        <span>{{actor.system.totalLevel}}</span>
+                    </div>
+                </div>
             </div>
             <div class="resource flexrow">
                 <div class="resource-label">Class</div>
@@ -161,11 +167,13 @@
         {{!-- Combat Tab --}}
         <div class="tab combat" data-group="primary" data-tab="combat" data-drop-target="true">
             <div class="combat-stats flexrow">
+                <div class="combat-stat"><label>Damage</label><span class="computed-value">{{actor.system.combat.damage}}</span></div>
                 <div class="combat-stat"><label>Attack Speed</label><span class="computed-value">{{actor.system.combat.attackSpeed}}</span></div>
                 <div class="combat-stat"><label>Hit Rate</label><span class="computed-value">{{actor.system.combat.hitRate}}%</span></div>
                 <div class="combat-stat"><label>Critical Rate</label><span class="computed-value">{{actor.system.combat.critRate}}%</span></div>
                 <div class="combat-stat"><label>Avoid</label><span class="computed-value">{{actor.system.combat.avoid}}%</span></div>
                 <div class="combat-stat"><label>Dodge</label><span class="computed-value">{{actor.system.combat.dodge}}%</span></div>
+                <div class="combat-stat"><label>Aid</label><span class="computed-value">{{actor.system.combat.aid}}</span></div>
             </div>
 
             <div class="weapons-section">
@@ -218,7 +226,16 @@
                 {{#each combatArts as |art|}}
                 <div class="item combat-art flexrow" data-item-id="{{art._id}}">
                     <div class="item-image"><img src="{{art.img}}" title="{{art.name}}" width="24" height="24" /></div>
-                    <div class="combat-art-info"><h4 class="item-name">{{art.name}}</h4><p class="combat-art-details">{{art.system.durabilityCost}} Dur | {{art.system.effect}}</p></div>
+                    <div class="combat-art-info">
+                        <h4 class="item-name">{{art.name}}</h4>
+                        <p class="combat-art-details">
+                            {{art.system.durabilityCost}} Dur
+                            {{#if art.system.might}} | +{{art.system.might}} Mt{{/if}}
+                            {{#if art.system.hit}} | +{{art.system.hit}} Hit{{/if}}
+                            {{#if art.system.crit}} | +{{art.system.crit}} Crit{{/if}}
+                            {{#if art.system.effect}} | {{art.system.effect}}{{/if}}
+                        </p>
+                    </div>
                     <div class="item-controls">
                         <a class="item-control roll-combat-art" data-item-id="{{art._id}}" title="Use"><i class="fas fa-dice-d20"></i></a>
                         <a class="item-control item-edit" title="Edit"><i class="fas fa-edit"></i></a>
@@ -244,6 +261,9 @@
                     <div class="item-quantity">{{item.system.quantity}}</div>
                     <div class="item-weight">{{item.system.weight}} wt</div>
                     <div class="item-controls">
+                        {{#ifEquals item.system.itemType "equippable"}}
+                        <a class="item-control item-equip" title="{{#if item.system.equipped}}Unequip{{else}}Equip{{/if}}"><i class="fas {{#if item.system.equipped}}fa-shield-alt{{else}}fa-hand-paper{{/if}}"></i></a>
+                        {{/ifEquals}}
                         <a class="item-control item-edit" title="Edit"><i class="fas fa-edit"></i></a>
                         <a class="item-control item-delete" title="Delete"><i class="fas fa-trash"></i></a>
                     </div>
