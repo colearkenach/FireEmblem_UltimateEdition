@@ -147,9 +147,9 @@
 
 .feue .resource-label {
     /*font-weight: bold;*/
-    min-width: 55px;
+    /*min-width: 55px;*/
     color: var(--feue-secondary);
-    font-size: 40px;
+    font-size: 30px;
     font-family: var(--feue-font-gba);
     text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
 }
