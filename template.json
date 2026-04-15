@@ -57,6 +57,18 @@
           "charm": 0,
           "build": 0
         },
+        "accumulatedGrowthRates": {
+          "hp": 0,
+          "strength": 0,
+          "magic": 0,
+          "skill": 0,
+          "speed": 0,
+          "defense": 0,
+          "resistance": 0,
+          "luck": 0,
+          "charm": 0,
+          "build": 0
+        },
         "level": 1,
         "totalLevel": 1,
         "experience": 0
@@ -95,6 +107,7 @@
       "unitTypes": [],
       "supportRanks": {},
       "affinity": "",
+      "weaponExp": 0,
       "fatePoints": {
         "value": 0,
         "max": 0
@@ -175,6 +188,7 @@
     "item": {
       "templates": [ "base", "physical" ],
       "itemType": "consumable",
+      "equipped": false,
       "uses": {
         "value": 3,
         "max": 3
@@ -216,6 +230,11 @@
       "prerequisites": "",
       "weaponRestriction": "—",
       "durabilityCost": 1,
+      "might": 0,
+      "hit": 0,
+      "crit": 0,
+      "avoid": 0,
+      "dodge": 0,
       "effect": ""
     },
     "skill": {

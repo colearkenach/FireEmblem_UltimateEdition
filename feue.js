@@ -15,7 +15,7 @@ const FEUE = {
         "S": { order: 5, label: "S" }
     },
     AFFINITIES: ["Fire", "Thunder", "Wind", "Ice", "Earth", "Dark", "Light", "Anima"],
-    UNIT_TYPES: ["Infantry", "Mounted", "Flying", "Dragon", "Armored", "Magician", "Beast", "Monster"],
+    UNIT_TYPES: ["Infantry", "Mounted", "Flying", "Dragon", "Armored", "Magician", "Beast", "Mechanical", "Monster"],
     CLASS_TYPES: ["Recruit", "Standard", "Promoted", "Advanced", "Enemy Only"],
     MAG_WEAPON_TYPES: ["anima", "light", "dark", "staff", "stone"],
     STAT_KEYS: ["hp", "strength", "magic", "skill", "speed", "defense", "resistance", "luck", "charm", "build"],
@@ -54,10 +54,16 @@ class FireEmblemActor extends Actor {
 
     _collectBonuses() {
         const totals = this._blankBonuses();
-        const bonusItems = this.items.filter(i =>
-            ["item", "skill"].includes(i.type) ||
-            (i.type === "miscBonus" && i.system?.enabled !== false)
-        );
+        const bonusItems = this.items.filter(i => {
+            if (i.type === "skill") return true;
+            if (i.type === "item") {
+                // Equippable items only grant bonuses when equipped
+                if (i.system.itemType === "equippable") return i.system.equipped === true;
+                return true; // Consumables always apply their bonuses (if any)
+            }
+            if (i.type === "miscBonus" && i.system?.enabled !== false) return true;
+            return false;
+        });
         const equippedWeapon = this.items.find(i => i.type === "weapon" && i.system?.equipped);
         if (equippedWeapon) bonusItems.push(equippedWeapon);
         for (const item of bonusItems) {
@@ -179,6 +185,23 @@ class FireEmblemActor extends Actor {
 
         const baseHitRate = skl + Math.floor(lck / 4) + (bonus.combat.hitRate || 0);
         const baseCritRate = Math.floor(skl / 2) + (bonus.combat.critRate || 0);
+
+        // Damage: weapon might + relevant stat
+        let damage = 0;
+        if (ew) {
+            const di = this.getDamageStat(ew.system.weaponType);
+            damage = Number(ew.system.might || 0) + di.value;
+        }
+
+        // Aid: depends on unit type and sex
+        const unitTypes = Array.isArray(system.unitTypes) ? system.unitTypes : [];
+        const sex = (system.personalDetails?.sex || "").toLowerCase();
+        const isMountedOrFlying = unitTypes.some(t => ["Mounted", "Flying"].includes(t));
+        let aid = Math.max(bld - 1, 0); // Infantry default
+        if (isMountedOrFlying) {
+            aid = (sex === "female" || sex === "f") ? (20 - bld) : (25 - bld);
+        }
+
         system.combat = {
             attackSpeed: as,
             baseHitRate,
@@ -186,7 +209,9 @@ class FireEmblemActor extends Actor {
             hitRate: baseHitRate + wHit,
             critRate: baseCritRate + wCrit,
             avoid: spd + Math.floor(lck / 4) + (bonus.combat.avoid || 0),
-            dodge: lck + (bonus.combat.dodge || 0)
+            dodge: lck + (bonus.combat.dodge || 0),
+            damage,
+            aid
         };
     }
 
@@ -213,48 +238,75 @@ class FireEmblemActor extends Actor {
 
         // ── Normal level up ──
         const gr = system.growthRates || {};
+        const accumulated = foundry.utils.deepClone(system.accumulatedGrowthRates || {});
         const gains = {};
+        const newAccumulated = {};
+        const rollDetails = [];
 
-        for (const [stat, growth] of Object.entries(gr)) {
-            const roll = await new Roll("1d10").evaluate();
-            gains[stat] = (roll.total <= growth) ? 1 : 0;
-        }
+        for (const stat of FEUE.STAT_KEYS) {
+            const baseGR = Number(gr[stat] || 0);
+            const accum = Number(accumulated[stat] || 0);
+            const effectiveGR = baseGR + accum;
 
-        // Enforce stat caps — skip gains for stats already at max
-        for (const [stat, gained] of Object.entries(gains)) {
-            if (!gained) continue;
+            // Check stat cap first
+            let atCap = false;
             if (stat === "hp") {
-                const ecHp = this.items.find(i => i.type === "class" && i.system?.equipped);
-                if (ecHp) {
-                    const nodeHp = this._getCurrentClassNode(ecHp);
+                if (ec) {
+                    const nodeHp = this._getCurrentClassNode(ec);
                     const hpCap = Number(nodeHp.statCaps?.hp || 0);
-                    if (hpCap > 0 && Number(this.system.attributes?.hp?.max || 0) >= hpCap) {
-                        gains[stat] = 0;
-                    }
+                    if (hpCap > 0 && Number(system.attributes?.hp?.max || 0) >= hpCap) atCap = true;
                 }
+            } else {
+                const currentVal = Number(system.attributes?.[stat]?.value || 0);
+                const cap = Number(system.attributes?.[stat]?.max || 0);
+                if (cap > 0 && currentVal >= cap) atCap = true;
+            }
+
+            if (atCap) {
+                gains[stat] = 0;
+                newAccumulated[stat] = 0;
+                rollDetails.push({ stat, roll: "—", effectiveGR, gained: 0, atCap: true });
                 continue;
             }
-            const currentVal = Number(this.system.attributes?.[stat]?.value || 0);
-            const cap = Number(this.system.attributes?.[stat]?.max || 0);
-            if (cap > 0 && currentVal >= cap) {
-                gains[stat] = 0;  // Already at cap
+
+            if (effectiveGR >= 10) {
+                // Guaranteed +1, plus +1 per additional 10 above threshold
+                const gained = 1 + Math.floor((effectiveGR - 10) / 10);
+                gains[stat] = gained;
+                newAccumulated[stat] = effectiveGR % 10;
+                rollDetails.push({ stat, roll: "auto", effectiveGR, gained, atCap: false });
+            } else {
+                const roll = await new Roll("1d10").evaluate();
+                const sum = roll.total + effectiveGR;
+                if (sum >= 10) {
+                    gains[stat] = 1;
+                    newAccumulated[stat] = 0;
+                    rollDetails.push({ stat, roll: roll.total, effectiveGR, gained: 1, atCap: false });
+                } else {
+                    gains[stat] = 0;
+                    newAccumulated[stat] = sum;
+                    rollDetails.push({ stat, roll: roll.total, effectiveGR, gained: 0, atCap: false, carried: sum });
+                }
             }
         }
+
+        // Persist accumulated growth rates
+        await this.update({ "system.accumulatedGrowthRates": newAccumulated });
 
         const gainedStats = Object.entries(gains).filter(([, v]) => v > 0);
 
         if (gainedStats.length) {
             const bonusItem = await this._getOrCreateLevelUpBonus();
             const updates = {};
-            for (const [stat] of gainedStats) {
+            for (const [stat, amount] of gainedStats) {
                 const current = Number(bonusItem.system.bonuses?.attributes?.[stat] || 0);
-                updates[`system.bonuses.attributes.${stat}`] = current + 1;
+                updates[`system.bonuses.attributes.${stat}`] = current + amount;
             }
             await bonusItem.update(updates);
 
             if (gains.hp) {
                 await this.update({
-                    "system.attributes.hp.value": (system.attributes?.hp?.value || 0) + 1
+                    "system.attributes.hp.value": (system.attributes?.hp?.value || 0) + gains.hp
                 });
             }
         }
@@ -262,10 +314,21 @@ class FireEmblemActor extends Actor {
         const newLevel = currentLevel + 1;
         await this.update({ "system.level": newLevel, "system.totalLevel": (system.totalLevel || 1) + 1 });
 
-        const gainList = Object.entries(gains).filter(([, v]) => v > 0).map(([k]) => FEUE.STAT_LABELS[k] || k);
+        // Build detailed chat message
+        const detailRows = rollDetails.map(d => {
+            const label = FEUE.STAT_LABELS[d.stat] || d.stat;
+            if (d.atCap) return `<tr><td>${label}</td><td colspan="3" style="color:#888;">At cap</td></tr>`;
+            const rollStr = d.roll === "auto" ? "Auto" : String(d.roll);
+            const resultStr = d.gained > 0
+                ? `<span class="gain">+${d.gained}</span>`
+                : (d.carried ? `<span style="color:#b8860b;">Carry ${d.carried}</span>` : `<span style="color:#888;">—</span>`);
+            return `<tr><td>${label}</td><td>${rollStr}</td><td>GR ${d.effectiveGR}</td><td>${resultStr}</td></tr>`;
+        }).join("");
+
+        const gainList = gainedStats.map(([k, v]) => `<span class="gain">+${v} ${FEUE.STAT_LABELS[k] || k}</span>`);
         ChatMessage.create({
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: this }),
-            content: `<div class="feue-levelup"><h3>${this.name} reached level ${newLevel}!</h3>${gainList.length ? `<div class="stat-gains">${gainList.map(s => `<span class="gain">+1 ${s}</span>`).join("")}</div>` : "<p>No stats increased.</p>"}</div>`
+            content: `<div class="feue-levelup"><h3>${this.name} reached level ${newLevel}!</h3>${gainList.length ? `<div class="stat-gains">${gainList.join("")}</div>` : "<p>No stats increased.</p>"}<details><summary>Roll Details</summary><table class="feue-gr-table"><tr><th>Stat</th><th>Roll</th><th>GR</th><th>Result</th></tr>${detailRows}</table></details></div>`
         });
 
         // Grant class skills for new level
@@ -484,6 +547,24 @@ class FireEmblemActor extends Actor {
         }
     }
 
+    _onUpdate(changed, options, userId) {
+        super._onUpdate(changed, options, userId);
+        if (game.user.id !== userId) return;
+
+        // Auto-level when EXP reaches 10+
+        const newExp = foundry.utils.getProperty(changed, "system.experience");
+        if (newExp !== undefined && newExp >= 10) {
+            // Count how many level-ups are earned (every 10 EXP = 1 level)
+            const levelUps = Math.floor(newExp / 10);
+            // EXP always resets to 0 per rulebook (no carrying remainder)
+            this.update({ "system.experience": 0 }).then(async () => {
+                for (let i = 0; i < levelUps; i++) {
+                    await this.levelUp();
+                }
+            });
+        }
+    }
+
     canUseWeapon(weapon) {
         if (!weapon?.system?.weaponType || !weapon?.system?.rank) return true;
         const r = this.system.weaponRanks?.[weapon.system.weaponType] || "";
@@ -631,6 +712,17 @@ class FireEmblemCharacterSheet extends ActorSheet {
             await item.update({ "system.equipped": true });
         });
 
+        html.find(".item-control.item-equip").click(async ev => {
+            const id = $(ev.currentTarget).closest(".item").data("item-id");
+            const item = this.actor.items.get(id);
+            if (!item) return;
+            if (item.system.equipped) { await item.update({ "system.equipped": false }); return; }
+            // Unequip other equippable items first (only one equipped at a time)
+            const others = this.actor.items.filter(i => i.type === "item" && i.system.itemType === "equippable" && i.system.equipped && i.id !== item.id);
+            if (others.length) await this.actor.updateEmbeddedDocuments("Item", others.map(i => ({ _id: i.id, "system.equipped": false })));
+            await item.update({ "system.equipped": true });
+        });
+
         html.find(".roll-attack").click(async (ev) => this._onRollAttack(ev));
         html.find(".roll-battalion").click(async (ev) => this._onRollBattalion(ev));
         html.find(".roll-spell").click(async (ev) => this._onRollSpell(ev));
@@ -658,17 +750,37 @@ class FireEmblemCharacterSheet extends ActorSheet {
         event.preventDefault();
         const weapon = this.actor.items.get(event.currentTarget.dataset.weaponId);
         if (!weapon) return;
-        if (!this.actor.canUseWeapon(weapon)) return ui.notifications.warn("Insufficient weapon rank.");
-        if (weapon.system.uses?.value <= 0) return ui.notifications.warn("Weapon is broken.");
-        const a = this.actor, di = a.getDamageStat(weapon.system.weaponType), dmg = Number(weapon.system.might || 0) + di.value;
-        const hr = a.system.combat?.hitRate || 0, cr = a.system.combat?.critRate || 0;
+
+        const a = this.actor;
+        const isBroken = (weapon.system.uses?.value ?? 1) <= 0;
+        const isNonProf = !a.canUseWeapon(weapon);
+        const penalties = [];
+
+        // Determine modifiers based on weapon state
+        let mightMult = 1, hitMult = 1, critOverride = null;
+        if (isBroken) {
+            mightMult = 0; hitMult = 0.5; critOverride = 0;
+            penalties.push("BROKEN");
+        } else if (isNonProf) {
+            mightMult = 0.5; hitMult = 0.5; critOverride = 0;
+            penalties.push("NON-PROFICIENT");
+        }
+
+        const di = a.getDamageStat(weapon.system.weaponType);
+        const baseMight = isBroken ? 0 : Number(weapon.system.might || 0);
+        const dmg = Math.floor((baseMight + di.value) * mightMult);
+        const hr = Math.floor((a.system.combat?.hitRate || 0) * hitMult);
+        const cr = critOverride !== null ? critOverride : (a.system.combat?.critRate || 0);
+
         const hR = await new Roll("1d100").evaluate(); const hit = hR.total <= hr;
         let crit = false; if (hit && cr > 0) { const cR = await new Roll("1d100").evaluate(); crit = cR.total <= cr; }
         if (weapon.system.uses) await weapon.update({ "system.uses.value": Math.max(weapon.system.uses.value - 1, 0) });
         const fd = crit ? dmg * 3 : dmg;
+
+        const penaltyNote = penalties.length ? `<p class="feue-penalty"><b>${penalties.join(", ")}</b> — penalties applied</p>` : "";
         ChatMessage.create({
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: a }),
-            content: `<div class="feue-attack-roll"><h3>${a.name} attacks with ${weapon.name}!</h3><p><b>Hit:</b> ${hR.total} vs ${hr}% — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && cr > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd} (${weapon.system.might} Mt + ${di.value} ${di.stat}${crit ? " × 3" : ""})</p>` : ""}<p><b>Range:</b> ${weapon.system.range}</p></div>`
+            content: `<div class="feue-attack-roll"><h3>${a.name} attacks with ${weapon.name}!</h3>${penaltyNote}<p><b>Hit:</b> ${hR.total} vs ${hr}% — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && cr > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd} (${baseMight} Mt + ${di.value} ${di.stat}${mightMult !== 1 ? ` × ${mightMult}` : ""}${crit ? " × 3" : ""})</p>` : ""}<p><b>Range:</b> ${weapon.system.range}</p></div>`
         });
     }
 
@@ -724,16 +836,27 @@ class FireEmblemCharacterSheet extends ActorSheet {
     async _executeCombatArt(art, weapon) {
         const a = this.actor, dc = Number(art.system.durabilityCost || 0), uses = weapon.system.uses;
         if (uses && dc > 0 && uses.value < dc) return ui.notifications.warn(`Not enough durability on ${weapon.name}.`);
-        const di = a.getDamageStat(weapon.system.weaponType), dmg = Number(weapon.system.might || 0) + di.value;
-        const hr = (a.system.combat?.baseHitRate || 0) + Number(weapon.system.hit || 0);
-        const cr = (a.system.combat?.baseCritRate || 0) + Number(weapon.system.crit || 0);
+
+        const di = a.getDamageStat(weapon.system.weaponType);
+        const artMt = Number(art.system.might || 0);
+        const artHit = Number(art.system.hit || 0);
+        const artCrit = Number(art.system.crit || 0);
+
+        const dmg = Number(weapon.system.might || 0) + di.value + artMt;
+        const hr = (a.system.combat?.baseHitRate || 0) + Number(weapon.system.hit || 0) + artHit;
+        const cr = (a.system.combat?.baseCritRate || 0) + Number(weapon.system.crit || 0) + artCrit;
+
         const hR = await new Roll("1d100").evaluate(); const hit = hR.total <= hr;
         let crit = false; if (hit && cr > 0) { const cR = await new Roll("1d100").evaluate(); crit = cR.total <= cr; }
         if (uses && dc > 0) await weapon.update({ "system.uses.value": Math.max(uses.value - dc, 0) });
         const fd = crit ? dmg * 3 : dmg;
+
+        const dmgParts = [`${weapon.system.might} Mt`, `${di.value} ${di.stat}`];
+        if (artMt) dmgParts.push(`${artMt > 0 ? "+" : ""}${artMt} Art`);
+
         ChatMessage.create({
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: a }),
-            content: `<div class="feue-attack-roll"><h3>${a.name} uses ${art.name} with ${weapon.name}!</h3><p><b>Hit:</b> ${hR.total} vs ${hr}% — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && cr > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd} (${weapon.system.might} Mt + ${di.value} ${di.stat}${crit ? " × 3" : ""})</p>` : ""}<p><b>Effect:</b> ${art.system.effect || "—"} | <b>Dur Cost:</b> ${dc}</p></div>`
+            content: `<div class="feue-attack-roll"><h3>${a.name} uses ${art.name} with ${weapon.name}!</h3><p><b>Hit:</b> ${hR.total} vs ${hr}%${artHit ? ` (incl. ${artHit > 0 ? "+" : ""}${artHit} Art)` : ""} — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && cr > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}${artCrit ? ` (incl. ${artCrit > 0 ? "+" : ""}${artCrit} Art)` : ""}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd} (${dmgParts.join(" + ")}${crit ? " × 3" : ""})</p>` : ""}<p><b>Effect:</b> ${art.system.effect || "—"} | <b>Dur Cost:</b> ${dc}</p></div>`
         });
     }
 
