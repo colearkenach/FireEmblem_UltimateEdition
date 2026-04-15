@@ -861,7 +861,7 @@
 .feue-levelup {
     background: linear-gradient(135deg, var(--feue-header-bg) 0%, var(--feue-primary) 100%);
     color: white;
-    padding: 12px;
+    padding: 2px;
     border-radius: 6px;
     border: 2px solid var(--feue-accent);
     margin: 5px 0;
@@ -872,7 +872,7 @@
     font-family: var(--feue-font-gba);
     letter-spacing: 1px;
     margin: 0 0 8px 0;
-    font-size: 25px;
+    font-size: 20px;
     color: var(--feue-secondary);
 }
 
@@ -891,8 +891,8 @@
     border-radius: 3px;
     font-family: var(--feue-font-gba);
     /*font-weight: bold;*/
-    font-size: 30px;
-    letter-spacing: 5px;
+    font-size: 20px;
+    letter-spacing: 0px;
 }
 
 /* ===== CHAT MESSAGES: ATTACK ROLL ===== */
