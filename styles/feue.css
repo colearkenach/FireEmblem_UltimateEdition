@@ -378,13 +378,14 @@
 .feue .growth-rate input {
     /*width: 38px;*/
     text-align: center;
-    border: 1px solid var(--feue-border);
+    border: 2px solid var(--feue-border);
     border-radius: 3px;
     padding: 2px;
     font-family: var(--feue-font-gba);
     font-size: 28px;
     background: white;
     color: var(--feue-primary);
+    height: 30px;
 }
 
 .feue .attribute-value input:disabled,
@@ -430,7 +431,8 @@
     font-weight: bold;
     color: var(--feue-secondary);
     min-width: 60px;
-    font-size: 12px;
+    font-size: 15px;
+    text-align: center;
 }
 
 .feue .weapon-rank select {
@@ -440,6 +442,7 @@
     background: white;
     font-size: 15px;
     flex: 1;
+    max-width: fit-content;
 }
 
 .feue .no-proficiency-note {
@@ -590,6 +593,7 @@
     margin-bottom: 8px;
     border-bottom: 2px solid var(--feue-accent);
     padding-bottom: 4px;
+    max-height: fit-content;
 }
 
 .feue .section-header h3 {
@@ -614,9 +618,15 @@
     border-color: var(--feue-secondary);
 }
 
+.feue .item-image {
+    border-radius: 3px;
+}
+
 .feue .item-image img {
     border: 1px solid var(--feue-border);
     border-radius: 3px;
+    width: 50px;
+    height: 50px;
 }
 
 .feue .item-name {
@@ -624,7 +634,8 @@
     margin: 0 10px;
     font-weight: bold;
     color: var(--feue-text);
-    font-size: 15px;
+    font-size: 20px;
+    width: max-content;
 }
 
 .feue .item-controls {
@@ -687,7 +698,7 @@
     display: flex;
     gap: 3px;
     margin-right: 8px;
-    flex-wrap: wrap;
+    /*flex-wrap: wrap;*/
 }
 
 .feue .weapon-stats span {
@@ -697,7 +708,6 @@
     border-radius: 10px;
     font-family: var(--feue-font-gba);
     font-size: 20px;
-    letter-spacing: 2px;
     font-weight: normal;
     line-height: 1.4;
     white-space: nowrap;
@@ -798,7 +808,7 @@
 
 .feue .details-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
     gap: 10px;
 }
 
@@ -811,7 +821,8 @@
 .feue .detail label {
     font-weight: bold;
     color: var(--feue-secondary);
-    font-size: 12px;
+    font-size: 16px;
+    text-shadow: 0 0 black;
 }
 
 .feue .detail input {
@@ -819,7 +830,7 @@
     border-radius: 3px;
     padding: 4px 6px;
     background: white;
-    font-size: 12px;
+    font-size: 15px;
 }
 
 .feue .biography-text,
@@ -841,7 +852,7 @@
     border-radius: 4px;
     padding: 8px;
     font-family: var(--feue-font-body);
-    font-size: 12px;
+    font-size: 14px;
     resize: vertical;
     background: white;
 }
@@ -1215,6 +1226,10 @@
     flex-direction: row;
     align-content: center;
     gap: 5.73px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
 }
 
 .feue .flexcol {
