@@ -91,7 +91,10 @@
 
             {{!-- Weapon Ranks --}}
             <div class="weapon-ranks">
-                <h3>Weapon Ranks</h3>
+                <div class="section-header">
+                    <h3>Weapon Ranks</h3>
+                    <span class="wexp-display" title="Weapon EXP — spend to advance ranks">WEXP: {{actor.system.weaponExp}}</span>
+                </div>
 
                 {{!-- Proficient weapons from equipped class --}}
                 {{#if hasClassProficiencies}}
@@ -104,6 +107,7 @@
                             <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
                             {{/each}}
                         </select>
+                        <a class="wexp-spend" data-weapon-type="{{weapon}}" title="Spend 1 WEXP to advance"><i class="fas fa-arrow-up"></i></a>
                     </div>
                     {{/each}}
                 </div>
@@ -161,6 +165,57 @@
                         <input type="number" name="system.experience" value="{{actor.system.experience}}" data-dtype="Number" min="0" max="100" />
                     </div>
                 </div>
+            </div>
+
+            {{!-- Status Effects --}}
+            <div class="status-effects-section">
+                <div class="section-header">
+                    <h3>Status Effects</h3>
+                    <a class="status-effect-add" title="Add Status Effect"><i class="fas fa-plus"></i> Add</a>
+                </div>
+                {{#if actor.system.statusEffects.length}}
+                <div class="status-effects-list">
+                    {{#each actor.system.statusEffects as |effect idx|}}
+                    <div class="status-effect flexrow" data-effect-index="{{idx}}">
+                        <span class="effect-name">{{effect.name}}</span>
+                        <div class="effect-duration">
+                            <label>Dur:</label>
+                            <input type="number" class="effect-duration-input" value="{{effect.duration}}" data-effect-index="{{idx}}" min="-1" title="-1 = indefinite" />
+                        </div>
+                        <a class="status-effect-remove" data-effect-index="{{idx}}" title="Remove"><i class="fas fa-times"></i></a>
+                    </div>
+                    {{/each}}
+                </div>
+                {{else}}
+                <p class="empty-note">No active status effects.</p>
+                {{/if}}
+            </div>
+
+            {{!-- Supports --}}
+            <div class="supports-section">
+                <div class="section-header">
+                    <h3>Supports ({{supportCount}} / {{supportLimit}})</h3>
+                    <a class="support-add" title="Add Support Partner"><i class="fas fa-plus"></i> Add</a>
+                </div>
+                {{#if supportEntries.length}}
+                <div class="supports-list">
+                    {{#each supportEntries as |sup|}}
+                    <div class="support-entry flexrow" data-support-key="{{sup.key}}">
+                        <span class="support-name">{{sup.name}}</span>
+                        <span class="support-affinity">{{sup.affinity}}</span>
+                        <select class="support-rank-select" data-support-key="{{sup.key}}">
+                            {{#each ../FEUE.SUPPORT_RANKS as |r|}}
+                            <option value="{{r}}" {{#ifEquals r sup.rank}}selected{{/ifEquals}}>{{r}}</option>
+                            {{/each}}
+                        </select>
+                        <span class="support-bonus">{{sup.bonusText}}</span>
+                        <a class="support-remove" data-support-key="{{sup.key}}" title="Remove"><i class="fas fa-times"></i></a>
+                    </div>
+                    {{/each}}
+                </div>
+                {{else}}
+                <p class="empty-note">No support partners.</p>
+                {{/if}}
             </div>
         </div>
 
@@ -261,6 +316,10 @@
                     <div class="item-quantity">{{item.system.quantity}}</div>
                     <div class="item-weight">{{item.system.weight}} wt</div>
                     <div class="item-controls">
+                        {{#ifEquals item.system.itemType "consumable"}}
+                        <span class="item-uses">{{item.system.uses.value}}/{{item.system.uses.max}}</span>
+                        <a class="item-control use-item" title="Use"><i class="fas fa-flask"></i></a>
+                        {{/ifEquals}}
                         {{#ifEquals item.system.itemType "equippable"}}
                         <a class="item-control item-equip" title="{{#if item.system.equipped}}Unequip{{else}}Equip{{/if}}"><i class="fas {{#if item.system.equipped}}fa-shield-alt{{else}}fa-hand-paper{{/if}}"></i></a>
                         {{/ifEquals}}

@@ -25,6 +25,23 @@ const FEUE = {
         "firearm": "Firearm", "unarmed": "Unarmed", "knife": "Knife",
         "anima": "Anima", "light": "Light", "dark": "Dark",
         "staff": "Staff", "monster": "Monster", "stone": "Stone"
+    },
+    STATUS_EFFECTS: [
+        "Berserk", "Silence", "Sleep", "Poison", "Petrification",
+        "Paralysis", "Shock", "Rattled", "Confusion", "Blood Sacrifice",
+        "Burning", "Buffeted", "Frozen", "Guard Break", "Knocked Out"
+    ],
+    SUPPORT_RANKS: ["C", "B", "A", "S"],
+    SUPPORT_RANK_MULTIPLIER: { C: 1, B: 2, A: 3, S: 4 },
+    AFFINITY_BONUSES: {
+        Fire: { primary: "Atk", secondary: "Hit", pVal: 1, sVal: 1 },
+        Thunder: { primary: "Def", secondary: "Avo", pVal: 1, sVal: 1 },
+        Wind: { primary: "AS", secondary: "Avo", pVal: 1, sVal: 1 },
+        Ice: { primary: "Res", secondary: "Dodge", pVal: 1, sVal: 1 },
+        Earth: { primary: "Avo", secondary: "Dodge", pVal: 1, sVal: 1 },
+        Dark: { primary: "Crit", secondary: "Atk", pVal: 1, sVal: 1 },
+        Light: { primary: "Hit", secondary: "Crit", pVal: 1, sVal: 1 },
+        Anima: { primary: "Dodge", secondary: "Res", pVal: 1, sVal: 1 }
     }
 };
 
@@ -336,6 +353,17 @@ class FireEmblemActor extends Actor {
             const currentNode = this._getCurrentClassNode(ec);
             await this._grantClassSkills(currentNode, { exactLevel: newLevel });
         }
+
+        // Award WEXP at level 4 and every 4 levels
+        if (newLevel >= 4 && newLevel % 4 === 0 && ec) {
+            const node = this._getCurrentClassNode(ec);
+            const profs = Object.entries(node.weaponProficiencies || {}).filter(([, v]) => v);
+            const wexpGain = profs.length;
+            if (wexpGain > 0) {
+                await this.update({ "system.weaponExp": (system.weaponExp || 0) + wexpGain });
+                ui.notifications.info(`${this.name} gained ${wexpGain} Weapon EXP!`);
+            }
+        }
     }
 
     async _showPromotionDialog(classItem, promotions) {
@@ -637,6 +665,21 @@ class FireEmblemCharacterSheet extends ActorSheet {
             if (key !== "hp") data.nonHpAttributes[key] = val;
         }
 
+        // Support ranks
+        const cha = this.actor.system.attributes?.charm?.value || 0;
+        data.supportLimit = Math.min(1 + Math.floor(cha / 4), 8);
+        const supports = this.actor.system.supportRanks || {};
+        data.supportEntries = Object.entries(supports).map(([key, val]) => {
+            const aff = FEUE.AFFINITY_BONUSES[val.affinity] || null;
+            const mult = FEUE.SUPPORT_RANK_MULTIPLIER[val.rank] || 0;
+            let bonusText = "—";
+            if (aff && mult) {
+                bonusText = `+${aff.pVal * mult} ${aff.primary}, +${aff.sVal * mult} ${aff.secondary}`;
+            }
+            return { key, name: val.name, rank: val.rank, affinity: val.affinity, bonusText };
+        });
+        data.supportCount = data.supportEntries.length;
+
         // Ensure Level Up Bonus item exists (migration for pre-existing actors)
         if (!this.actor.items.find(i => i.type === "miscBonus" && i.getFlag("feue", "isLevelUpBonus"))) {
             this.actor._getOrCreateLevelUpBonus();  // fire-and-forget, sheet will re-render
@@ -727,6 +770,32 @@ class FireEmblemCharacterSheet extends ActorSheet {
         html.find(".roll-battalion").click(async (ev) => this._onRollBattalion(ev));
         html.find(".roll-spell").click(async (ev) => this._onRollSpell(ev));
         html.find(".roll-combat-art").click(async (ev) => this._onRollCombatArt(ev));
+        html.find(".item-control.use-item").click(async (ev) => this._onUseItem(ev));
+
+        // Status effects
+        html.find(".status-effect-add").click(() => this._onAddStatusEffect());
+        html.find(".status-effect-remove").click(ev => this._onRemoveStatusEffect(Number($(ev.currentTarget).data("effect-index"))));
+        html.find(".effect-duration-input").change(ev => {
+            const idx = Number($(ev.currentTarget).data("effect-index"));
+            const val = Number(ev.currentTarget.value);
+            const statuses = foundry.utils.deepClone(this.actor.system.statusEffects || []);
+            if (statuses[idx]) {
+                statuses[idx].duration = val;
+                this.actor.update({ "system.statusEffects": statuses });
+            }
+        });
+
+        // Weapon EXP spending
+        html.find(".wexp-spend").click(async (ev) => this._onSpendWexp(ev));
+
+        // Supports
+        html.find(".support-add").click(() => this._onAddSupport());
+        html.find(".support-remove").click(ev => this._onRemoveSupport($(ev.currentTarget).data("support-key")));
+        html.find(".support-rank-select").change(ev => {
+            const key = $(ev.currentTarget).data("support-key");
+            const rank = ev.currentTarget.value;
+            this.actor.update({ [`system.supportRanks.${key}.rank`]: rank });
+        });
 
         html.find(".other-weapons-toggle").click(ev => {
             const toggle = $(ev.currentTarget);
@@ -751,12 +820,37 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const weapon = this.actor.items.get(event.currentTarget.dataset.weaponId);
         if (!weapon) return;
 
+        new Dialog({
+            title: `Attack with ${weapon.name}`,
+            content: `<form>
+                <div class="form-group"><label>Weapon Triangle</label>
+                    <select id="wt-triangle">
+                        <option value="none">None</option>
+                        <option value="advantage">Advantage (+15 Hit, +3 Mt)</option>
+                        <option value="disadvantage">Disadvantage (-15 Hit, -3 Mt)</option>
+                    </select>
+                </div>
+            </form>`,
+            buttons: {
+                roll: {
+                    icon: '<i class="fas fa-dice-d10"></i>', label: "Roll",
+                    callback: (h) => {
+                        const triangle = h.find("#wt-triangle").val();
+                        this._executeAttack(weapon, triangle);
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "roll"
+        }).render(true);
+    }
+
+    async _executeAttack(weapon, triangle = "none") {
         const a = this.actor;
         const isBroken = (weapon.system.uses?.value ?? 1) <= 0;
         const isNonProf = !a.canUseWeapon(weapon);
         const penalties = [];
 
-        // Determine modifiers based on weapon state
         let mightMult = 1, hitMult = 1, critOverride = null;
         if (isBroken) {
             mightMult = 0; hitMult = 0.5; critOverride = 0;
@@ -766,10 +860,15 @@ class FireEmblemCharacterSheet extends ActorSheet {
             penalties.push("NON-PROFICIENT");
         }
 
+        // Weapon triangle modifiers
+        let triHit = 0, triMt = 0, triNote = "";
+        if (triangle === "advantage") { triHit = 15; triMt = 3; triNote = "WTA +15 Hit, +3 Mt"; }
+        else if (triangle === "disadvantage") { triHit = -15; triMt = -3; triNote = "WTD -15 Hit, -3 Mt"; }
+
         const di = a.getDamageStat(weapon.system.weaponType);
         const baseMight = isBroken ? 0 : Number(weapon.system.might || 0);
-        const dmg = Math.floor((baseMight + di.value) * mightMult);
-        const hr = Math.floor((a.system.combat?.hitRate || 0) * hitMult);
+        const dmg = Math.max(Math.floor((baseMight + di.value) * mightMult) + triMt, 0);
+        const hr = Math.max(Math.floor((a.system.combat?.hitRate || 0) * hitMult) + triHit, 0);
         const cr = critOverride !== null ? critOverride : (a.system.combat?.critRate || 0);
 
         const hR = await new Roll("1d100").evaluate(); const hit = hR.total <= hr;
@@ -778,9 +877,10 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const fd = crit ? dmg * 3 : dmg;
 
         const penaltyNote = penalties.length ? `<p class="feue-penalty"><b>${penalties.join(", ")}</b> — penalties applied</p>` : "";
+        const triNoteHtml = triNote ? `<p class="feue-triangle"><b>${triNote}</b></p>` : "";
         ChatMessage.create({
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: a }),
-            content: `<div class="feue-attack-roll"><h3>${a.name} attacks with ${weapon.name}!</h3>${penaltyNote}<p><b>Hit:</b> ${hR.total} vs ${hr}% — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && cr > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd} (${baseMight} Mt + ${di.value} ${di.stat}${mightMult !== 1 ? ` × ${mightMult}` : ""}${crit ? " × 3" : ""})</p>` : ""}<p><b>Range:</b> ${weapon.system.range}</p></div>`
+            content: `<div class="feue-attack-roll"><h3>${a.name} attacks with ${weapon.name}!</h3>${penaltyNote}${triNoteHtml}<p><b>Hit:</b> ${hR.total} vs ${hr}% — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && cr > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd} (${baseMight} Mt + ${di.value} ${di.stat}${triMt ? ` ${triMt > 0 ? "+" : ""}${triMt} WT` : ""}${mightMult !== 1 ? ` × ${mightMult}` : ""}${crit ? " × 3" : ""})</p>` : ""}<p><b>Range:</b> ${weapon.system.range}</p></div>`
         });
     }
 
@@ -801,18 +901,32 @@ class FireEmblemCharacterSheet extends ActorSheet {
         event.preventDefault();
         const sp = this.actor.items.get(event.currentTarget.dataset.itemId);
         if (!sp) return;
-        const a = this.actor, cost = Number(sp.system.hpCost || 0), curHp = a.system.attributes?.hp?.value || 0;
+        const a = this.actor;
+        const baseCost = Number(sp.system.hpCost || 0);
+
+        // Spell Admix: equipped weapon name matches spell name → +2 Mt, +10 Hit, +5 Crit, -2 HP cost
+        const ew = a.items.find(i => i.type === "weapon" && i.system?.equipped);
+        const admix = ew && ew.name.toLowerCase() === sp.name.toLowerCase();
+        const admixMt = admix ? 2 : 0;
+        const admixHit = admix ? 10 : 0;
+        const admixCrit = admix ? 5 : 0;
+        const cost = admix ? Math.max(baseCost - 2, 1) : baseCost;
+
+        const curHp = a.system.attributes?.hp?.value || 0;
         if (cost > 0 && curHp <= cost) return ui.notifications.warn("Not enough HP.");
-        const mag = a.system.attributes?.magic?.value || 0, dmg = Number(sp.system.might || 0) + mag;
-        const hr = (a.system.combat?.baseHitRate || 0) + Number(sp.system.hit || 0);
-        const cr = (a.system.combat?.baseCritRate || 0) + Number(sp.system.crit || 0);
+        const mag = a.system.attributes?.magic?.value || 0;
+        const dmg = Number(sp.system.might || 0) + mag + admixMt;
+        const hr = (a.system.combat?.baseHitRate || 0) + Number(sp.system.hit || 0) + admixHit;
+        const cr = (a.system.combat?.baseCritRate || 0) + Number(sp.system.crit || 0) + admixCrit;
         const hR = await new Roll("1d100").evaluate(); const hit = hR.total <= hr;
         let crit = false; if (hit && cr > 0) { const cR = await new Roll("1d100").evaluate(); crit = cR.total <= cr; }
         if (cost > 0) await a.update({ "system.attributes.hp.value": curHp - cost });
         const fd = crit ? dmg * 3 : dmg;
+
+        const admixNote = admix ? `<p class="feue-admix"><b>Spell Admix!</b> ${ew.name} equipped — +2 Mt, +10 Hit, +5 Crit, -2 HP cost</p>` : "";
         ChatMessage.create({
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: a }),
-            content: `<div class="feue-attack-roll"><h3>${a.name} casts ${sp.name}!</h3><p><b>School:</b> ${sp.system.school} | <b>HP Cost:</b> ${cost}</p><p><b>Hit:</b> ${hR.total} vs ${hr}% — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && cr > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd} (${sp.system.might} Mt + ${mag} MAG${crit ? " × 3" : ""})</p>` : ""}<p><b>Range:</b> ${sp.system.range}</p></div>`
+            content: `<div class="feue-attack-roll"><h3>${a.name} casts ${sp.name}!</h3>${admixNote}<p><b>School:</b> ${sp.system.school} | <b>HP Cost:</b> ${cost}${admix ? ` (base ${baseCost})` : ""}</p><p><b>Hit:</b> ${hR.total} vs ${hr}%${admix ? ` (incl. +${admixHit} Admix)` : ""} — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && cr > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}${admix ? ` (incl. +${admixCrit} Admix)` : ""}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd} (${sp.system.might} Mt + ${mag} MAG${admix ? ` + ${admixMt} Admix` : ""}${crit ? " × 3" : ""})</p>` : ""}<p><b>Range:</b> ${sp.system.range}</p></div>`
         });
     }
 
@@ -857,6 +971,172 @@ class FireEmblemCharacterSheet extends ActorSheet {
         ChatMessage.create({
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: a }),
             content: `<div class="feue-attack-roll"><h3>${a.name} uses ${art.name} with ${weapon.name}!</h3><p><b>Hit:</b> ${hR.total} vs ${hr}%${artHit ? ` (incl. ${artHit > 0 ? "+" : ""}${artHit} Art)` : ""} — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && cr > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}${artCrit ? ` (incl. ${artCrit > 0 ? "+" : ""}${artCrit} Art)` : ""}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd} (${dmgParts.join(" + ")}${crit ? " × 3" : ""})</p>` : ""}<p><b>Effect:</b> ${art.system.effect || "—"} | <b>Dur Cost:</b> ${dc}</p></div>`
+        });
+    }
+
+    async _onSpendWexp(event) {
+        event.preventDefault();
+        const weaponType = event.currentTarget.dataset.weaponType;
+        const wexp = this.actor.system.weaponExp || 0;
+        if (wexp <= 0) return ui.notifications.warn("No Weapon EXP available.");
+
+        const currentRank = this.actor.system.weaponRanks?.[weaponType] || "";
+        const rankOrder = ["", "E", "D", "C", "B", "A", "S"];
+        const idx = rankOrder.indexOf(currentRank);
+        if (idx >= rankOrder.length - 1) return ui.notifications.warn(`${weaponType} is already at max rank (S).`);
+
+        const nextRank = rankOrder[idx + 1];
+        await this.actor.update({
+            [`system.weaponRanks.${weaponType}`]: nextRank,
+            "system.weaponExp": wexp - 1
+        });
+        ui.notifications.info(`${FEUE.WeaponTypes[weaponType]} rank advanced to ${nextRank}! (1 WEXP spent)`);
+    }
+
+    _onAddSupport() {
+        const cha = this.actor.system.attributes?.charm?.value || 0;
+        const limit = Math.min(1 + Math.floor(cha / 4), 8);
+        const current = Object.keys(this.actor.system.supportRanks || {}).length;
+        if (current >= limit) return ui.notifications.warn(`Support limit reached (${limit}).`);
+
+        const affOpts = FEUE.AFFINITIES.map(a => `<option value="${a}">${a}</option>`).join("");
+        const rankOpts = FEUE.SUPPORT_RANKS.map(r => `<option value="${r}">${r}</option>`).join("");
+        new Dialog({
+            title: "Add Support Partner",
+            content: `<form>
+                <div class="form-group"><label>Partner Name</label><input type="text" id="sp-name" placeholder="Character name" /></div>
+                <div class="form-group"><label>Partner Affinity</label><select id="sp-aff">${affOpts}</select></div>
+                <div class="form-group"><label>Starting Rank</label><select id="sp-rank">${rankOpts}</select></div>
+            </form>`,
+            buttons: {
+                add: {
+                    icon: '<i class="fas fa-plus"></i>', label: "Add",
+                    callback: async (h) => {
+                        const name = h.find("#sp-name").val()?.trim();
+                        if (!name) return;
+                        const affinity = h.find("#sp-aff").val();
+                        const rank = h.find("#sp-rank").val();
+                        const key = foundry.utils.randomID();
+                        await this.actor.update({ [`system.supportRanks.${key}`]: { name, affinity, rank } });
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "add"
+        }).render(true);
+    }
+
+    async _onRemoveSupport(key) {
+        await this.actor.update({ [`system.supportRanks.-=${key}`]: null });
+    }
+
+    _onAddStatusEffect() {
+        const opts = FEUE.STATUS_EFFECTS.map(e => `<option value="${e}">${e}</option>`).join("");
+        new Dialog({
+            title: "Add Status Effect",
+            content: `<form>
+                <div class="form-group"><label>Effect</label><select id="se-name">${opts}<option value="__custom">Custom...</option></select></div>
+                <div class="form-group" id="se-custom-group" style="display:none;"><label>Custom Name</label><input type="text" id="se-custom" /></div>
+                <div class="form-group"><label>Duration (turns, -1 = indefinite)</label><input type="number" id="se-dur" value="3" min="-1" /></div>
+            </form>`,
+            buttons: {
+                add: {
+                    icon: '<i class="fas fa-plus"></i>', label: "Add",
+                    callback: async (h) => {
+                        let name = h.find("#se-name").val();
+                        if (name === "__custom") name = h.find("#se-custom").val()?.trim();
+                        if (!name) return;
+                        const dur = Number(h.find("#se-dur").val()) || 3;
+                        const statuses = foundry.utils.deepClone(this.actor.system.statusEffects || []);
+                        statuses.push({ name, duration: dur });
+                        await this.actor.update({ "system.statusEffects": statuses });
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "add",
+            render: (h) => {
+                h.find("#se-name").change(ev => {
+                    h.find("#se-custom-group").toggle(ev.currentTarget.value === "__custom");
+                });
+            }
+        }).render(true);
+    }
+
+    async _onRemoveStatusEffect(idx) {
+        const statuses = foundry.utils.deepClone(this.actor.system.statusEffects || []);
+        if (idx >= 0 && idx < statuses.length) {
+            statuses.splice(idx, 1);
+            await this.actor.update({ "system.statusEffects": statuses });
+        }
+    }
+
+    async _onUseItem(event) {
+        event.preventDefault();
+        const itemId = $(event.currentTarget).closest(".item").data("item-id");
+        const item = this.actor.items.get(itemId);
+        if (!item || item.type !== "item") return;
+
+        const uses = item.system.uses;
+        if (uses && uses.value <= 0) {
+            return ui.notifications.warn(`${item.name} has no uses remaining.`);
+        }
+
+        const a = this.actor;
+        const effect = (item.system.effect || "").toLowerCase();
+        const name = item.name.toLowerCase();
+        const results = [];
+
+        // Full HP restore
+        if (/restore\s+all\s+hp|full\s+hp|restore.*max.*hp/.test(effect) || name === "elixir") {
+            const maxHp = a.system.attributes.hp.max;
+            const curHp = a.system.attributes.hp.value;
+            const healed = maxHp - curHp;
+            await a.update({ "system.attributes.hp.value": maxHp });
+            results.push(`Restored all HP (+${healed})`);
+        } else {
+            // Partial HP restore
+            const hpMatch = effect.match(/(?:restore|heal|\+)\s*(\d+)\s*hp/);
+            if (hpMatch || name === "vulnerary") {
+                const amount = hpMatch ? Number(hpMatch[1]) : 10;
+                const maxHp = a.system.attributes.hp.max;
+                const curHp = a.system.attributes.hp.value;
+                const newHp = Math.min(curHp + amount, maxHp);
+                const healed = newHp - curHp;
+                await a.update({ "system.attributes.hp.value": newHp });
+                results.push(`Restored ${healed} HP (${curHp} → ${newHp})`);
+            }
+        }
+
+        // Cure poison
+        if (/cure.*poison|remove.*poison/.test(effect) || name === "antitoxin") {
+            const statuses = foundry.utils.deepClone(a.system.statusEffects || []);
+            const idx = statuses.findIndex(s => (s.name || s).toLowerCase() === "poison");
+            if (idx >= 0) {
+                statuses.splice(idx, 1);
+                await a.update({ "system.statusEffects": statuses });
+                results.push("Cured Poison");
+            } else {
+                results.push("No Poison to cure");
+            }
+        }
+
+        // Generic effect — display text if no known pattern matched
+        if (!results.length && item.system.effect) {
+            results.push(item.system.effect);
+        }
+
+        // Decrement uses
+        if (uses) {
+            const newUses = Math.max(uses.value - 1, 0);
+            await item.update({ "system.uses.value": newUses });
+            if (newUses <= 0) results.push("Item depleted!");
+        }
+
+        ChatMessage.create({
+            user: game.user.id,
+            speaker: ChatMessage.getSpeaker({ actor: a }),
+            content: `<div class="feue-item-use"><h3>${a.name} uses ${item.name}</h3><p>${results.join("</p><p>")}</p></div>`
         });
     }
 

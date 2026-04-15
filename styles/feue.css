@@ -1195,6 +1195,138 @@
     text-transform: uppercase;
 }
 
+/* ===== STATUS EFFECTS ===== */
+.feue .status-effects-section {
+    margin-top: 8px;
+}
+
+.feue .status-effects-section .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.feue .status-effects-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.feue .status-effect {
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    background: rgba(139, 69, 19, 0.08);
+    border: 1px solid var(--feue-border);
+    border-radius: 4px;
+}
+
+.feue .effect-name {
+    flex: 1;
+    font-weight: bold;
+    color: var(--feue-accent);
+}
+
+.feue .effect-duration {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.feue .effect-duration input {
+    width: 40px;
+    text-align: center;
+}
+
+.feue .status-effect-remove {
+    cursor: pointer;
+    color: #a0522d;
+}
+
+.feue .status-effect-add {
+    cursor: pointer;
+    color: var(--feue-accent);
+}
+
+/* ===== SUPPORTS ===== */
+.feue .supports-section {
+    margin-top: 8px;
+}
+
+.feue .supports-section .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.feue .supports-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.feue .support-entry {
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    background: rgba(44, 72, 117, 0.08);
+    border: 1px solid var(--feue-border);
+    border-radius: 4px;
+}
+
+.feue .support-name {
+    flex: 1;
+    font-weight: bold;
+}
+
+.feue .support-affinity {
+    font-size: 11px;
+    color: #666;
+}
+
+.feue .support-rank-select {
+    width: 45px;
+}
+
+.feue .support-bonus {
+    font-size: 11px;
+    color: var(--feue-accent);
+}
+
+.feue .support-remove {
+    cursor: pointer;
+    color: #a0522d;
+}
+
+.feue .support-add {
+    cursor: pointer;
+    color: var(--feue-accent);
+}
+
+/* ===== WEAPON EXP ===== */
+.feue .wexp-display {
+    font-weight: bold;
+    color: var(--feue-accent);
+    font-size: 12px;
+}
+
+.feue .wexp-spend {
+    cursor: pointer;
+    color: var(--feue-accent);
+    margin-left: 4px;
+}
+
+.feue .wexp-spend:hover {
+    color: #2c4875;
+}
+
+/* ===== CONSUMABLE USES ===== */
+.feue .item-uses {
+    font-size: 11px;
+    color: #666;
+    margin-right: 4px;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 800px) {
     .feue .sheet-header {
