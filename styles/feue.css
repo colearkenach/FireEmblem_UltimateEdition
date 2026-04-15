@@ -125,8 +125,8 @@
     border: none;
     color: white;
     font-size: 22px;
-    font-weight: bold;
-    text-transform: uppercase;
+    /*font-weight: bold;*/
+    /*text-transform: uppercase;*/
     letter-spacing: 1px;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
     padding: 0;
@@ -146,19 +146,20 @@
 }
 
 .feue .resource-label {
-    font-weight: bold;
+    /*font-weight: bold;*/
     min-width: 55px;
     color: var(--feue-secondary);
-    font-size: 14px;
+    font-size: 25px;
     font-family: var(--feue-font-gba);
     text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
-    letter-spacing: 0.5px;
+    letter-spacing: 5.5px;
 }
 
 .feue .resource-value {
     color: rgba(255, 255, 255, 0.9);
     font-family: var(--feue-font-gba);
-    font-size: 13px;
+    font-size: 25px;
+    letter-spacing: 3px;
 }
 
 .feue .resource-value input,
@@ -169,7 +170,7 @@
     padding: 2px 6px;
     border-radius: 3px;
     width: 50px;
-    font-size: 13px;
+    font-size: 25px;
     font-family: var(--feue-font-gba);
     text-align: center;
 }
@@ -187,7 +188,7 @@
 
 .feue .hp-fields .hp-current {
     width: 50px;
-    font-size: 15px;
+    font-size: 25px;
     font-family: var(--feue-font-gba);
     color: #90ee90;
     text-align: center;
@@ -199,7 +200,7 @@
 
 .feue .hp-fields .hp-max {
     font-family: var(--feue-font-gba);
-    font-size: 13px;
+    font-size: 25px;
     color: rgba(255, 255, 255, 0.7);
 }
 
@@ -210,10 +211,10 @@
     border: 1px solid #5a1520;
     border-radius: 4px;
     padding: 5px 14px;
-    font-weight: bold;
+    /*font-weight: bold;*/
     font-family: var(--feue-font-gba);
-    font-size: 11px;
-    letter-spacing: 0.5px;
+    font-size: 25px;
+    letter-spacing: 2.7px;
     text-transform: uppercase;
     cursor: pointer;
     margin-left: 8px;
@@ -246,9 +247,9 @@
     padding: 6px 12px;
     font-family: var(--feue-font-gba);
     font-weight: normal;
-    font-size: 13px;
+    font-size: 25px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 2px;
     line-height: 1.4;
     transition: all 0.15s ease;
     display: flex;
@@ -262,7 +263,7 @@
 
 .feue .tabs .item.active {
     background: var(--feue-tab-active);
-    color: white;
+    color: gold;
     border-bottom-color: var(--feue-secondary);
 }
 
@@ -355,7 +356,7 @@
     text-transform: capitalize;
     min-width: 80px;
     color: var(--feue-secondary);
-    font-size: 12px;
+    font-size: 15px;
 }
 
 .feue .attribute-value {
@@ -378,7 +379,7 @@
     border-radius: 3px;
     padding: 2px;
     font-family: var(--feue-font-gba);
-    font-size: 13px;
+    font-size: 20px;
     background: white;
     color: var(--feue-primary);
 }
@@ -434,14 +435,14 @@
     border-radius: 3px;
     padding: 2px 4px;
     background: white;
-    font-size: 12px;
+    font-size: 15px;
     flex: 1;
 }
 
 .feue .no-proficiency-note {
     color: #8b4513;
     font-style: italic;
-    font-size: 12px;
+    font-size: 15px;
     margin: 4px 0 8px;
 }
 
@@ -454,7 +455,7 @@
 
 .feue .other-weapons-toggle {
     cursor: pointer;
-    font-size: 12px;
+    font-size: 15px;
     font-weight: bold;
     color: var(--feue-secondary);
     display: inline-flex;
@@ -507,7 +508,7 @@
 .feue .details .resource label {
     font-weight: bold;
     color: var(--feue-secondary);
-    font-size: 12px;
+    font-size: 15px;
 }
 
 .feue .movement .resource input,
@@ -519,7 +520,7 @@
     border-radius: 3px;
     padding: 3px 4px;
     font-family: var(--feue-font-gba);
-    font-size: 13px;
+    font-size: 25px;
     background: white;
 }
 
@@ -531,7 +532,7 @@
 .feue .details .resource select {
     width: auto;
     font-family: var(--feue-font-body);
-    font-size: 12px;
+    font-size: 15px;
     text-align: left;
 }
 
@@ -560,7 +561,7 @@
     display: block;
     font-weight: bold;
     color: var(--feue-secondary);
-    font-size: 10px;
+    font-size: 15px;
     font-family: var(--feue-font-header);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -569,10 +570,10 @@
 
 .feue .computed-value {
     font-family: var(--feue-font-gba);
-    font-size: 22px;
-    font-weight: bold;
+    font-size: 25px;
+    /*font-weight: bold;*/
     color: white;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
@@ -618,7 +619,7 @@
     margin: 0 10px;
     font-weight: bold;
     color: var(--feue-text);
-    font-size: 13px;
+    font-size: 15px;
 }
 
 .feue .item-controls {
@@ -634,7 +635,7 @@
     padding: 4px 6px;
     cursor: pointer;
     transition: all 0.15s ease;
-    font-size: 11px;
+    font-size: 20px;
 }
 
 .feue .item-control:hover {
@@ -649,7 +650,7 @@
     border: 1px solid var(--feue-primary);
     border-radius: 4px;
     padding: 2px 8px;
-    font-size: 11px;
+    font-size: 20px;
     font-family: var(--feue-font-gba);
     color: white;
     background: linear-gradient(180deg, var(--feue-tab-active), var(--feue-primary));
@@ -673,7 +674,7 @@
     color: var(--feue-secondary);
     font-style: italic;
     margin: 0;
-    font-size: 12px;
+    font-size: 20px;
 }
 
 /* ===== WEAPON STAT BADGES ===== */
@@ -690,7 +691,8 @@
     padding: 2px 7px;
     border-radius: 10px;
     font-family: var(--feue-font-gba);
-    font-size: 11px;
+    font-size: 20px;
+    letter-spacing: 2px;
     font-weight: normal;
     line-height: 1.4;
     white-space: nowrap;
@@ -711,7 +713,7 @@
 
 .feue .combat-art-details {
     margin: 0;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--feue-secondary);
     font-style: italic;
 }
@@ -723,13 +725,13 @@
 
 .feue .inventory-limit h3 {
     font-family: var(--feue-font-gba);
-    font-size: 13px;
+    font-size: 12px;
     margin-bottom: 4px;
 }
 
 .feue .item-quantity {
     font-family: var(--feue-font-gba);
-    font-size: 13px;
+    font-size: 25px;
     color: var(--feue-primary);
     min-width: 28px;
     text-align: center;
@@ -741,7 +743,7 @@
 
 .feue .item-weight {
     font-family: var(--feue-font-gba);
-    font-size: 11px;
+    font-size: 20px;
     color: var(--feue-secondary);
     min-width: 40px;
     text-align: center;
@@ -772,7 +774,7 @@
 .feue .spell-details,
 .feue .class-details {
     margin: 0;
-    font-size: 11px;
+    font-size: 20px;
     color: var(--feue-secondary);
     font-style: italic;
 }
@@ -854,7 +856,7 @@
     font-family: var(--feue-font-gba);
     letter-spacing: 1px;
     margin: 0 0 8px 0;
-    font-size: 14px;
+    font-size: 25px;
     color: var(--feue-secondary);
 }
 
@@ -869,12 +871,12 @@
 .feue-levelup .gain {
     background: rgba(255, 255, 255, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 3px 8px;
+    padding: 1px 8px;
     border-radius: 3px;
     font-family: var(--feue-font-gba);
-    font-weight: bold;
-    font-size: 12px;
-    letter-spacing: 0.5px;
+    /*font-weight: bold;*/
+    font-size: 30px;
+    letter-spacing: 5px;
 }
 
 /* ===== CHAT MESSAGES: ATTACK ROLL ===== */
