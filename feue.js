@@ -1520,6 +1520,7 @@ class FireEmblemItem extends Item {
 }
 
 class FireEmblemItemSheet extends ItemSheet {
+    static _promotionClipboard = null;
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             classes: ["feue", "sheet", "item"], template: "systems/feue/templates/item/item-sheet.html",
@@ -1548,6 +1549,15 @@ class FireEmblemItemSheet extends ItemSheet {
                 const ok = await Dialog.confirm({ title: "Delete Promotion", content: "<p>Delete this promotion and all sub-promotions?</p>" });
                 if (ok) this._deletePromotion($(ev.currentTarget).data("path").toString().split(","));
             });
+            html.on("click", ".promo-copy", (ev) => {
+                const path = $(ev.currentTarget).data("path").toString().split(",");
+                this._copyPromotion(path);
+            });
+            html.find(".promo-paste-root").click(() => this._pastePromotion([]));
+            html.on("click", ".promo-paste-sub", (ev) => {
+                const parentPath = $(ev.currentTarget).data("path").toString().split(",");
+                this._pastePromotion(parentPath);
+            });
 
             // ── Promotion Tree: drag-and-drop class items ──
             const promoContainer = html.find("#promotion-tree-container")[0];
@@ -1555,8 +1565,8 @@ class FireEmblemItemSheet extends ItemSheet {
                 promoContainer.addEventListener("dragover", (e) => e.preventDefault());
                 promoContainer.addEventListener("drop", (e) => this._onDropClassPromotion(e, []));
             }
-            html.on("dragover", ".promo-add-sub", (e) => e.preventDefault());
-            html.on("drop", ".promo-add-sub", (e) => {
+            html.on("dragover", ".promo-add-sub, .promo-paste-sub", (e) => e.preventDefault());
+            html.on("drop", ".promo-add-sub, .promo-paste-sub", (e) => {
                 const parentPath = $(e.currentTarget).data("path").toString().split(",");
                 this._onDropClassPromotion(e.originalEvent, parentPath);
             });
@@ -1622,8 +1632,10 @@ class FireEmblemItemSheet extends ItemSheet {
                         ${checked ? '<span class="promo-tree-check"><i class="fas fa-check-circle"></i> Active</span>' : ""}
                     </span>
                     <a class="promo-edit" data-path="${path}" title="Edit" style="cursor:pointer;"><i class="fas fa-edit"></i></a>
+                    <a class="promo-copy" data-path="${path}" title="Copy Promotion" style="cursor:pointer;color:#5a8a5a;"><i class="fas fa-copy"></i></a>
                     <a class="promo-delete" data-path="${path}" title="Delete" style="cursor:pointer;color:#a0522d;"><i class="fas fa-trash"></i></a>
-                    <a class="promo-add-sub" data-path="${path}" title="Add Sub-Promotion" style="cursor:pointer;color:#2c4875;"><i class="fas fa-plus"></i></a>
+                    ${isProm ? "" : `<a class="promo-add-sub" data-path="${path}" title="Add Sub-Promotion" style="cursor:pointer;color:#2c4875;"><i class="fas fa-plus"></i></a>
+                    <a class="promo-paste-sub" data-path="${path}" title="Paste Sub-Promotion" style="cursor:pointer;color:#5a8a5a;"><i class="fas fa-paste"></i></a>`}
                 </div>
                 ${p.promotions?.length ? this._buildTreeHTML(p.promotions, nodePath, currentPath) : ""}
             </li>`;
@@ -1673,6 +1685,43 @@ class FireEmblemItemSheet extends ItemSheet {
         const idx = nodes.findIndex(n => n.id === path[path.length - 1]);
         if (idx !== -1) nodes.splice(idx, 1);
         await this.item.update({ "system.promotions": promos });
+    }
+
+    _copyPromotion(path) {
+        const promos = this.item.system.promotions || [];
+        let nodes = promos, node = null;
+        for (const id of path) {
+            node = nodes.find(n => n.id === id);
+            if (!node) return;
+            nodes = node.promotions || [];
+        }
+        if (!node) return;
+        FireEmblemItemSheet._promotionClipboard = foundry.utils.deepClone(node);
+        ui.notifications.info(`Copied promotion "${node.name}" to clipboard.`);
+    }
+
+    async _pastePromotion(parentPath) {
+        const clip = FireEmblemItemSheet._promotionClipboard;
+        if (!clip) {
+            ui.notifications.warn("No promotion copied. Use the copy button on a promotion first.");
+            return;
+        }
+        const reassignIds = (node) => {
+            node.id = foundry.utils.randomID();
+            for (const child of (node.promotions || [])) reassignIds(child);
+        };
+        const newP = foundry.utils.deepClone(clip);
+        reassignIds(newP);
+        const promos = foundry.utils.deepClone(this.item.system.promotions || []);
+        if (!parentPath.length) {
+            promos.push(newP);
+        } else {
+            let nodes = promos, parent = null;
+            for (const id of parentPath) { parent = nodes.find(n => n.id === id); if (!parent) return; parent.promotions ??= []; nodes = parent.promotions; }
+            if (parent) parent.promotions.push(newP);
+        }
+        await this.item.update({ "system.promotions": promos });
+        ui.notifications.info(`Pasted promotion "${newP.name}".`);
     }
 
     async _onDropClassPromotion(event, parentPath) {
