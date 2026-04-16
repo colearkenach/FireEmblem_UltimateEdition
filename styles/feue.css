@@ -923,12 +923,12 @@
 .feue.item .sheet-header {
     padding: 8px 12px;
     min-height: 60px;
-    max-height: 70px;
+    max-height: 100px;
 }
 
 .feue.item .sheet-header .item-img {
-    width: 48px;
-    height: 48px;
+    width: 80px;
+    height: 80px;
     border: 2px solid var(--feue-secondary);
     border-radius: 4px;
     flex-shrink: 0;
