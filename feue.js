@@ -277,7 +277,11 @@ class FireEmblemActor extends Actor {
             const node = this._getCurrentClassNode(equippedClass);
             system.activeClassName = node.name;
             system.activeClassType = node.classType;
-            baseStats = foundry.utils.deepClone(node.baseStats || {});
+            // Promoted/Advanced classes have no inherent base stats — all stat
+            // value comes from the level-up bonus item.  Their "baseStats" field
+            // stores promotion bonuses (applied once at promotion time).
+            const isPromoted = ["Promoted", "Advanced"].includes(node.classType);
+            baseStats = isPromoted ? {} : foundry.utils.deepClone(node.baseStats || {});
             growths = foundry.utils.deepClone(node.growthRates || {});
             caps = foundry.utils.deepClone(node.statCaps || {});
             classMovement = Number(node.movement || 0);
@@ -558,46 +562,53 @@ class FireEmblemActor extends Actor {
         const promoteToAdvanced = ["Promoted", "Advanced"].includes(nextType);
         const fromBaseClass = ["Recruit", "Standard"].includes(prevType);
 
-        // ── Adjust Level Up Bonus to account for base stat change ──
+        // ── Adjust Level Up Bonus to account for promotion ──
         const bonusItem = await this._getOrCreateLevelUpBonus();
         const bonusUpdates = {};
 
+        // Track whether the previous class was Promoted/Advanced (base=0 in derivation)
+        const prevIsPromoted = ["Promoted", "Advanced"].includes(prevType);
+        const prevEffectiveBase = (key) => prevIsPromoted ? 0 : Number(previousNode?.baseStats?.[key] || 0);
+
         for (const key of FEUE.STAT_KEYS) {
-            const prevBase = Number(previousNode?.baseStats?.[key] || 0);
-            const nextBase = Number(chosenNode?.baseStats?.[key] || 0);
             const currentBonus = Number(bonusItem.system.bonuses?.attributes?.[key] || 0);
+            const currentTotal = prevEffectiveBase(key) + currentBonus;
 
-            // Current total stat = prevBase + currentBonus (ignoring equipment etc.)
-            const currentTotal = prevBase + currentBonus;
-
-            let targetTotal = currentTotal;
+            let newBonus = currentBonus;
 
             if (fromBaseClass && !promoteToAdvanced) {
-                // Recruit→Standard: floor to new base
-                targetTotal = Math.max(currentTotal, nextBase);
+                // Recruit→Standard: floor to new base, then store remainder as bonus
+                const nextBase = Number(chosenNode?.baseStats?.[key] || 0);
+                const targetTotal = Math.max(currentTotal, nextBase);
+                newBonus = Math.max(targetTotal - nextBase, 0);
             } else if (promoteToAdvanced) {
-                // Standard→Promoted/Advanced: add delta between bases
-                targetTotal = currentTotal + Math.max(nextBase - prevBase, 0);
+                // Standard→Promoted/Advanced: add promotion bonuses, capped by new stat caps.
+                // Promoted classes have effective base 0, so all value lives in the bonus.
+                const promoBonus = Number(chosenNode?.baseStats?.[key] || 0);
+                const cap = Number(chosenNode?.statCaps?.[key] || 0);
+                const uncapped = currentTotal + promoBonus;
+                newBonus = cap > 0 ? Math.min(uncapped, cap) : uncapped;
             }
 
-            // New bonus = target total - new base
-            const newBonus = Math.max(targetTotal - nextBase, 0);
             bonusUpdates[`system.bonuses.attributes.${key}`] = newBonus;
         }
 
         await bonusItem.update(bonusUpdates);
 
         // ── Bump current HP to match new max ──
-        // (prepareDerivedData will recalculate hp.max, but we need to adjust hp.value)
-        const oldHpMax = Number(this.system.attributes?.hp?.max || 0);
-        const prevHpBase = Number(previousNode?.baseStats?.hp || 0);
-        const nextHpBase = Number(chosenNode?.baseStats?.hp || 0);
         const oldHpBonus = Number(bonusItem.system.bonuses?.attributes?.hp || 0);
-        const oldTotal = prevHpBase + oldHpBonus;  // use pre-update bonus for old total
-        let newHpTotal = oldTotal;
-        if (fromBaseClass && !promoteToAdvanced) newHpTotal = Math.max(oldTotal, nextHpBase);
-        else if (promoteToAdvanced) newHpTotal = oldTotal + Math.max(nextHpBase - prevHpBase, 0);
-        const hpDiff = newHpTotal - oldTotal;
+        const oldHpTotal = prevEffectiveBase("hp") + oldHpBonus;
+        let newHpTotal = oldHpTotal;
+        if (fromBaseClass && !promoteToAdvanced) {
+            const nextHpBase = Number(chosenNode?.baseStats?.hp || 0);
+            newHpTotal = Math.max(oldHpTotal, nextHpBase);
+        } else if (promoteToAdvanced) {
+            const promoHpBonus = Number(chosenNode?.baseStats?.hp || 0);
+            const hpCap = Number(chosenNode?.statCaps?.hp || 0);
+            const uncapped = oldHpTotal + promoHpBonus;
+            newHpTotal = hpCap > 0 ? Math.min(uncapped, hpCap) : uncapped;
+        }
+        const hpDiff = newHpTotal - oldHpTotal;
         if (hpDiff > 0) {
             await this.update({
                 "system.attributes.hp.value": (this.system.attributes?.hp?.value || 0) + hpDiff
@@ -1739,7 +1750,7 @@ class FireEmblemItemSheet extends ItemSheet {
                 <div style="display:flex;gap:8px;"><div class="form-group" style="flex:1;"><label>Max Level</label><input type="number" id="pml" value="${promo.maxLevel || 20}"/></div><div class="form-group" style="flex:1;"><label>Movement</label><input type="number" id="pmv" value="${promo.movement || 5}"/></div></div>
                 <hr/><h4>Unit Types</h4><div>${unitTypeChecks}</div>
                 <hr/><h4>Weapon Proficiencies</h4><div>${weaponChecks}</div>
-                <hr/><div id="pbs"><h4>${isProm ? "Base Stats (Promotion Targets)" : "Base Stats"}</h4><div>${sr("bs", bs)}</div><hr/></div>
+                <hr/><div id="pbs"><h4>${isProm ? "Promotion Bonuses" : "Base Stats"}</h4><div>${sr("bs", bs)}</div><hr/></div>
                 <h4>Growth Rates</h4><div>${sr("gr", gr)}</div><hr/>
                 <h4>Stat Caps</h4><div>${sr("sc", sc)}</div>
                 <hr/><h4>Class Skills</h4>
@@ -1766,7 +1777,7 @@ class FireEmblemItemSheet extends ItemSheet {
                 h.find("#pct").change(ev => {
                     const v = ev.currentTarget.value;
                     const isProm = ["Promoted", "Advanced"].includes(v);
-                    h.find("#pbs h4").text(isProm ? "Base Stats (Promotion Targets)" : "Base Stats");
+                    h.find("#pbs h4").text(isProm ? "Promotion Bonuses" : "Base Stats");
                 });
 
                 // ── Skills: drop zone ──
