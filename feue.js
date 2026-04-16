@@ -1538,6 +1538,18 @@ class FireEmblemItemSheet extends ItemSheet {
                 if (ok) this._deletePromotion($(ev.currentTarget).data("path").toString().split(","));
             });
 
+            // ── Promotion Tree: drag-and-drop class items ──
+            const promoContainer = html.find("#promotion-tree-container")[0];
+            if (promoContainer) {
+                promoContainer.addEventListener("dragover", (e) => e.preventDefault());
+                promoContainer.addEventListener("drop", (e) => this._onDropClassPromotion(e, []));
+            }
+            html.on("dragover", ".promo-add-sub", (e) => e.preventDefault());
+            html.on("drop", ".promo-add-sub", (e) => {
+                const parentPath = $(e.currentTarget).data("path").toString().split(",");
+                this._onDropClassPromotion(e.originalEvent, parentPath);
+            });
+
             // ── Class Skills: drag-and-drop, level change, removal ──
             const skillList = html.find(".class-skills-list");
             if (skillList.length) {
@@ -1581,7 +1593,7 @@ class FireEmblemItemSheet extends ItemSheet {
         if (!c.length) return;
         const promos = this.item.system.promotions || [];
         const currentPath = this.item.system.currentPath || [];
-        c.html(promos.length ? this._buildTreeHTML(promos, [], currentPath) : '<p style="color:#8b4513; font-style:italic;">No promotions defined.</p>');
+        c.html(promos.length ? this._buildTreeHTML(promos, [], currentPath) : '<p style="color:#8b4513; font-style:italic;">No promotions defined. Drag class items here or click Add Promotion.</p>');
     }
 
     _buildTreeHTML(promos, parentPath, currentPath) {
@@ -1650,6 +1662,43 @@ class FireEmblemItemSheet extends ItemSheet {
         const idx = nodes.findIndex(n => n.id === path[path.length - 1]);
         if (idx !== -1) nodes.splice(idx, 1);
         await this.item.update({ "system.promotions": promos });
+    }
+
+    async _onDropClassPromotion(event, parentPath) {
+        event.preventDefault();
+        event.stopPropagation();
+        let data;
+        try { data = JSON.parse(event.dataTransfer.getData("text/plain")); } catch { return; }
+        if (data.type !== "Item") return;
+        const item = await Item.implementation.fromDropData(data);
+        if (!item || item.type !== "class") {
+            ui.notifications.warn("Only class items can be dropped onto the promotion tree.");
+            return;
+        }
+        const newP = {
+            id: foundry.utils.randomID(),
+            name: item.name,
+            classType: item.system.classType || "Promoted",
+            maxLevel: item.system.maxLevel || 20,
+            movement: item.system.movement || 5,
+            unitTypes: foundry.utils.deepClone(item.system.unitTypes || {}),
+            weaponProficiencies: foundry.utils.deepClone(item.system.weaponProficiencies || {}),
+            baseStats: foundry.utils.deepClone(item.system.baseStats || {}),
+            growthRates: foundry.utils.deepClone(item.system.growthRates || {}),
+            statCaps: foundry.utils.deepClone(item.system.statCaps || {}),
+            classSkills: foundry.utils.deepClone(item.system.classSkills || []),
+            promotions: []
+        };
+        const promos = foundry.utils.deepClone(this.item.system.promotions || []);
+        if (!parentPath.length) {
+            promos.push(newP);
+        } else {
+            let nodes = promos, parent = null;
+            for (const id of parentPath) { parent = nodes.find(n => n.id === id); if (!parent) return; parent.promotions ??= []; nodes = parent.promotions; }
+            if (parent) parent.promotions.push(newP);
+        }
+        await this.item.update({ "system.promotions": promos });
+        ui.notifications.info(`Added "${item.name}" as a promotion.`);
     }
 
     _openPromotionDialog(promo, onSave) {
