@@ -242,7 +242,8 @@
       "skillType": "Passive",
       "prerequisites": "",
       "level": "Innate",
-      "activation": ""
+      "activation": "",
+      "grantedByClass": ""
     },
     "class": {
       "templates": [ "base" ],

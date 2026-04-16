@@ -1383,6 +1383,73 @@
     margin-right: 4px;
 }
 
+/* ===== SKILL ACTIVATION ===== */
+.feue .skill-activation {
+    font-size: 10px;
+    color: #666;
+    font-style: italic;
+    margin: 0;
+}
+
+.feue .use-skill i {
+    color: #daa520;
+}
+
+/* ===== STAT CAP GREEN ===== */
+.feue .attribute.at-cap input,
+.feue .attribute.at-cap span {
+    color: #228b22 !important;
+    font-weight: bold;
+}
+
+.feue .attribute.at-cap .attribute-label {
+    color: #228b22;
+    font-weight: bold;
+}
+
+/* ===== LEVEL RESET BUTTON ===== */
+.feue .level-reset {
+    background: linear-gradient(180deg, #a04040, #752020);
+    color: white;
+    border: 1px solid #601010;
+    border-radius: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+.feue .level-reset:hover {
+    background: linear-gradient(180deg, #c05050, #903030);
+}
+
+/* ===== WEAPON USES ON COMBAT TAB ===== */
+.feue .weapon-uses {
+    color: #666;
+    font-size: 11px;
+    font-style: italic;
+}
+
+/* ===== LEVEL RESET CHAT ===== */
+.feue-level-reset {
+    border-left: 3px solid #a04040;
+    padding-left: 8px;
+}
+
+/* ===== STATUS UPDATE CHAT ===== */
+.feue-status-update {
+    border-left: 3px solid #daa520;
+    padding-left: 8px;
+    font-style: italic;
+}
+
+/* ===== TARGET NOTE IN CHAT ===== */
+.feue-target {
+    color: #4a6fa5;
+    font-style: italic;
+    margin: 2px 0;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 800px) {
     .feue .sheet-header {
