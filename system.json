@@ -38,7 +38,64 @@
   "styles": [
     "styles/feue.css"
   ],
-  "packs": [],
+  "packs": [
+    {
+      "name": "battalion",
+      "label": "Battalion",
+      "path": "packs/battalion",
+      "type": "Item",
+      "system": "feue"
+    },
+    {
+      "name": "classes",
+      "label": "Classes",
+      "path": "packs/classes",
+      "type": "Item",
+      "system": "feue"
+    },
+    {
+      "name": "combat-arts",
+      "label": "Combat Arts",
+      "path": "packs/combat-arts",
+      "type": "Item",
+      "system": "feue"
+    },
+    {
+      "name": "consumables",
+      "label": "Consumables",
+      "path": "packs/consumables",
+      "type": "Item",
+      "system": "feue"
+    },
+    {
+      "name": "equippable-items",
+      "label": "Equippable Items",
+      "path": "packs/equippable-items",
+      "type": "Item",
+      "system": "feue"
+    },
+    {
+      "name": "skills",
+      "label": "Skills",
+      "path": "packs/skills",
+      "type": "Item",
+      "system": "feue"
+    },
+    {
+      "name": "spell",
+      "label": "Spell",
+      "path": "packs/spell",
+      "type": "Item",
+      "system": "feue"
+    },
+    {
+      "name": "weapons",
+      "label": "Weapons",
+      "path": "packs/weapons",
+      "type": "Item",
+      "system": "feue"
+    }
+  ],
   "languages": [
     {
       "lang": "en",
