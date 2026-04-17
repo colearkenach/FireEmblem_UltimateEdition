@@ -163,6 +163,49 @@
                 <div class="form-group"><label>Level</label><select name="system.level"><option value="Innate" {{#ifEquals item.system.level "Innate"}} selected{{/ifEquals}}>Innate</option><option value="1" {{#ifEquals item.system.level "1"}} selected{{/ifEquals}}>1</option><option value="5" {{#ifEquals item.system.level "5"}} selected{{/ifEquals}}>5</option><option value="10" {{#ifEquals item.system.level "10"}} selected{{/ifEquals}}>10</option><option value="15" {{#ifEquals item.system.level "15"}} selected{{/ifEquals}}>15</option><option value="20" {{#ifEquals item.system.level "20"}} selected{{/ifEquals}}>20</option><option value="30" {{#ifEquals item.system.level "30"}} selected{{/ifEquals}}>30</option></select></div>
             </div>
             <div class="form-group"><label>Effects</label><textarea name="system.activation" rows="2">{{item.system.activation}}</textarea></div>
+
+            {{#unless (eq item.system.skillType "Passive")}}
+            <fieldset style="margin-top:8px;padding:6px;border:1px solid #aaa;border-radius:4px;">
+                <legend>Activation</legend>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Trigger</label>
+                        <select name="system.activationTrigger">
+                            <option value="Manual" {{#ifEquals item.system.activationTrigger "Manual"}} selected{{/ifEquals}}>Manual</option>
+                            <option value="Attack" {{#ifEquals item.system.activationTrigger "Attack"}} selected{{/ifEquals}}>On Attack</option>
+                            <option value="Defense" {{#ifEquals item.system.activationTrigger "Defense"}} selected{{/ifEquals}}>On Defense</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Target Type</label>
+                        <select name="system.activationTargetType">
+                            <option value="stat_mult" {{#ifEquals item.system.activationTargetType "stat_mult"}} selected{{/ifEquals}}>Stat × Multiplier</option>
+                            <option value="stat" {{#ifEquals item.system.activationTargetType "stat"}} selected{{/ifEquals}}>Stat Only</option>
+                            <option value="fixed" {{#ifEquals item.system.activationTargetType "fixed"}} selected{{/ifEquals}}>Fixed Number</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Stat</label>
+                        <select name="system.activationStat">
+                            <option value="hp" {{#ifEquals item.system.activationStat "hp"}} selected{{/ifEquals}}>HP</option>
+                            <option value="strength" {{#ifEquals item.system.activationStat "strength"}} selected{{/ifEquals}}>Strength</option>
+                            <option value="magic" {{#ifEquals item.system.activationStat "magic"}} selected{{/ifEquals}}>Magic</option>
+                            <option value="skill" {{#ifEquals item.system.activationStat "skill"}} selected{{/ifEquals}}>Skill</option>
+                            <option value="speed" {{#ifEquals item.system.activationStat "speed"}} selected{{/ifEquals}}>Speed</option>
+                            <option value="defense" {{#ifEquals item.system.activationStat "defense"}} selected{{/ifEquals}}>Defense</option>
+                            <option value="resistance" {{#ifEquals item.system.activationStat "resistance"}} selected{{/ifEquals}}>Resistance</option>
+                            <option value="luck" {{#ifEquals item.system.activationStat "luck"}} selected{{/ifEquals}}>Luck</option>
+                            <option value="charm" {{#ifEquals item.system.activationStat "charm"}} selected{{/ifEquals}}>Charm</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Multiplier</label><input type="number" data-dtype="Number" name="system.activationMult" value="{{item.system.activationMult}}" step="0.1" /></div>
+                    <div class="form-group"><label>Fixed #</label><input type="number" data-dtype="Number" name="system.activationFixed" value="{{item.system.activationFixed}}" /></div>
+                </div>
+                <p style="font-size:11px;opacity:0.7;margin:4px 0 0;">Target number is rolled against on 1d100 (success on roll ≤ target). Attack/Defense triggers fire automatically on the relevant roll; Manual must be triggered from the sheet.</p>
+            </fieldset>
+            {{/unless}}
         </div>
         {{/if}}
 
