@@ -150,47 +150,20 @@
                 {{/if}}
             </div>
 
-            {{!-- Battalion Ranks --}}
+            {{!-- Battalion Rank --}}
             <div class="battalion-ranks">
                 <div class="section-header">
-                    <h3>Battalion Ranks</h3>
+                    <h3>Battalion Rank</h3>
                 </div>
-                {{#if hasBattalionProficiencies}}
                 <div class="weapon-ranks-grid proficient-grid">
-                    {{#each proficientBattalions as |rank btype|}}
-                    <div class="weapon-rank flexrow proficient">
-                        <label class="weapon-label">{{lookup ../battalionTypeLabels btype}}</label>
-                        <select name="system.battalionRanks.{{btype}}" data-battalion-type="{{btype}}">
-                            {{#each ../weaponRankOptions as |opt|}}
-                            <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
+                    <div class="weapon-rank flexrow {{#if hasBattalionProficiency}}proficient{{/if}}">
+                        <label class="weapon-label">Battalion{{#unless hasBattalionProficiency}} (non-proficient){{/unless}}</label>
+                        <select name="system.battalionRank">
+                            {{#each weaponRankOptions as |opt|}}
+                            <option value="{{opt.key}}" {{#ifEquals ../battalionRank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
                             {{/each}}
                         </select>
-                        <a class="wexp-spend-battalion" data-battalion-type="{{btype}}" title="Spend 1 WEXP to advance"><i class="fas fa-arrow-up"></i></a>
-                    </div>
-                    {{/each}}
-                </div>
-                {{else}}
-                <p class="no-proficiency-note">No battalion proficiencies from class.</p>
-                {{/if}}
-
-                <div class="other-weapons-section">
-                    <a class="battalion-ranks-toggle">
-                        <i class="fas fa-caret-right"></i> Other Battalion Types
-                    </a>
-                    <div class="battalion-ranks-content" style="display: none;">
-                        <div class="weapon-ranks-grid other-grid">
-                            {{#each otherBattalions as |rank btype|}}
-                            <div class="weapon-rank flexrow">
-                                <label class="weapon-label">{{lookup ../battalionTypeLabels btype}}</label>
-                                <select name="system.battalionRanks.{{btype}}" data-battalion-type="{{btype}}">
-                                    {{#each ../weaponRankOptions as |opt|}}
-                                    <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
-                                    {{/each}}
-                                </select>
-                                <a class="wexp-spend-battalion" data-battalion-type="{{btype}}" title="Spend 2 WEXP to buy rank (max S)"><i class="fas fa-coins"></i></a>
-                            </div>
-                            {{/each}}
-                        </div>
+                        <a class="wexp-spend-battalion" title="Spend WEXP to advance ({{#if hasBattalionProficiency}}1{{else}}2{{/if}})"><i class="fas {{#if hasBattalionProficiency}}fa-arrow-up{{else}}fa-coins{{/if}}"></i></a>
                     </div>
                 </div>
             </div>

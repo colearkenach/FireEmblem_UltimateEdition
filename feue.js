@@ -26,10 +26,6 @@ const FEUE = {
         "anima": "Anima", "light": "Light", "dark": "Dark",
         "staff": "Staff", "monster": "Monster", "stone": "Stone"
     },
-    BattalionTypes: {
-        "infantry": "Infantry", "cavalry": "Cavalry", "flying": "Flying",
-        "armored": "Armored", "magic": "Magic", "healing": "Healing"
-    },
     CLASS_MAX_RANK: {
         "Recruit": "C",
         "Standard": "A",
@@ -142,9 +138,6 @@ FEUE.WEAPON_RANK_ARTS = {
 
 const DEFAULT_WEAPON_RANKS = Object.fromEntries(
     Object.keys(FEUE.WeaponTypes).map(type => [type, ""])
-);
-const DEFAULT_BATTALION_RANKS = Object.fromEntries(
-    Object.keys(FEUE.BattalionTypes).map(type => [type, ""])
 );
 const RANK_ORDER = ["", "E", "D", "C", "B", "A", "S"];
 function rankIdx(r) { return RANK_ORDER.indexOf(r || ""); }
@@ -343,7 +336,7 @@ class FireEmblemActor extends Actor {
             maxLevel: sys.maxLevel, baseStats: sys.baseStats || {},
             growthRates: sys.growthRates || {}, statCaps: sys.statCaps || {},
             unitTypes: sys.unitTypes || {}, weaponProficiencies: sys.weaponProficiencies || {},
-            battalionProficiencies: sys.battalionProficiencies || {},
+            battalionProficiency: !!sys.battalionProficiency,
             classSkills: Array.isArray(sys.classSkills) ? sys.classSkills : [],
             promotions: sys.promotions || []
         };
@@ -365,12 +358,7 @@ class FireEmblemActor extends Actor {
             if (system.weaponRanks[key] === undefined || Array.isArray(system.weaponRanks[key])) system.weaponRanks[key] = "";
         }
 
-        // Battalion ranks
-        system.battalionRanks = foundry.utils.mergeObject(foundry.utils.deepClone(DEFAULT_BATTALION_RANKS), system.battalionRanks || {}, { overwrite: true });
-        for (const key of Object.keys(DEFAULT_BATTALION_RANKS)) {
-            if (system.battalionRanks[key] === undefined || Array.isArray(system.battalionRanks[key])) system.battalionRanks[key] = "";
-        }
-
+        if (typeof system.battalionRank !== "string") system.battalionRank = "";
         system.weaponMasteryBonuses ??= {};
 
         // Resolve equipped class node
@@ -653,8 +641,7 @@ class FireEmblemActor extends Actor {
         if (newLevel >= 4 && newLevel % 4 === 0 && ec) {
             const node = this._getCurrentClassNode(ec);
             const wProfs = Object.entries(node.weaponProficiencies || {}).filter(([, v]) => v);
-            const bProfs = Object.entries(node.battalionProficiencies || {}).filter(([, v]) => v);
-            const wexpGain = wProfs.length + bProfs.length;
+            const wexpGain = wProfs.length + (node.battalionProficiency ? 1 : 0);
             if (wexpGain > 0) {
                 await this.update({ "system.weaponExp": (system.weaponExp || 0) + wexpGain });
                 ui.notifications.info(`${this.name} gained ${wexpGain} Weapon EXP!`);
@@ -798,11 +785,8 @@ class FireEmblemActor extends Actor {
                 updates[`system.weaponRanks.${wt}`] = "E";
             }
         }
-        const existingBRanks = this.system.battalionRanks || {};
-        for (const bt of Object.keys(FEUE.BattalionTypes)) {
-            if (chosenNode?.battalionProficiencies?.[bt] && !existingBRanks[bt]) {
-                updates[`system.battalionRanks.${bt}`] = "E";
-            }
+        if (chosenNode?.battalionProficiency && !this.system.battalionRank) {
+            updates["system.battalionRank"] = "E";
         }
 
         await this.update(updates);
@@ -1132,16 +1116,8 @@ class FireEmblemCharacterSheet extends ActorSheet {
         }
         data.hasClassProficiencies = Object.keys(data.proficientWeapons).length > 0;
 
-        // Split battalion ranks into proficient vs other
-        const classBattalionProfs = classNode?.battalionProficiencies || {};
-        data.proficientBattalions = {};
-        data.otherBattalions = {};
-        for (const [btype, rank] of Object.entries(this.actor.system.battalionRanks || {})) {
-            if (classBattalionProfs[btype]) data.proficientBattalions[btype] = rank;
-            else data.otherBattalions[btype] = rank;
-        }
-        data.hasBattalionProficiencies = Object.keys(data.proficientBattalions).length > 0;
-        data.battalionTypeLabels = FEUE.BattalionTypes;
+        data.hasBattalionProficiency = !!classNode?.battalionProficiency;
+        data.battalionRank = this.actor.system.battalionRank || "";
 
         // Mastery bonuses (for display)
         data.weaponMasteryDisplay = [];
@@ -2092,40 +2068,36 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
     async _onSpendWexpBattalion(event) {
         event.preventDefault();
-        const battalionType = event.currentTarget.dataset.battalionType;
         const actor = this.actor;
         const wexp = actor.system.weaponExp || 0;
 
         const ec = actor.items.find(i => i.type === "class" && i.system?.equipped);
         const node = ec ? actor._getCurrentClassNode(ec) : null;
-        const isProficient = !!node?.battalionProficiencies?.[battalionType];
+        const isProficient = !!node?.battalionProficiency;
         const cost = isProficient ? 1 : 2;
         if (wexp < cost) return ui.notifications.warn(`Need ${cost} WEXP.`);
 
-        const currentRank = actor.system.battalionRanks?.[battalionType] || "";
-        const curIdx = rankIdx(currentRank);
-
+        const curIdx = rankIdx(actor.system.battalionRank || "");
         const classType = node?.classType || "Standard";
         const cap = FEUE.CLASS_MAX_RANK[classType] || "A";
         let maxIdx;
         if (!isProficient) maxIdx = rankIdx("S");
         else if (cap === "S") maxIdx = rankIdx("S");
         else if (cap === "S_ONE") {
-            const ranks = actor.system.battalionRanks || {};
-            const hasS = Object.entries(ranks).some(([k, v]) => v === "S" && k !== battalionType);
-            maxIdx = hasS ? rankIdx("A") : rankIdx("S");
+            const weaponHasS = Object.values(actor.system.weaponRanks || {}).includes("S");
+            maxIdx = weaponHasS ? rankIdx("A") : rankIdx("S");
         } else maxIdx = rankIdx(cap);
 
         if (curIdx >= maxIdx) {
-            return ui.notifications.warn(`${FEUE.BattalionTypes[battalionType]} is at its max rank (${RANK_ORDER[maxIdx] || "—"}).`);
+            return ui.notifications.warn(`Battalion is at its max rank (${RANK_ORDER[maxIdx] || "—"}).`);
         }
 
         const nextRank = RANK_ORDER[curIdx + 1];
         await actor.update({
-            [`system.battalionRanks.${battalionType}`]: nextRank,
+            "system.battalionRank": nextRank,
             "system.weaponExp": wexp - cost
         });
-        ui.notifications.info(`${FEUE.BattalionTypes[battalionType]} battalion rank advanced to ${nextRank}! (${cost} WEXP spent)`);
+        ui.notifications.info(`Battalion rank advanced to ${nextRank}! (${cost} WEXP spent)`);
     }
 
     async _onRepairWeapon(event) {
