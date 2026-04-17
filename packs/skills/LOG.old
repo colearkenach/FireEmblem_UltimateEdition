@@ -1,16 +1,11 @@
-2026/04/17-14:05:17.410 4428 Recovering log #17
-2026/04/17-14:05:17.410 4428 Level-0 table #20: started
-2026/04/17-14:05:17.413 4428 Level-0 table #20: 51981 bytes OK
-2026/04/17-14:05:17.416 4428 Delete type=0 #17
-2026/04/17-14:05:17.416 4428 Delete type=3 #15
-2026/04/17-19:03:51.537 7b04 Level-0 table #23: started
-2026/04/17-19:03:51.537 7b04 Level-0 table #23: 0 bytes OK
-2026/04/17-19:03:51.539 7b04 Delete type=0 #21
-2026/04/17-19:03:51.548 7b04 Manual compaction at level-0 from '!folders!2SEpLlnpp831MyCx' @ 72057594037927935 : 1 .. '!items!zP1DLR3uV20OVIl0' @ 0 : 0; will stop at '!items!yUDU9kLLV7krgUPo' @ 2462 : 1
-2026/04/17-19:03:51.548 7b04 Compacting 1@0 + 1@1 files
-2026/04/17-19:03:51.550 7b04 Generated table #24@0: 195 keys, 84770 bytes
-2026/04/17-19:03:51.550 7b04 Compacted 1@0 + 1@1 files => 84770 bytes
-2026/04/17-19:03:51.551 7b04 compacted to: files[ 0 1 0 0 0 0 0 ]
-2026/04/17-19:03:51.551 7b04 Delete type=2 #18
-2026/04/17-19:03:51.551 7b04 Delete type=2 #20
-2026/04/17-19:03:51.564 7b04 Manual compaction at level-0 from '!items!yUDU9kLLV7krgUPo' @ 2462 : 1 .. '!items!zP1DLR3uV20OVIl0' @ 0 : 0; will stop at (end)
+2026/04/17-19:13:18.028 6c9c Recovering log #27
+2026/04/17-19:13:18.030 6c9c Delete type=2 #18
+2026/04/17-19:13:18.030 6c9c Delete type=2 #20
+2026/04/17-19:13:18.030 6c9c Delete type=0 #21
+2026/04/17-19:13:18.030 6c9c Delete type=0 #27
+2026/04/17-19:13:18.030 6c9c Delete type=3 #19
+2026/04/17-19:13:18.030 6c9c Delete type=3 #25
+2026/04/17-19:13:35.384 20bc Level-0 table #32: started
+2026/04/17-19:13:35.384 20bc Level-0 table #32: 0 bytes OK
+2026/04/17-19:13:35.385 20bc Delete type=0 #30
+2026/04/17-19:13:35.386 20bc Manual compaction at level-0 from '!folders!2SEpLlnpp831MyCx' @ 72057594037927935 : 1 .. '!items!zP1DLR3uV20OVIl0' @ 0 : 0; will stop at (end)
