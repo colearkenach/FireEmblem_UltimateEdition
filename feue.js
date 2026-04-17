@@ -807,6 +807,7 @@ class FireEmblemActor extends Actor {
     canUseWeapon(weapon) {
         if (!weapon?.system?.weaponType || !weapon?.system?.rank) return true;
         if (this._hasHolyBloodForWeapon(weapon?.name)) return true;
+        if (weapon.system.rank === "Prf") return !!weapon.system.prfProficient;
         const r = this.system.weaponRanks?.[weapon.system.weaponType] || "";
         if (!r) return false;
         return FEUE.WEAPON_RANKS[r].order >= FEUE.WEAPON_RANKS[weapon.system.rank].order;

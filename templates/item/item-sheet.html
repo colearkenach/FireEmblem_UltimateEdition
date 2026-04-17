@@ -102,8 +102,13 @@
         <div class="tab weapon" data-group="primary" data-tab="weapon">
             <div class="form-row">
                 <div class="form-group"><label>Weapon Type</label><select name="system.weaponType">{{#each FEUE.WeaponTypes as |label key|}}<option value="{{key}}" {{#ifEquals ../item.system.weaponType key}} selected{{/ifEquals}}>{{label}}</option>{{/each}}</select></div>
-                <div class="form-group"><label>Weapon Rank</label><select name="system.rank">{{#each FEUE.WEAPON_RANKS as |rd rk|}}{{#unless (eq rk "")}}<option value="{{rk}}" {{#ifEquals ../item.system.rank rk}} selected{{/ifEquals}}>{{rd.label}}</option>{{/unless}}{{/each}}</select></div>
+                <div class="form-group"><label>Weapon Rank</label><select name="system.rank">{{#each FEUE.WEAPON_RANKS as |rd rk|}}{{#unless (eq rk "")}}<option value="{{rk}}" {{#ifEquals ../item.system.rank rk}} selected{{/ifEquals}}>{{rd.label}}</option>{{/unless}}{{/each}}<option value="Prf" {{#ifEquals item.system.rank "Prf"}} selected{{/ifEquals}}>Prf</option></select></div>
             </div>
+            {{#ifEquals item.system.rank "Prf"}}
+            <div class="form-row">
+                <div class="form-group"><label>Proficient for Wielder</label><input type="checkbox" name="system.prfProficient" {{checked item.system.prfProficient}} /></div>
+            </div>
+            {{/ifEquals}}
             <div class="form-row">
                 <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" /></div>
                 <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" /></div>
