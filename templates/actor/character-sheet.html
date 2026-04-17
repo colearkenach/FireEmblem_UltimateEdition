@@ -255,13 +255,17 @@
                     <div class="item-image"><img src="{{weapon.img}}" title="{{weapon.name}}" width="24" height="24" /></div>
                     <h4 class="item-name">{{weapon.name}}</h4>
                     <div class="weapon-stats">
+                        {{#ifEquals weapon.system.weaponType "staff"}}
+                        <span>{{weapon.system.might}} Heal</span>{{#if weapon.system.hit}}<span>{{weapon.system.hit}}% Hit</span>{{/if}}<span>{{weapon.system.range}} Rng</span>
+                        {{else}}
                         <span>{{weapon.system.might}} Mt</span><span>{{weapon.system.hit}}% Hit</span>
                         <span>{{weapon.system.crit}}% Crit</span><span>{{weapon.system.range}} Rng</span>
+                        {{/ifEquals}}
                         {{#if weapon.system.uses.max}}<span class="weapon-uses">({{weapon.system.uses.value}}/{{weapon.system.uses.max}})</span>{{/if}}
                     </div>
                     <div class="item-controls">
                         <a class="item-control weapon-equip" title="{{#if weapon.system.equipped}}Unequip{{else}}Equip{{/if}}"><i class="fas {{#if weapon.system.equipped}}fa-shield-alt{{else}}fa-hand-paper{{/if}}"></i></a>
-                        <a class="item-control roll-attack" data-weapon-id="{{weapon._id}}" title="Attack"><i class="fas fa-dice-d10"></i></a>
+                        <a class="item-control roll-attack" data-weapon-id="{{weapon._id}}" title="{{#ifEquals weapon.system.weaponType "staff"}}Use Staff{{else}}Attack{{/ifEquals}}"><i class="fas {{#ifEquals weapon.system.weaponType "staff"}}fa-heart{{else}}fa-dice-d10{{/ifEquals}}"></i></a>
                         <a class="item-control item-edit" title="Edit"><i class="fas fa-edit"></i></a>
                         <a class="item-control item-delete" title="Delete"><i class="fas fa-trash"></i></a>
                     </div>

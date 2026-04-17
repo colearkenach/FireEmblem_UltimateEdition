@@ -1479,6 +1479,8 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const weapon = this.actor.items.get(event.currentTarget.dataset.weaponId);
         if (!weapon) return;
 
+        if (weapon.system.weaponType === "staff") return this._useStaff(weapon);
+
         const target = this._getTarget();
         const buildPreview = (tri) => {
             const s = this._computeAttackStats(weapon, tri, target);
@@ -1658,6 +1660,89 @@ class FireEmblemCharacterSheet extends ActorSheet {
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: a }),
             content: `<div class="feue-attack-roll"><h3>${a.name} casts ${sp.name}${target ? ` on ${target.name}` : ""}!</h3>${admixNote}${targetNote}<p><b>School:</b> ${sp.system.school} | <b>HP Cost:</b> ${cost}${admix ? ` (base ${baseCost})` : ""}</p><p><b>Hit:</b> ${hR.total} vs ${netHit}%${target ? ` (${rawHit} - ${tAvo} Avo)` : ""}${admix ? ` (incl. +${admixHit} Admix)` : ""} — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && netCrit > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}${admix ? ` (incl. +${admixCrit} Admix)` : ""}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd}${target ? ` (${rawDmg} - ${tRes} Res${crit ? " × 3" : ""})` : ` (${sp.system.might} Mt + ${mag} MAG${admix ? ` + ${admixMt} Admix` : ""}${crit ? " × 3" : ""})`}</p>` : ""}<p><b>Range:</b> ${sp.system.range}</p></div>`
         });
+    }
+
+    async _useStaff(weapon) {
+        const caster = this.actor;
+        const isBroken = (weapon.system.uses?.value ?? 1) <= 0;
+        const isNonProf = !caster.canUseWeapon(weapon);
+        const penalties = [];
+        let mightMult = 1, hitMult = 1;
+        if (isBroken) { mightMult = 0; hitMult = 0.5; penalties.push("BROKEN"); }
+        else if (isNonProf) { mightMult = 0.5; hitMult = 0.5; penalties.push("NON-PROFICIENT"); }
+
+        const mag = caster.system.attributes?.magic?.value || 0;
+        const baseMight = isBroken ? 0 : Number(weapon.system.might || 0);
+        const healing = Math.max(Math.floor((baseMight + mag) * mightMult), 0);
+        const weaponHit = Number(weapon.system.hit || 0);
+        const needsHitRoll = weaponHit > 0;
+        const rawHit = needsHitRoll ? Math.max(Math.floor(((caster.system.combat?.hitRate || 0) + weaponHit) * hitMult), 0) : 0;
+
+        const targetOptions = [`<option value="self">Self (${caster.name})</option>`];
+        if (typeof canvas !== "undefined" && canvas.tokens?.placeables) {
+            for (const token of canvas.tokens.placeables) {
+                if (token.actor && token.actor.id !== caster.id) {
+                    targetOptions.push(`<option value="${token.actor.id}">${token.actor.name}</option>`);
+                }
+            }
+        }
+
+        const penaltyLine = penalties.length ? `<p style="color:red;"><b>${penalties.join(", ")}</b></p>` : "";
+        const hitLine = needsHitRoll ? `<p>Hit: <b>${rawHit}%</b></p>` : "";
+
+        new Dialog({
+            title: `Use ${weapon.name}`,
+            content: `<form>
+                ${penaltyLine}
+                <div class="form-group"><label>Target</label><select id="staff-target">${targetOptions.join("")}</select></div>
+                <p>Healing: <b>${healing}</b> HP (${baseMight} Mt + ${mag} MAG${mightMult !== 1 ? ` × ${mightMult}` : ""})</p>
+                ${hitLine}
+            </form>`,
+            buttons: {
+                use: {
+                    icon: '<i class="fas fa-heart"></i>', label: "Use",
+                    callback: async (h) => {
+                        const targetId = h.find("#staff-target").val();
+                        const target = targetId === "self" ? caster : game.actors.get(targetId);
+                        if (!target) return;
+
+                        let hit = true, hitRollTotal = null;
+                        if (needsHitRoll) {
+                            const tAvo = target.system?.combat?.avoid || 0;
+                            const netHit = Math.max(rawHit - tAvo, 0);
+                            const hR = await new Roll("1d100").evaluate();
+                            hitRollTotal = hR.total;
+                            hit = hR.total <= netHit;
+                        }
+
+                        if (weapon.system.uses) {
+                            const newUses = Math.max(weapon.system.uses.value - 1, 0);
+                            await weapon.update({ "system.uses.value": newUses });
+                            if (newUses > 0 && newUses <= 2) ui.notifications.warn(`${weapon.name} has only ${newUses} use(s) remaining!`);
+                        }
+
+                        let healed = 0, tHp = 0, newHp = 0;
+                        if (hit) {
+                            tHp = target.system.attributes?.hp?.value || 0;
+                            const tMax = target.system.attributes?.hp?.max || 0;
+                            newHp = Math.min(tHp + healing, tMax);
+                            healed = newHp - tHp;
+                            await target.update({ "system.attributes.hp.value": newHp });
+                        }
+
+                        const penaltyNote = penalties.length ? `<p class="feue-penalty"><b>${penalties.join(", ")}</b> — penalties applied</p>` : "";
+                        const hitNote = needsHitRoll ? `<p><b>Hit:</b> ${hitRollTotal} vs ${rawHit}% — <b>${hit ? "HIT" : "MISS"}</b></p>` : "";
+                        const healNote = hit ? `<p><b>Healed:</b> ${healed} HP (${tHp} → ${newHp})</p>` : "";
+                        ChatMessage.create({
+                            user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: caster }),
+                            content: `<div class="feue-heal-roll"><h3>${caster.name} uses ${weapon.name} on ${target.name}!</h3>${penaltyNote}${hitNote}${healNote}<p><b>Range:</b> ${weapon.system.range}</p></div>`
+                        });
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "use"
+        }).render(true);
     }
 
     async _castHealingSpell(sp, caster, mag, admixMt, cost, baseCost, admix, admixWeapon) {
