@@ -293,6 +293,22 @@
         {{#if (eq item.type "battalion")}}
         <div class="tab battalion" data-group="primary" data-tab="battalion">
             <div class="form-row">
+                <div class="form-group">
+                    <label>Battalion Type</label>
+                    <select name="system.battalionType">
+                        {{#each FEUE.BattalionTypes as |label key|}}
+                        <option value="{{key}}" {{#ifEquals ../item.system.battalionType key}} selected{{/ifEquals}}>{{label}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Battalion Rank</label>
+                    <select name="system.rank">
+                        {{#each FEUE.WEAPON_RANKS as |rd rk|}}{{#unless (eq rk "")}}<option value="{{rk}}" {{#ifEquals ../item.system.rank rk}} selected{{/ifEquals}}>{{rd.label}}</option>{{/unless}}{{/each}}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
                 <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" /></div>
                 <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" /></div>
                 <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" placeholder="0" /></div>
@@ -347,6 +363,16 @@
                 {{#each FEUE.WeaponTypes as |label key|}}
                 <label>
                     <input type="checkbox" name="system.weaponProficiencies.{{key}}" {{checked (lookup ../item.system.weaponProficiencies key)}} /> {{label}}
+                </label>
+                {{/each}}
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="weapon-proficiencies">
+                <h3>Battalion Proficiencies</h3>
+                {{#each FEUE.BattalionTypes as |label key|}}
+                <label>
+                    <input type="checkbox" name="system.battalionProficiencies.{{key}}" {{checked (lookup ../item.system.battalionProficiencies key)}} /> {{label}}
                 </label>
                 {{/each}}
             </div>

@@ -108,7 +108,7 @@
                             <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
                             {{/each}}
                         </select>
-                        <a class="wexp-spend" data-weapon-type="{{weapon}}" title="Spend 1 WEXP to advance"><i class="fas fa-arrow-up"></i></a>
+                        <a class="wexp-spend" data-weapon-type="{{weapon}}" title="Spend 1 WEXP to advance (or unlock mastery bonus at S)"><i class="fas fa-arrow-up"></i></a>
                     </div>
                     {{/each}}
                 </div>
@@ -131,6 +131,63 @@
                                     <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
                                     {{/each}}
                                 </select>
+                                <a class="wexp-spend" data-weapon-type="{{weapon}}" title="Spend 2 WEXP to buy rank (max S)"><i class="fas fa-coins"></i></a>
+                            </div>
+                            {{/each}}
+                        </div>
+                    </div>
+                </div>
+
+                {{#if weaponMasteryDisplay.length}}
+                <div class="weapon-mastery-section">
+                    <h4>Weapon Mastery Bonuses</h4>
+                    <ul style="margin:0;padding-left:18px;">
+                    {{#each weaponMasteryDisplay as |m|}}
+                        <li><b>{{m.type}}:</b> {{m.text}}</li>
+                    {{/each}}
+                    </ul>
+                </div>
+                {{/if}}
+            </div>
+
+            {{!-- Battalion Ranks --}}
+            <div class="battalion-ranks">
+                <div class="section-header">
+                    <h3>Battalion Ranks</h3>
+                </div>
+                {{#if hasBattalionProficiencies}}
+                <div class="weapon-ranks-grid proficient-grid">
+                    {{#each proficientBattalions as |rank btype|}}
+                    <div class="weapon-rank flexrow proficient">
+                        <label class="weapon-label">{{lookup ../battalionTypeLabels btype}}</label>
+                        <select name="system.battalionRanks.{{btype}}" data-battalion-type="{{btype}}">
+                            {{#each ../weaponRankOptions as |opt|}}
+                            <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
+                            {{/each}}
+                        </select>
+                        <a class="wexp-spend-battalion" data-battalion-type="{{btype}}" title="Spend 1 WEXP to advance"><i class="fas fa-arrow-up"></i></a>
+                    </div>
+                    {{/each}}
+                </div>
+                {{else}}
+                <p class="no-proficiency-note">No battalion proficiencies from class.</p>
+                {{/if}}
+
+                <div class="other-weapons-section">
+                    <a class="battalion-ranks-toggle">
+                        <i class="fas fa-caret-right"></i> Other Battalion Types
+                    </a>
+                    <div class="battalion-ranks-content" style="display: none;">
+                        <div class="weapon-ranks-grid other-grid">
+                            {{#each otherBattalions as |rank btype|}}
+                            <div class="weapon-rank flexrow">
+                                <label class="weapon-label">{{lookup ../battalionTypeLabels btype}}</label>
+                                <select name="system.battalionRanks.{{btype}}" data-battalion-type="{{btype}}">
+                                    {{#each ../weaponRankOptions as |opt|}}
+                                    <option value="{{opt.key}}" {{#ifEquals rank opt.key}} selected{{/ifEquals}}>{{opt.label}}</option>
+                                    {{/each}}
+                                </select>
+                                <a class="wexp-spend-battalion" data-battalion-type="{{btype}}" title="Spend 2 WEXP to buy rank (max S)"><i class="fas fa-coins"></i></a>
                             </div>
                             {{/each}}
                         </div>
@@ -251,9 +308,9 @@
                     <a class="item-control item-create {{#if inventory.full}}disabled{{/if}}" data-type="weapon" title="Create Weapon"><i class="fas fa-plus"></i> Add Weapon</a>
                 </div>
                 {{#each weapons as |weapon|}}
-                <div class="item weapon flexrow" data-item-id="{{weapon._id}}">
+                <div class="item weapon flexrow {{#if weapon.broken}}weapon-broken{{/if}}" data-item-id="{{weapon._id}}">
                     <div class="item-image"><img src="{{weapon.img}}" title="{{weapon.name}}" width="24" height="24" /></div>
-                    <h4 class="item-name">{{weapon.name}}</h4>
+                    <h4 class="item-name">{{weapon.name}}{{#if weapon.broken}} <span class="broken-tag">[BROKEN]</span>{{/if}}</h4>
                     <div class="weapon-stats">
                         {{#ifEquals weapon.system.weaponType "staff"}}
                         <span>{{weapon.system.might}} Heal</span>{{#if weapon.system.hit}}<span>{{weapon.system.hit}}% Hit</span>{{/if}}<span>{{weapon.system.range}} Rng</span>
@@ -266,6 +323,7 @@
                     <div class="item-controls">
                         <a class="item-control weapon-equip" title="{{#if weapon.system.equipped}}Unequip{{else}}Equip{{/if}}"><i class="fas {{#if weapon.system.equipped}}fa-shield-alt{{else}}fa-hand-paper{{/if}}"></i></a>
                         <a class="item-control roll-attack" data-weapon-id="{{weapon._id}}" title="{{#ifEquals weapon.system.weaponType "staff"}}Use Staff{{else}}Attack{{/ifEquals}}"><i class="fas {{#ifEquals weapon.system.weaponType "staff"}}fa-heart{{else}}fa-dice-d10{{/ifEquals}}"></i></a>
+                        {{#if weapon.system.uses.max}}<a class="item-control weapon-repair" title="Repair Weapon"><i class="fas fa-hammer"></i></a>{{/if}}
                         <a class="item-control item-edit" title="Edit"><i class="fas fa-edit"></i></a>
                         <a class="item-control item-delete" title="Delete"><i class="fas fa-trash"></i></a>
                     </div>

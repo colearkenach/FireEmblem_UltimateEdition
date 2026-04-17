@@ -486,6 +486,55 @@
     opacity: 1;
 }
 
+.feue .battalion-ranks {
+    margin-top: 12px;
+}
+
+.feue .battalion-ranks-toggle {
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--feue-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    user-select: none;
+}
+
+.feue .battalion-ranks-toggle:hover {
+    color: var(--feue-primary);
+}
+
+.feue .battalion-ranks-content .weapon-rank {
+    opacity: 0.6;
+}
+
+.feue .battalion-ranks-content .weapon-rank:hover {
+    opacity: 1;
+}
+
+.feue .weapon-mastery-section {
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: rgba(139, 115, 85, 0.08);
+    border-radius: 4px;
+}
+
+.feue .weapon-mastery-section h4 {
+    margin: 0 0 4px;
+    font-size: 14px;
+}
+
+.feue .weapon-broken {
+    background: rgba(178, 34, 34, 0.08);
+}
+
+.feue .broken-tag {
+    color: #b22222;
+    font-size: 11px;
+    font-weight: bold;
+}
+
 /* ===== MAIN TAB: MOVEMENT & DETAILS ===== */
 .feue .movement,
 .feue .details {
