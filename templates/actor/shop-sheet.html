@@ -1,0 +1,117 @@
+<form class="feue {{cssClass}} flexcol shop-sheet" autocomplete="off">
+
+    <header class="sheet-header flexrow">
+        <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" height="80" width="80" />
+        <div class="header-fields flexcol">
+            <h1 class="charname">
+                <input name="name" type="text" value="{{actor.name}}" placeholder="Shop Name" />
+            </h1>
+            <div class="header-row flexrow">
+                <div class="resource flexrow shop-status {{#if actor.system.isOpen}}is-open{{else}}is-closed{{/if}}">
+                    <div class="resource-label">Status</div>
+                    <div class="resource-value">
+                        {{#if actor.system.isOpen}}<span class="open-badge">OPEN</span>{{else}}<span class="closed-badge">CLOSED</span>{{/if}}
+                    </div>
+                    {{#if isGM}}
+                    <button type="button" class="shop-toggle-open">
+                        {{#if actor.system.isOpen}}Close{{else}}Open{{/if}}
+                    </button>
+                    {{/if}}
+                </div>
+                {{#if party}}
+                <div class="resource flexrow">
+                    <div class="resource-label">Party</div>
+                    <div class="resource-value">{{party.name}} ({{party.gold}}g)</div>
+                </div>
+                {{/if}}
+            </div>
+            {{#if isGM}}
+            <div class="shop-config flexrow">
+                <div class="form-group">
+                    <label>Linked Party</label>
+                    <select class="shop-party-select">
+                        <option value="">— None —</option>
+                        {{#each parties}}
+                        <option value="{{this.id}}" {{#ifEquals ../actor.system.partyId this.id}}selected{{/ifEquals}}>{{this.name}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Buy ×</label>
+                    <input type="number" class="shop-buy-mult" value="{{buyMultiplier}}" step="0.1" min="0" />
+                </div>
+                <div class="form-group">
+                    <label>Sell ×</label>
+                    <input type="number" class="shop-sell-mult" value="{{sellMultiplier}}" step="0.1" min="0" />
+                </div>
+            </div>
+            {{/if}}
+        </div>
+    </header>
+
+    <section class="sheet-body shop-body" data-drop-target="true">
+
+        {{#if isGM}}
+        <div class="shop-drop-hint">
+            <i class="fas fa-box"></i> Drag weapon or item documents here to stock the shop.
+        </div>
+        {{/if}}
+
+        <div class="shop-stock-header flexrow">
+            <h3 style="flex:1;">Stock ({{stock.length}})</h3>
+            {{#if actor.system.isOpen}}
+                {{#if party}}
+                <button type="button" class="shop-open-sell"><i class="fas fa-coins"></i> Sell Items…</button>
+                {{/if}}
+            {{/if}}
+        </div>
+
+        {{#if stock.length}}
+        <table class="shop-stock-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each stock}}
+                <tr class="shop-item" data-item-id="{{this.id}}">
+                    <td><img src="{{this.img}}" width="20" height="20" /> {{this.name}}</td>
+                    <td>{{this.type}}</td>
+                    <td>{{this.buyPrice}}g</td>
+                    <td>
+                        {{#if ../isGM}}
+                        <input type="number" class="shop-stock-quantity" value="{{#unless this.unlimited}}{{this.stockQty}}{{/unless}}" placeholder="∞" min="0" style="width:60px;" />
+                        {{else}}
+                            {{#if this.unlimited}}∞{{else}}{{this.stockQty}}{{/if}}
+                        {{/if}}
+                    </td>
+                    <td class="shop-item-controls">
+                        {{#if ../actor.system.isOpen}}
+                        <a class="shop-item-buy" title="Buy"><i class="fas fa-shopping-cart"></i></a>
+                        {{/if}}
+                        {{#if ../isGM}}
+                        <a class="shop-item-edit" title="Edit"><i class="fas fa-edit"></i></a>
+                        <a class="shop-item-delete" title="Remove"><i class="fas fa-trash"></i></a>
+                        {{/if}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        {{else}}
+        <p class="shop-empty">No items in stock.</p>
+        {{/if}}
+
+        {{#if isGM}}
+        <div class="shop-notes">
+            <h3>GM Notes</h3>
+            <textarea name="system.notes" rows="4">{{actor.system.notes}}</textarea>
+        </div>
+        {{/if}}
+    </section>
+</form>

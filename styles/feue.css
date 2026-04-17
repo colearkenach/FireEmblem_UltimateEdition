@@ -1493,3 +1493,88 @@
         flex-direction: column;
     }
 }
+
+/* ==================================================================== */
+/* Party Sheet                                                          */
+/* ==================================================================== */
+.feue.party-sheet .party-actions { gap: 6px; margin-top: 4px; }
+.feue.party-sheet .party-body { padding: 8px; }
+.feue.party-sheet .party-drop-hint {
+    padding: 6px 10px; margin-bottom: 8px;
+    border: 1px dashed #b8a080; border-radius: 4px;
+    background: rgba(139, 115, 85, 0.05); color: #8b4513;
+    font-size: 12px; font-style: italic;
+}
+.feue.party-sheet .party-empty {
+    color: #888; font-style: italic; text-align: center; padding: 20px;
+}
+.feue.party-sheet .party-members-list {
+    display: flex; flex-direction: column; gap: 4px;
+}
+.feue.party-sheet .party-member {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px; background: rgba(255, 255, 255, 0.5);
+}
+.feue.party-sheet .party-member img {
+    border: 1px solid #999; border-radius: 2px; flex-shrink: 0;
+}
+.feue.party-sheet .party-member-info { flex: 1; min-width: 0; }
+.feue.party-sheet .party-member-name { font-weight: bold; color: #2c4875; }
+.feue.party-sheet .party-member-meta { font-size: 11px; color: #666; }
+.feue.party-sheet .party-member-controls { display: flex; gap: 6px; }
+.feue.party-sheet .party-member-controls a { cursor: pointer; color: #555; }
+.feue.party-sheet .party-member-controls a:hover { color: #2c4875; }
+.feue.party-sheet .party-notes { margin-top: 12px; }
+.feue.party-sheet .party-notes textarea { width: 100%; }
+
+/* ==================================================================== */
+/* Shop Sheet                                                           */
+/* ==================================================================== */
+.feue.shop-sheet .shop-status .open-badge {
+    background: #5a8a5a; color: #fff; padding: 2px 8px; border-radius: 3px;
+    font-weight: bold; font-size: 11px;
+}
+.feue.shop-sheet .shop-status .closed-badge {
+    background: #a0522d; color: #fff; padding: 2px 8px; border-radius: 3px;
+    font-weight: bold; font-size: 11px;
+}
+.feue.shop-sheet .shop-config {
+    gap: 8px; margin-top: 6px; align-items: flex-end;
+}
+.feue.shop-sheet .shop-config .form-group {
+    display: flex; flex-direction: column; flex: 1;
+}
+.feue.shop-sheet .shop-config label { font-size: 11px; color: #555; }
+.feue.shop-sheet .shop-body { padding: 8px; }
+.feue.shop-sheet .shop-drop-hint {
+    padding: 6px 10px; margin-bottom: 8px;
+    border: 1px dashed #b8a080; border-radius: 4px;
+    background: rgba(139, 115, 85, 0.05); color: #8b4513;
+    font-size: 12px; font-style: italic;
+}
+.feue.shop-sheet .shop-stock-header {
+    align-items: center; margin-bottom: 6px;
+}
+.feue.shop-sheet .shop-stock-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+}
+.feue.shop-sheet .shop-stock-table th,
+.feue.shop-sheet .shop-stock-table td {
+    padding: 4px 6px; border-bottom: 1px solid rgba(0, 0, 0, 0.08); text-align: left;
+}
+.feue.shop-sheet .shop-stock-table th {
+    background: rgba(44, 72, 117, 0.08); font-weight: bold;
+}
+.feue.shop-sheet .shop-item-controls { display: flex; gap: 6px; }
+.feue.shop-sheet .shop-item-controls a { cursor: pointer; color: #555; }
+.feue.shop-sheet .shop-item-controls a:hover { color: #2c4875; }
+.feue.shop-sheet .shop-item-controls .shop-item-buy { color: #5a8a5a; }
+.feue.shop-sheet .shop-item-controls .shop-item-delete { color: #a0522d; }
+.feue.shop-sheet .shop-empty {
+    color: #888; font-style: italic; text-align: center; padding: 20px;
+}
+.feue.shop-sheet .shop-notes { margin-top: 12px; }
+.feue.shop-sheet .shop-notes textarea { width: 100%; }
+
+.feue-shop-tx h3, .feue-party-xp h3 { margin: 0 0 4px; color: #2c4875; }

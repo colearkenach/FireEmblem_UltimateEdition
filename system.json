@@ -20,7 +20,9 @@
   ],
   "documentTypes": {
     "Actor": [
-      "character"
+      "character",
+      "party",
+      "shop"
     ],
     "Item": [
       "weapon",

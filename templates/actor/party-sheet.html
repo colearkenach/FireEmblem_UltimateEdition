@@ -1,0 +1,61 @@
+<form class="feue {{cssClass}} flexcol party-sheet" autocomplete="off">
+
+    <header class="sheet-header flexrow">
+        <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" height="80" width="80" />
+        <div class="header-fields flexcol">
+            <h1 class="charname">
+                <input name="name" type="text" value="{{actor.name}}" placeholder="Party Name" />
+            </h1>
+            <div class="header-row flexrow">
+                <div class="resource flexrow">
+                    <div class="resource-label">Gold</div>
+                    <div class="resource-value">
+                        <input type="number" name="system.gold" value="{{actor.system.gold}}" data-dtype="Number" min="0" {{#unless isGM}}disabled{{/unless}} />
+                    </div>
+                    <button type="button" class="party-gold-adjust" data-amount="1" title="Add Gold"><i class="fas fa-plus"></i></button>
+                    <button type="button" class="party-gold-adjust" data-amount="-1" title="Subtract Gold"><i class="fas fa-minus"></i></button>
+                </div>
+                <div class="resource flexrow">
+                    <div class="resource-label">Members</div>
+                    <div class="resource-value"><span>{{members.length}}</span></div>
+                </div>
+            </div>
+            <div class="party-actions flexrow">
+                <button type="button" class="party-award-xp"><i class="fas fa-star"></i> Award XP to All</button>
+            </div>
+        </div>
+    </header>
+
+    <section class="sheet-body party-body" data-drop-target="true">
+        <div class="party-drop-hint">
+            <i class="fas fa-users"></i> Drag character actors here to add them to the party.
+        </div>
+
+        {{#if members.length}}
+        <div class="party-members-list">
+            {{#each members}}
+            <div class="party-member" data-actor-id="{{this.id}}">
+                <img src="{{this.img}}" width="40" height="40" />
+                <div class="party-member-info">
+                    <div class="party-member-name">{{this.name}}</div>
+                    <div class="party-member-meta">
+                        Lv {{this.level}} (Total {{this.totalLevel}}) · {{this.className}} · HP {{this.hp}}/{{this.hpMax}} · XP {{this.experience}}
+                    </div>
+                </div>
+                <div class="party-member-controls">
+                    <a class="party-member-open" title="Open Sheet"><i class="fas fa-external-link-alt"></i></a>
+                    <a class="party-member-remove" title="Remove from Party"><i class="fas fa-times"></i></a>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+        {{else}}
+        <p class="party-empty">No members. Drag character actors onto this sheet.</p>
+        {{/if}}
+
+        <div class="party-notes">
+            <h3>Notes</h3>
+            <textarea name="system.notes" rows="6">{{actor.system.notes}}</textarea>
+        </div>
+    </section>
+</form>

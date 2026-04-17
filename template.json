@@ -1,6 +1,6 @@
 {
   "Actor": {
-    "types": [ "character" ],
+    "types": [ "character", "party", "shop" ],
     "templates": {
       "base": {
         "attributes": {
@@ -123,6 +123,20 @@
         "birthplace": "",
         "background": ""
       }
+    },
+    "party": {
+      "templates": [],
+      "gold": 0,
+      "memberIds": [],
+      "notes": ""
+    },
+    "shop": {
+      "templates": [],
+      "isOpen": false,
+      "buyMultiplier": 1,
+      "sellMultiplier": 0.5,
+      "partyId": "",
+      "notes": ""
     }
   },
   "Item": {
