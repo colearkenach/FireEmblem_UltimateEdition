@@ -1547,6 +1547,32 @@
 /* Party Sheet                                                          */
 /* ==================================================================== */
 .feue.party-sheet .party-actions { gap: 6px; margin-top: 4px; }
+.feue.party-sheet .party-actions button {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-weight: 600;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6);
+    transition: background 0.15s, border-color 0.15s;
+}
+.feue.party-sheet .party-actions button:hover {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: var(--feue-secondary);
+    color: #fff;
+}
+.feue.party-sheet .party-actions button i { margin-right: 4px; color: var(--feue-secondary); }
+.feue.party-sheet .party-gold-adjust {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: #fff;
+}
+.feue.party-sheet .party-gold-adjust:hover {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: var(--feue-secondary);
+    color: #fff;
+}
 .feue.party-sheet .party-body { padding: 8px; }
 .feue.party-sheet .party-drop-hint {
     padding: 6px 10px; margin-bottom: 8px;
