@@ -1593,36 +1593,59 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const isBroken = (weapon.system.uses?.value ?? 1) <= 0;
         const isNonProf = !a.canUseWeapon(weapon);
         const penalties = [];
+        const props = normalizeWeaponProperties(weapon.system.properties);
+        const propNotes = [];
 
         let mightMult = 1, hitMult = 1, critOverride = null;
         if (isBroken) { mightMult = 0; hitMult = 0.5; critOverride = 0; penalties.push("BROKEN"); }
         else if (isNonProf) { mightMult = 0.5; hitMult = 0.5; critOverride = 0; penalties.push("NON-PROFICIENT"); }
 
+        const abuseMult = props.abuse ? 2 : 1;
         let triHit = 0, triMt = 0, triNote = "";
-        if (triangle === "advantage") { triHit = 15; triMt = 3; triNote = "WTA +15 Hit, +3 Mt"; }
-        else if (triangle === "disadvantage") { triHit = -15; triMt = -3; triNote = "WTD -15 Hit, -3 Mt"; }
+        if (triangle === "advantage") { triHit = 15 * abuseMult; triMt = 3 * abuseMult; triNote = `WTA +${triHit} Hit, +${triMt} Mt${props.abuse ? " (Abuse)" : ""}`; }
+        else if (triangle === "disadvantage") { triHit = -15 * abuseMult; triMt = -3 * abuseMult; triNote = `WTD ${triHit} Hit, ${triMt} Mt${props.abuse ? " (Abuse)" : ""}`; }
 
-        const di = a.getDamageStat(weapon.system.weaponType);
+        let di;
+        if (props.magical) { di = { stat: "MAG", value: a.system.attributes?.magic?.value || 0 }; propNotes.push("Magical"); }
+        else if (props.mechanical) { di = { stat: "SPD", value: a.system.attributes?.speed?.value || 0 }; propNotes.push("Mechanical"); }
+        else di = a.getDamageStat(weapon.system.weaponType);
+
+        const statContribution = props.puncture ? 0 : di.value;
+        if (props.puncture) propNotes.push("Puncture");
+
         const baseMight = isBroken ? 0 : Number(weapon.system.might || 0);
-        const rawDmg = Math.max(Math.floor((baseMight + di.value) * mightMult) + triMt, 0);
+
+        let slayerMult = 1;
+        if (props.slayer?.enabled && target) {
+            const tut = target.system?.unitTypes || {};
+            const matched = props.slayer.all || Object.entries(props.slayer.types || {}).some(([t, v]) => v && tut[t]);
+            if (matched) { slayerMult = 2; propNotes.push(props.slayer.all ? "Slayer (All) × 2" : "Slayer × 2"); }
+        }
+
+        const rawDmg = Math.max(Math.floor((baseMight + statContribution) * mightMult) + triMt, 0) * slayerMult;
         const rawHit = Math.max(Math.floor((a.system.combat?.hitRate || 0) * hitMult) + triHit, 0);
         const rawCrit = critOverride !== null ? critOverride : (a.system.combat?.critRate || 0);
 
         // Target defenses
-        const isMagic = FEUE.MAG_WEAPON_TYPES.includes(weapon.system.weaponType);
+        const isMagic = FEUE.MAG_WEAPON_TYPES.includes(weapon.system.weaponType) || props.magical;
         const tAvo = target?.system?.combat?.avoid || 0;
         const tDodge = target?.system?.combat?.dodge || 0;
         const tDef = target ? (isMagic ? (target.system.attributes?.resistance?.value || 0) : (target.system.attributes?.defense?.value || 0)) : 0;
         const defLabel = isMagic ? "Res" : "Def";
 
+        let netDmg;
+        if (props.piercing) { netDmg = rawDmg; if (target) propNotes.push("Piercing"); }
+        else netDmg = Math.max(rawDmg - tDef, 0);
+
         return {
             rawDmg, rawHit, rawCrit,
-            netDmg: Math.max(rawDmg - tDef, 0),
+            netDmg,
             netHit: Math.max(rawHit - tAvo, 0),
             netCrit: Math.max(rawCrit - tDodge, 0),
             tAvo, tDodge, tDef, defLabel,
             baseMight, di, triHit, triMt, triNote, mightMult, penalties,
-            targetName: target?.name || null
+            targetName: target?.name || null,
+            props, propNotes
         };
     }
 
@@ -1631,22 +1654,69 @@ class FireEmblemCharacterSheet extends ActorSheet {
         const a = this.actor;
         const target = this._getTarget();
         const s = this._computeAttackStats(weapon, triangle, target);
+        const props = s.props;
 
         const hR = await new Roll("1d100").evaluate(); const hit = hR.total <= s.netHit;
-        let crit = false; if (hit && s.netCrit > 0) { const cR = await new Roll("1d100").evaluate(); crit = cR.total <= s.netCrit; }
+        let crit = false;
+        if (hit && s.netCrit > 0 && !props.shade) { const cR = await new Roll("1d100").evaluate(); crit = cR.total <= s.netCrit; }
         if (weapon.system.uses) {
             const newUses = Math.max(weapon.system.uses.value - 1, 0);
             await weapon.update({ "system.uses.value": newUses });
             if (newUses > 0 && newUses <= 2) ui.notifications.warn(`${weapon.name} has only ${newUses} use(s) remaining!`);
         }
-        const fd = crit ? s.netDmg * 3 : s.netDmg;
+
+        let fd = crit ? s.netDmg * 3 : s.netDmg;
+        if (hit && props.deadly && fd < 1) fd = 1;
+
+        // Shade override: set target HP to half (only kills at 1 HP)
+        let shadeNote = "";
+        if (hit && props.shade && target) {
+            const curHp = target.system.attributes?.hp?.value || 0;
+            const newHp = curHp <= 1 ? 0 : Math.max(1, Math.floor(curHp / 2));
+            await target.update({ "system.attributes.hp.value": newHp });
+            shadeNote = `<p class="feue-shade"><b>Shade:</b> ${target.name} HP ${curHp} → ${newHp}</p>`;
+            fd = 0;
+        }
+
+        // Absorb: heal wielder by damage dealt
+        let absorbNote = "";
+        if (hit && props.absorb && !props.shade && fd > 0) {
+            const curHp = a.system.attributes?.hp?.value || 0;
+            const maxHp = a.system.attributes?.hp?.max || curHp;
+            const healed = Math.min(maxHp - curHp, fd);
+            if (healed > 0) {
+                await a.update({ "system.attributes.hp.value": curHp + healed });
+                absorbNote = `<p class="feue-absorb"><b>Absorb:</b> ${a.name} heals ${healed} HP</p>`;
+            }
+        }
+
+        // Cursed: after hit, d100 vs 31 - Luck; if ≤, wielder takes damage equal to damage dealt
+        let cursedNote = "";
+        if (hit && props.cursed) {
+            const luck = a.system.attributes?.luck?.value || 0;
+            const threshold = 31 - luck;
+            const cr = await new Roll("1d100").evaluate();
+            const backfire = cr.total <= threshold;
+            if (backfire) {
+                const selfDmg = Math.max(fd, 1);
+                const curHp = a.system.attributes?.hp?.value || 0;
+                await a.update({ "system.attributes.hp.value": Math.max(curHp - selfDmg, 0) });
+                cursedNote = `<p class="feue-cursed"><b>Cursed!</b> ${cr.total} ≤ ${threshold} — ${a.name} takes ${selfDmg} damage</p>`;
+            } else {
+                cursedNote = `<p class="feue-cursed"><b>Cursed:</b> ${cr.total} vs ${threshold} — resisted</p>`;
+            }
+        }
 
         const penaltyNote = s.penalties.length ? `<p class="feue-penalty"><b>${s.penalties.join(", ")}</b> — penalties applied</p>` : "";
         const triNoteHtml = s.triNote ? `<p class="feue-triangle"><b>${s.triNote}</b></p>` : "";
+        const propNoteHtml = s.propNotes.length ? `<p class="feue-props"><b>${s.propNotes.join(", ")}</b></p>` : "";
         const targetNote = target ? `<p class="feue-target"><b>Target:</b> ${target.name} (${s.tAvo} Avo, ${s.tDodge} Dodge, ${s.tDef} ${s.defLabel})</p>` : "";
+        const dmgLine = props.shade
+            ? ""
+            : (hit ? `<p><b>Damage:</b> ${fd}${target ? ` (${s.rawDmg}${props.piercing ? "" : ` - ${s.tDef} ${s.defLabel}`}${crit ? " × 3" : ""}${props.deadly && fd === 1 ? ", Deadly min 1" : ""})` : ` (${s.baseMight} Mt + ${s.di.value} ${s.di.stat}${crit ? " × 3" : ""})`}</p>` : "");
         ChatMessage.create({
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: a }),
-            content: `<div class="feue-attack-roll"><h3>${a.name} attacks ${target ? target.name : ""} with ${weapon.name}!</h3>${penaltyNote}${triNoteHtml}${targetNote}<p><b>Hit:</b> ${hR.total} vs ${s.netHit}%${target ? ` (${s.rawHit} - ${s.tAvo} Avo)` : ""} — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && s.netCrit > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd}${target ? ` (${s.rawDmg} - ${s.tDef} ${s.defLabel}${crit ? " × 3" : ""})` : ` (${s.baseMight} Mt + ${s.di.value} ${s.di.stat}${crit ? " × 3" : ""})`}</p>` : ""}<p><b>Range:</b> ${weapon.system.range}</p></div>`
+            content: `<div class="feue-attack-roll"><h3>${a.name} attacks ${target ? target.name : ""} with ${weapon.name}!</h3>${penaltyNote}${triNoteHtml}${propNoteHtml}${targetNote}<p><b>Hit:</b> ${hR.total} vs ${s.netHit}%${target ? ` (${s.rawHit} - ${s.tAvo} Avo)` : ""} — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && s.netCrit > 0 && !props.shade ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}</p>` : ""}${dmgLine}${shadeNote}${absorbNote}${cursedNote}<p><b>Range:</b> ${weapon.system.range}</p></div>`
         });
     }
 
@@ -2392,8 +2462,29 @@ class FireEmblemCharacterSheet extends ActorSheet {
 // ====================================================================
 // 4. ITEM CLASS & SHEET
 // ====================================================================
+const DEFAULT_WEAPON_PROPERTIES = () => ({
+    illegal: false, legendary: false,
+    slayer: { enabled: false, all: false, types: {} },
+    cursed: false, shade: false, deadly: false, magical: false,
+    unwieldy: false, slow: false, mechanical: false, abuse: false,
+    absorb: false, puncture: false, piercing: false
+});
+
+function normalizeWeaponProperties(p) {
+    const def = DEFAULT_WEAPON_PROPERTIES();
+    if (!p || typeof p !== "object" || Array.isArray(p)) return def;
+    const out = foundry.utils.mergeObject(def, p, { inplace: false });
+    if (!out.slayer || typeof out.slayer !== "object") out.slayer = def.slayer;
+    if (!out.slayer.types || typeof out.slayer.types !== "object") out.slayer.types = {};
+    return out;
+}
+
 class FireEmblemItem extends Item {
-    prepareDerivedData() { }
+    prepareDerivedData() {
+        if (this.type === "weapon") {
+            this.system.properties = normalizeWeaponProperties(this.system.properties);
+        }
+    }
 }
 
 class FireEmblemItemSheet extends ItemSheet {
@@ -2414,6 +2505,7 @@ class FireEmblemItemSheet extends ItemSheet {
         const t = this.item.type, s = this.item.system || {};
         data.showQuantity = t !== "weapon";
         data.showWeight = (t === "weapon" && s.weaponType !== "staff") || (t === "item" && s.itemType === "equippable");
+        data.hidePrice = t === "weapon" && (s.properties?.illegal || s.properties?.legendary);
         return data;
     }
 
@@ -2495,7 +2587,27 @@ class FireEmblemItemSheet extends ItemSheet {
         let value = el.value;
         if (el.dataset.dtype === "Number") { const n = Number(value); value = Number.isFinite(n) ? n : null; }
         else if (el.type === "checkbox") value = el.checked;
-        await this.item.update({ [el.name]: value });
+
+        const update = { [el.name]: value };
+
+        // Migrate legacy array/string shape of weapon properties before nested writes
+        if (this.item.type === "weapon" && el.name.startsWith("system.properties.")) {
+            const raw = this.item._source?.system?.properties;
+            if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+                await this.item.update({ "system.properties": normalizeWeaponProperties(null) });
+            }
+        }
+
+        // Roll randomized price (5d10 × 1000) the first time Illegal or Legendary is turned on
+        if (this.item.type === "weapon" && value === true &&
+            (el.name === "system.properties.illegal" || el.name === "system.properties.legendary")) {
+            const p = this.item.system.properties || {};
+            if (!p.illegal && !p.legendary) {
+                const r = await new Roll("5d10 * 1000").evaluate();
+                update["system.price"] = r.total;
+            }
+        }
+        await this.item.update(update);
     }
 
     async _updateObject(event, formData) { return await this.object.update(foundry.utils.expandObject(formData)); }

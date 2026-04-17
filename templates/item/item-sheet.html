@@ -28,7 +28,9 @@
             </div>
             {{#unless (eq item.type "skill")}}{{#unless (eq item.type "spell")}}{{#unless (eq item.type "class")}}{{#unless (eq item.type "combatArt")}}{{#unless (eq item.type "miscBonus")}}
             <div class="form-row">
+                {{#unless hidePrice}}
                 <div class="form-group"><label>Price</label><input type="number" data-dtype="Number" name="system.price" value="{{item.system.price}}" placeholder="0" min="0" /></div>
+                {{/unless}}
                 {{#if showWeight}}
                 <div class="form-group"><label>Weight</label><input type="number" data-dtype="Number" name="system.weight" value="{{item.system.weight}}" placeholder="0" min="0" /></div>
                 {{/if}}
@@ -133,7 +135,35 @@
                 <div class="form-group"><label>Range</label><input type="text" name="system.range" value="{{item.system.range}}" placeholder="1" /></div>
                 <div class="form-group"><label>Uses</label><div class="uses-group"><input type="number" data-dtype="Number" name="system.uses.value" value="{{item.system.uses.value}}" placeholder="0" min="0" /><span>/</span><input type="number" data-dtype="Number" name="system.uses.max" value="{{item.system.uses.max}}" placeholder="0" min="0" /></div></div>
             </div>
-            <div class="form-group"><label>Weapon Properties</label><textarea name="system.properties" rows="2" placeholder="List weapon properties...">{{item.system.properties}}</textarea></div>
+            <div class="form-group feue-weapon-properties">
+                <label>Weapon Properties</label>
+                <div class="weapon-props-grid">
+                    <label><input type="checkbox" name="system.properties.illegal" {{checked item.system.properties.illegal}} /> Illegal</label>
+                    <label><input type="checkbox" name="system.properties.legendary" {{checked item.system.properties.legendary}} /> Legendary</label>
+                    <label><input type="checkbox" name="system.properties.cursed" {{checked item.system.properties.cursed}} /> Cursed</label>
+                    <label><input type="checkbox" name="system.properties.shade" {{checked item.system.properties.shade}} /> Shade</label>
+                    <label><input type="checkbox" name="system.properties.deadly" {{checked item.system.properties.deadly}} /> Deadly</label>
+                    <label><input type="checkbox" name="system.properties.magical" {{checked item.system.properties.magical}} /> Magical</label>
+                    <label><input type="checkbox" name="system.properties.mechanical" {{checked item.system.properties.mechanical}} /> Mechanical</label>
+                    <label><input type="checkbox" name="system.properties.unwieldy" {{checked item.system.properties.unwieldy}} /> Unwieldy</label>
+                    <label><input type="checkbox" name="system.properties.slow" {{checked item.system.properties.slow}} /> Slow</label>
+                    <label><input type="checkbox" name="system.properties.abuse" {{checked item.system.properties.abuse}} /> Abuse</label>
+                    <label><input type="checkbox" name="system.properties.absorb" {{checked item.system.properties.absorb}} /> Absorb</label>
+                    <label><input type="checkbox" name="system.properties.puncture" {{checked item.system.properties.puncture}} /> Puncture</label>
+                    <label><input type="checkbox" name="system.properties.piercing" {{checked item.system.properties.piercing}} /> Piercing</label>
+                    <label><input type="checkbox" name="system.properties.slayer.enabled" {{checked item.system.properties.slayer.enabled}} /> Slayer</label>
+                </div>
+                {{#if item.system.properties.slayer.enabled}}
+                <div class="weapon-slayer-types">
+                    <label><input type="checkbox" name="system.properties.slayer.all" {{checked item.system.properties.slayer.all}} /> <b>All</b></label>
+                    {{#unless item.system.properties.slayer.all}}
+                    {{#each FEUE.UNIT_TYPES as |ut|}}
+                    <label><input type="checkbox" name="system.properties.slayer.types.{{ut}}" {{checked (lookup ../item.system.properties.slayer.types ut)}} /> {{ut}}</label>
+                    {{/each}}
+                    {{/unless}}
+                </div>
+                {{/if}}
+            </div>
         </div>
         {{/if}}
 
