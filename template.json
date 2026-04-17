@@ -219,6 +219,7 @@
       "crit": 0,
       "range": "1",
       "rank": "E",
+      "prfProficient": false,
       "uses": {
         "value": 45,
         "max": 45
