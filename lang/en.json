@@ -168,7 +168,9 @@
   },
   "TYPES": {
     "Actor": {
-      "character": "Character"
+      "character": "Character",
+      "party": "Party",
+      "shop": "Shop / Armory"
     },
     "Item": {
       "weapon": "Weapon",
