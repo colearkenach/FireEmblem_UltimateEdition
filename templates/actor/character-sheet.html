@@ -377,6 +377,9 @@
                             {{#ifEquals skill.system.skillType "Active"}}
                             <a class="item-control use-skill" data-item-id="{{skill._id}}" title="Use Skill"><i class="fas fa-bolt"></i></a>
                             {{/ifEquals}}
+                            {{#ifEquals skill.system.skillType "Passive (Activated)"}}
+                            <a class="item-control trigger-skill" data-item-id="{{skill._id}}" title="Trigger Activation Roll"><i class="fas fa-dice-d20"></i></a>
+                            {{/ifEquals}}
                             <a class="item-control item-edit" title="Edit"><i class="fas fa-edit"></i></a>
                             <a class="item-control item-delete" title="Delete"><i class="fas fa-trash"></i></a>
                         </div>

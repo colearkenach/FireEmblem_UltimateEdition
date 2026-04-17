@@ -266,8 +266,27 @@ class FireEmblemActor extends Actor {
         return totals;
     }
 
+    /** Collapse duplicate Level-Up Bonus items. Keeps the one with the flag (or first match) and deletes others. */
+    async _dedupeLevelUpBonus() {
+        const matches = this.items.filter(i =>
+            i.type === "miscBonus" && (i.getFlag("feue", "isLevelUpBonus") || i.name === "Bonuses from Level Up")
+        );
+        if (matches.length <= 1) {
+            if (matches.length === 1 && !matches[0].getFlag("feue", "isLevelUpBonus")) {
+                await matches[0].setFlag("feue", "isLevelUpBonus", true);
+            }
+            return matches[0] || null;
+        }
+        const keeper = matches.find(i => i.getFlag("feue", "isLevelUpBonus")) || matches[0];
+        const extras = matches.filter(i => i.id !== keeper.id);
+        if (!keeper.getFlag("feue", "isLevelUpBonus")) await keeper.setFlag("feue", "isLevelUpBonus", true);
+        await this.deleteEmbeddedDocuments("Item", extras.map(i => i.id));
+        return keeper;
+    }
+
     /** Find or create the permanent "Bonuses from Level Up" miscBonus item. */
     async _getOrCreateLevelUpBonus() {
+        await this._dedupeLevelUpBonus();
         let bonus = this.items.find(i =>
             i.type === "miscBonus" && i.getFlag("feue", "isLevelUpBonus")
         );
@@ -1143,10 +1162,11 @@ class FireEmblemCharacterSheet extends ActorSheet {
             };
         });
 
-        // Ensure Level Up Bonus item exists (migration for pre-existing actors)
-        if (!this.actor.items.find(i => i.type === "miscBonus" && i.getFlag("feue", "isLevelUpBonus"))) {
-            this.actor._getOrCreateLevelUpBonus();  // fire-and-forget, sheet will re-render
-        }
+        // Dedupe any legacy duplicate Level Up Bonus items (do not auto-create new ones)
+        const lubMatches = this.actor.items.filter(i =>
+            i.type === "miscBonus" && (i.getFlag("feue", "isLevelUpBonus") || i.name === "Bonuses from Level Up")
+        );
+        if (lubMatches.length > 1) this.actor._dedupeLevelUpBonus();
 
         return data;
     }
@@ -1409,6 +1429,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
         html.find(".roll-combat-art").click(async (ev) => this._onRollCombatArt(ev));
         html.find(".item-control.use-item").click(async (ev) => this._onUseItem(ev));
         html.find(".item-control.use-skill").click(async (ev) => this._onUseSkill(ev));
+        html.find(".item-control.trigger-skill").click(async (ev) => this._onTriggerSkill(ev));
 
         // Status effects
         html.find(".status-effect-add").click(() => this._onAddStatusEffect());
@@ -1543,6 +1564,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
     }
 
     async _executeAttack(weapon, triangle = "none") {
+        await this._autoTriggerSkills("Attack");
         const a = this.actor;
         const target = this._getTarget();
         const s = this._computeAttackStats(weapon, triangle, target);
@@ -1747,6 +1769,55 @@ class FireEmblemCharacterSheet extends ActorSheet {
             user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: a }),
             content: `<div class="feue-attack-roll"><h3>${a.name} uses ${art.name}${target ? ` on ${target.name}` : ""} with ${weapon.name}!</h3>${targetNote}<p><b>Hit:</b> ${hR.total} vs ${netHit}%${target ? ` (${rawHit} - ${tAvo} Avo)` : ""}${artHit ? ` (incl. ${artHit > 0 ? "+" : ""}${artHit} Art)` : ""} — <b>${hit ? "HIT" : "MISS"}</b></p>${hit && netCrit > 0 ? `<p><b>Crit:</b> ${crit ? "CRITICAL HIT!" : "Normal Hit"}${artCrit ? ` (incl. ${artCrit > 0 ? "+" : ""}${artCrit} Art)` : ""}</p>` : ""}${hit ? `<p><b>Damage:</b> ${fd}${target ? ` (${rawDmg} - ${tDef} ${defLabel}${crit ? " × 3" : ""})` : ` (${dmgParts.join(" + ")}${crit ? " × 3" : ""})`}</p>` : ""}<p><b>Effect:</b> ${art.system.effect || "—"} | <b>Dur Cost:</b> ${dc}</p></div>`
         });
+    }
+
+    /** Compute the activation target number for a skill. */
+    _computeSkillActivationTarget(skill) {
+        const s = skill.system || {};
+        const type = s.activationTargetType || "stat_mult";
+        if (type === "fixed") return Number(s.activationFixed || 0);
+        const statKey = s.activationStat || "skill";
+        const statVal = Number(this.actor.system.attributes?.[statKey]?.value || 0);
+        const mult = Number(s.activationMult ?? 1);
+        return type === "stat" ? statVal : Math.floor(statVal * mult);
+    }
+
+    /** Roll activation for a single skill and post to chat. Returns {success, roll, target}. */
+    async _rollSkillActivation(skill, { silent = false } = {}) {
+        const target = this._computeSkillActivationTarget(skill);
+        const r = await new Roll("1d100").evaluate();
+        const success = r.total <= target;
+        if (!silent) {
+            const s = skill.system || {};
+            const desc = s.activationTargetType === "fixed"
+                ? `${target}`
+                : s.activationTargetType === "stat"
+                    ? `${s.activationStat?.toUpperCase()} (${target})`
+                    : `${s.activationStat?.toUpperCase()} × ${s.activationMult} (${target})`;
+            ChatMessage.create({
+                user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+                content: `<div class="feue-skill-activation"><h3>${this.actor.name} — ${skill.name}</h3><p><b>Activation:</b> rolled ${r.total} vs ${desc} — <b>${success ? "ACTIVATED" : "failed"}</b></p>${success && s.activation ? `<p><b>Effect:</b> ${s.activation}</p>` : ""}</div>`
+            });
+        }
+        return { success, roll: r.total, target };
+    }
+
+    /** Auto-fire all "Passive (Activated)" skills with matching trigger ("Attack" or "Defense"). */
+    async _autoTriggerSkills(triggerType) {
+        const skills = this.actor.items.filter(i =>
+            i.type === "skill"
+            && i.system?.skillType === "Passive (Activated)"
+            && (i.system?.activationTrigger || "Manual") === triggerType
+        );
+        for (const sk of skills) await this._rollSkillActivation(sk);
+    }
+
+    async _onTriggerSkill(event) {
+        event.preventDefault();
+        const id = $(event.currentTarget).data("item-id");
+        const skill = this.actor.items.get(id);
+        if (!skill || skill.type !== "skill") return;
+        await this._rollSkillActivation(skill);
     }
 
     async _onUseSkill(event) {
@@ -1958,8 +2029,72 @@ class FireEmblemCharacterSheet extends ActorSheet {
         if (!type) return ui.notifications.error("Missing item type.");
         if ((type === "item" || type === "weapon") && this._getInventoryUsage().full) return ui.notifications.error("Inventory full (5 max).");
         if (type === "battalion" && this.actor.items.some(i => i.type === "battalion")) return ui.notifications.error("Only one battalion allowed.");
+
+        const PICKER_TYPES = ["class", "skill", "spell", "weapon", "battalion", "combatArt"];
+        if (PICKER_TYPES.includes(type)) {
+            return this._openCompendiumPicker(type);
+        }
         const [created] = await this.actor.createEmbeddedDocuments("Item", [{ name: `New ${type.charAt(0).toUpperCase()}${type.slice(1)}`, type }]);
         if (created) created.sheet.render(true);
+    }
+
+    /** Open a dialog listing items of a given type across all Item compendiums; selection imports to actor. */
+    async _openCompendiumPicker(type) {
+        const typeLabels = { class: "Class", skill: "Skill", spell: "Spell", weapon: "Weapon", battalion: "Battalion", combatArt: "Combat Art" };
+        const label = typeLabels[type] || type;
+
+        const packs = game.packs.filter(p => p.metadata.type === "Item");
+        const entries = [];
+        for (const pack of packs) {
+            let index;
+            try { index = await pack.getIndex({ fields: ["type", "img", "name"] }); }
+            catch (e) { continue; }
+            for (const e of index) {
+                if (e.type === type) entries.push({ uuid: `Compendium.${pack.collection}.${e._id}`, name: e.name, img: e.img, pack: pack.metadata.label });
+            }
+        }
+        entries.sort((a, b) => a.name.localeCompare(b.name));
+
+        const listHtml = entries.length
+            ? entries.map(e => `<div class="feue-picker-entry" data-uuid="${e.uuid}" style="display:flex;align-items:center;gap:8px;padding:4px;border-bottom:1px solid #ccc;cursor:pointer;"><img src="${e.img}" width="24" height="24" style="flex:0 0 24px;"/><div style="flex:1;"><b>${e.name}</b><br/><small style="opacity:0.7;">${e.pack}</small></div></div>`).join("")
+            : `<p><i>No ${label} entries found in any compendium.</i></p>`;
+
+        const content = `<form>
+            <input type="text" id="feue-picker-search" placeholder="Search..." style="width:100%;margin-bottom:6px;"/>
+            <div id="feue-picker-list" style="max-height:400px;overflow-y:auto;border:1px solid #ccc;padding:4px;">${listHtml}</div>
+        </form>`;
+
+        const dlg = new Dialog({
+            title: `Choose ${label}`,
+            content,
+            buttons: {
+                blank: { icon: '<i class="fas fa-plus"></i>', label: `Create Blank ${label}`, callback: async () => {
+                    const [created] = await this.actor.createEmbeddedDocuments("Item", [{ name: `New ${label}`, type }]);
+                    if (created) created.sheet.render(true);
+                } },
+                cancel: { label: "Cancel" }
+            },
+            default: "cancel",
+            render: (h) => {
+                h.find("#feue-picker-search").on("input", (ev) => {
+                    const q = ev.currentTarget.value.toLowerCase();
+                    h.find(".feue-picker-entry").each((_, el) => {
+                        el.style.display = el.textContent.toLowerCase().includes(q) ? "" : "none";
+                    });
+                });
+                h.on("click", ".feue-picker-entry", async (ev) => {
+                    const uuid = ev.currentTarget.dataset.uuid;
+                    const src = await fromUuid(uuid);
+                    if (!src) return ui.notifications.error("Could not load selected item.");
+                    const data = src.toObject();
+                    delete data._id;
+                    const [created] = await this.actor.createEmbeddedDocuments("Item", [data]);
+                    if (created) ui.notifications.info(`Added ${created.name}.`);
+                    dlg.close();
+                });
+            }
+        }, { width: 480 });
+        dlg.render(true);
     }
 }
 

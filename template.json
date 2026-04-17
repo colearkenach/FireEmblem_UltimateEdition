@@ -265,7 +265,12 @@
       "prerequisites": "",
       "level": "Innate",
       "activation": "",
-      "grantedByClass": ""
+      "grantedByClass": "",
+      "activationTrigger": "Manual",
+      "activationTargetType": "stat_mult",
+      "activationStat": "skill",
+      "activationMult": 1,
+      "activationFixed": 0
     },
     "class": {
       "templates": [ "base" ],
