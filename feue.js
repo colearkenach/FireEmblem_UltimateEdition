@@ -109,6 +109,7 @@ class FireEmblemActor extends Actor {
     async _onCreate(data, options, userId) {
         super._onCreate(data, options, userId);
         if (game.user.id !== userId) return;
+        if (this.type !== "character") return;
         await this._getOrCreateLevelUpBonus();
     }
 
@@ -261,6 +262,7 @@ class FireEmblemActor extends Actor {
     }
 
     prepareDerivedData() {
+        if (this.type !== "character") return;
         const system = this.system;
 
         // Weapon ranks
@@ -744,6 +746,7 @@ class FireEmblemActor extends Actor {
     _onUpdate(changed, options, userId) {
         super._onUpdate(changed, options, userId);
         if (game.user.id !== userId) return;
+        if (this.type !== "character") return;
 
         // Auto-level when EXP reaches 10+
         const newExp = foundry.utils.getProperty(changed, "system.experience");
@@ -896,6 +899,7 @@ class FireEmblemCharacterSheet extends ActorSheet {
         if (!this.options.editable) return;
 
         html.find(".level-up").click(async () => this.actor.levelUp());
+        html.find(".award-xp").click(() => this._onAwardXp());
         html.find(".level-reset").click(async () => {
             new Dialog({
                 title: "Reset Level",
@@ -1501,6 +1505,29 @@ class FireEmblemCharacterSheet extends ActorSheet {
         });
     }
 
+    async _onAwardXp() {
+        new Dialog({
+            title: `Award XP to ${this.actor.name}`,
+            content: `<form><div class="form-group"><label>XP Amount</label><input type="number" id="xp-amount" value="10" min="1"/></div></form>`,
+            buttons: {
+                award: {
+                    icon: '<i class="fas fa-star"></i>', label: "Award",
+                    callback: async (h) => {
+                        const amount = Number(h.find("#xp-amount").val()) || 0;
+                        if (amount <= 0) return;
+                        await FEUEParty.awardXp([this.actor.id], amount);
+                        ChatMessage.create({
+                            user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+                            content: `<div class="feue-party-xp"><h3>${this.actor.name}: +${amount} XP</h3></div>`
+                        });
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "award"
+        }).render(true);
+    }
+
     async _onItemCreate(event) {
         event.preventDefault();
         const type = event.currentTarget.dataset.type;
@@ -1917,6 +1944,428 @@ class FireEmblemItemSheet extends ItemSheet {
 }
 
 // ====================================================================
+// 4b. PARTY SHEET
+// ====================================================================
+class FireEmblemPartySheet extends ActorSheet {
+    static get defaultOptions() {
+        return foundry.utils.mergeObject(super.defaultOptions, {
+            classes: ["feue", "sheet", "actor", "party"],
+            template: "systems/feue/templates/actor/party-sheet.html",
+            width: 600, height: 600
+        });
+    }
+
+    getData() {
+        const data = super.getData();
+        const memberIds = this.actor.system.memberIds || [];
+        data.members = memberIds
+            .map(id => game.actors.get(id))
+            .filter(a => a && a.type === "character")
+            .map(a => ({
+                id: a.id,
+                name: a.name,
+                img: a.img,
+                level: a.system.level || 1,
+                totalLevel: a.system.totalLevel || 1,
+                hp: a.system.attributes?.hp?.value || 0,
+                hpMax: a.system.attributes?.hp?.max || 0,
+                className: a.system.activeClassName || "—",
+                experience: a.system.experience || 0
+            }));
+        data.isGM = game.user.isGM;
+        return data;
+    }
+
+    activateListeners(html) {
+        super.activateListeners(html);
+        if (!this.options.editable) return;
+
+        html.find(".party-member-open").click(ev => {
+            const id = $(ev.currentTarget).closest(".party-member").data("actor-id");
+            game.actors.get(id)?.sheet.render(true);
+        });
+
+        html.find(".party-member-remove").click(async ev => {
+            const id = $(ev.currentTarget).closest(".party-member").data("actor-id");
+            const ids = (this.actor.system.memberIds || []).filter(x => x !== id);
+            await this.actor.update({ "system.memberIds": ids });
+        });
+
+        html.find(".party-award-xp").click(() => this._onAwardXp());
+        html.find(".party-gold-adjust").click(ev => this._onAdjustGold($(ev.currentTarget).data("amount")));
+    }
+
+    async _onDrop(event) {
+        let data;
+        try { data = JSON.parse(event.dataTransfer.getData("text/plain")); } catch { return super._onDrop(event); }
+        if (data?.type !== "Actor") return super._onDrop(event);
+        const actor = await Actor.implementation.fromDropData(data);
+        if (!actor || actor.type !== "character") {
+            ui.notifications.warn("Only character actors can be added to a party.");
+            return;
+        }
+        const ids = this.actor.system.memberIds || [];
+        if (ids.includes(actor.id)) {
+            ui.notifications.warn(`${actor.name} is already in this party.`);
+            return;
+        }
+        await this.actor.update({ "system.memberIds": [...ids, actor.id] });
+        ui.notifications.info(`Added ${actor.name} to ${this.actor.name}.`);
+    }
+
+    async _onAwardXp() {
+        const members = (this.actor.system.memberIds || [])
+            .map(id => game.actors.get(id))
+            .filter(a => a && a.type === "character");
+        if (!members.length) return ui.notifications.warn("No party members to award XP.");
+
+        new Dialog({
+            title: "Award XP to All Party Members",
+            content: `<form><div class="form-group"><label>XP per character</label><input type="number" id="party-xp-amount" value="10" min="1"/></div><p style="font-size:12px;color:#666;">Will award to ${members.length} member(s).</p></form>`,
+            buttons: {
+                award: {
+                    icon: '<i class="fas fa-star"></i>', label: "Award",
+                    callback: async (h) => {
+                        const amount = Number(h.find("#party-xp-amount").val()) || 0;
+                        if (amount <= 0) return;
+                        await FEUEParty.awardXp(members.map(m => m.id), amount);
+                        ChatMessage.create({
+                            user: game.user.id,
+                            content: `<div class="feue-party-xp"><h3>${this.actor.name}: +${amount} XP</h3><p>Awarded to: ${members.map(m => m.name).join(", ")}</p></div>`
+                        });
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "award"
+        }).render(true);
+    }
+
+    async _onAdjustGold(amount) {
+        amount = Number(amount);
+        if (!amount) return;
+        const sign = amount > 0 ? "+" : "";
+        new Dialog({
+            title: `${sign}${amount} Gold`,
+            content: `<form><div class="form-group"><label>Amount</label><input type="number" id="party-gold-amount" value="${Math.abs(amount)}" min="1"/></div></form>`,
+            buttons: {
+                ok: {
+                    label: "Apply",
+                    callback: async (h) => {
+                        const v = Number(h.find("#party-gold-amount").val()) || 0;
+                        const delta = amount > 0 ? v : -v;
+                        await FEUEParty.adjustGold(this.actor.id, delta);
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "ok"
+        }).render(true);
+    }
+}
+
+// ====================================================================
+// 4c. SHOP SHEET
+// ====================================================================
+class FireEmblemShopSheet extends ActorSheet {
+    static get defaultOptions() {
+        return foundry.utils.mergeObject(super.defaultOptions, {
+            classes: ["feue", "sheet", "actor", "shop"],
+            template: "systems/feue/templates/actor/shop-sheet.html",
+            width: 700, height: 650
+        });
+    }
+
+    getData() {
+        const data = super.getData();
+        data.isGM = game.user.isGM;
+        const buyMult = Number(this.actor.system.buyMultiplier ?? 1);
+        const sellMult = Number(this.actor.system.sellMultiplier ?? 0.5);
+        data.buyMultiplier = buyMult;
+        data.sellMultiplier = sellMult;
+        data.stock = this.actor.items
+            .filter(i => i.type === "weapon" || i.type === "item")
+            .map(i => {
+                const baseValue = Number(i.system.price || 0);
+                const buyPrice = Math.floor(baseValue * buyMult);
+                const stockQty = Number(i.getFlag("feue", "stockQuantity") ?? -1);
+                return {
+                    id: i.id,
+                    name: i.name,
+                    img: i.img,
+                    type: i.type,
+                    baseValue,
+                    buyPrice,
+                    stockQty,
+                    unlimited: stockQty < 0
+                };
+            });
+        data.parties = game.actors.filter(a => a.type === "party").map(p => ({ id: p.id, name: p.name }));
+        const party = game.actors.get(this.actor.system.partyId);
+        data.party = party ? { id: party.id, name: party.name, gold: party.system.gold || 0 } : null;
+        return data;
+    }
+
+    activateListeners(html) {
+        super.activateListeners(html);
+        if (!this.options.editable && !game.user.isGM) {
+            // Players still need buy/sell listeners
+        }
+
+        html.find(".shop-toggle-open").click(async () => {
+            await this.actor.update({ "system.isOpen": !this.actor.system.isOpen });
+        });
+
+        html.find(".shop-party-select").change(async ev => {
+            await this.actor.update({ "system.partyId": ev.currentTarget.value });
+        });
+
+        html.find(".shop-buy-mult").change(async ev => {
+            await this.actor.update({ "system.buyMultiplier": Number(ev.currentTarget.value) || 1 });
+        });
+        html.find(".shop-sell-mult").change(async ev => {
+            await this.actor.update({ "system.sellMultiplier": Number(ev.currentTarget.value) || 0.5 });
+        });
+
+        html.find(".shop-stock-quantity").change(async ev => {
+            const id = $(ev.currentTarget).closest(".shop-item").data("item-id");
+            const item = this.actor.items.get(id);
+            if (!item) return;
+            const v = ev.currentTarget.value === "" ? -1 : Number(ev.currentTarget.value);
+            await item.setFlag("feue", "stockQuantity", v);
+        });
+
+        html.find(".shop-item-edit").click(ev => {
+            const id = $(ev.currentTarget).closest(".shop-item").data("item-id");
+            this.actor.items.get(id)?.sheet.render(true);
+        });
+
+        html.find(".shop-item-delete").click(async ev => {
+            const id = $(ev.currentTarget).closest(".shop-item").data("item-id");
+            await this.actor.items.get(id)?.delete();
+        });
+
+        html.find(".shop-item-buy").click(ev => {
+            const id = $(ev.currentTarget).closest(".shop-item").data("item-id");
+            this._onBuy(id);
+        });
+
+        html.find(".shop-open-sell").click(() => this._onOpenSell());
+    }
+
+    async _onDrop(event) {
+        if (!game.user.isGM) return;
+        let data;
+        try { data = JSON.parse(event.dataTransfer.getData("text/plain")); } catch { return super._onDrop(event); }
+        if (data?.type !== "Item") return super._onDrop(event);
+        const item = await Item.implementation.fromDropData(data);
+        if (!item || (item.type !== "weapon" && item.type !== "item")) {
+            ui.notifications.warn("Only weapons and items can be stocked.");
+            return;
+        }
+        const itemData = item.toObject();
+        delete itemData._id;
+        await this.actor.createEmbeddedDocuments("Item", [itemData]);
+    }
+
+    async _onBuy(itemId) {
+        const partyId = this.actor.system.partyId;
+        const party = game.actors.get(partyId);
+        if (!party || party.type !== "party") {
+            return ui.notifications.error("This shop has no party linked.");
+        }
+        const item = this.actor.items.get(itemId);
+        if (!item) return;
+        let members = (party.system.memberIds || [])
+            .map(id => game.actors.get(id))
+            .filter(a => a && a.type === "character");
+        if (!game.user.isGM) {
+            members = members.filter(m => m.isOwner);
+        }
+        if (!members.length) return ui.notifications.warn(game.user.isGM ? "Party has no members." : "You don't own any party members.");
+
+        const opts = members.map(m => `<option value="${m.id}">${m.name}</option>`).join("");
+        const buyMult = Number(this.actor.system.buyMultiplier ?? 1);
+        const price = Math.floor(Number(item.system.price || 0) * buyMult);
+
+        new Dialog({
+            title: `Buy ${item.name}`,
+            content: `<form>
+                <p><b>Price:</b> ${price}g | <b>Party Gold:</b> ${party.system.gold || 0}g</p>
+                <div class="form-group"><label>For Character</label><select id="buy-character">${opts}</select></div>
+            </form>`,
+            buttons: {
+                buy: {
+                    icon: '<i class="fas fa-coins"></i>', label: "Buy",
+                    callback: async (h) => {
+                        const characterId = h.find("#buy-character").val();
+                        await FEUEShop.requestBuy({
+                            shopId: this.actor.id, itemId, characterId, partyId
+                        });
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "buy"
+        }).render(true);
+    }
+
+    async _onOpenSell() {
+        const partyId = this.actor.system.partyId;
+        const party = game.actors.get(partyId);
+        if (!party) return ui.notifications.error("This shop has no party linked.");
+        const sellMult = Number(this.actor.system.sellMultiplier ?? 0.5);
+
+        let members = (party.system.memberIds || [])
+            .map(id => game.actors.get(id))
+            .filter(a => a && a.type === "character");
+        if (!game.user.isGM) members = members.filter(m => m.isOwner);
+
+        const rows = [];
+        for (const m of members) {
+            for (const it of m.items.filter(i => (i.type === "weapon" || i.type === "item") && Number(i.system.price || 0) > 0)) {
+                const price = Math.floor(Number(it.system.price) * sellMult);
+                rows.push(`<tr>
+                    <td>${m.name}</td>
+                    <td><img src="${it.img}" width="20" height="20"/> ${it.name}</td>
+                    <td>${price}g</td>
+                    <td><a class="sell-btn" data-actor-id="${m.id}" data-item-id="${it.id}" data-price="${price}" style="cursor:pointer;color:#5a8a5a;"><i class="fas fa-coins"></i> Sell</a></td>
+                </tr>`);
+            }
+        }
+        if (!rows.length) return ui.notifications.warn("No sellable items in the party.");
+
+        const dlg = new Dialog({
+            title: `Sell to ${this.actor.name}`,
+            content: `<table style="width:100%;font-size:12px;"><thead><tr><th>Owner</th><th>Item</th><th>Price</th><th></th></tr></thead><tbody>${rows.join("")}</tbody></table>`,
+            buttons: { close: { label: "Close" } },
+            default: "close",
+            render: (h) => {
+                h.find(".sell-btn").click(async (ev) => {
+                    const actorId = $(ev.currentTarget).data("actor-id");
+                    const itemId = $(ev.currentTarget).data("item-id");
+                    const price = Number($(ev.currentTarget).data("price"));
+                    await FEUEShop.requestSell({
+                        shopId: this.actor.id, partyId, characterId: actorId, itemId, price
+                    });
+                    dlg.close();
+                });
+            }
+        }, { width: 500 });
+        dlg.render(true);
+    }
+}
+
+// ====================================================================
+// 4d. PARTY / SHOP HELPERS (with GM-relay socket)
+// ====================================================================
+const FEUE_SOCKET = "system.feue";
+
+const FEUEParty = {
+    async adjustGold(partyId, delta) {
+        if (game.user.isGM) {
+            const party = game.actors.get(partyId);
+            if (!party) return;
+            const cur = Number(party.system.gold || 0);
+            await party.update({ "system.gold": Math.max(cur + delta, 0) });
+            return;
+        }
+        if (!game.users.activeGM) return ui.notifications.error("No GM online to update party gold.");
+        game.socket.emit(FEUE_SOCKET, { action: "adjustGold", partyId, delta, userId: game.user.id });
+    },
+
+    async awardXp(characterIds, amount) {
+        if (game.user.isGM) {
+            for (const id of characterIds) {
+                const c = game.actors.get(id);
+                if (!c || c.type !== "character") continue;
+                const newXp = Number(c.system.experience || 0) + amount;
+                await c.update({ "system.experience": newXp });
+            }
+            return;
+        }
+        if (!game.users.activeGM) return ui.notifications.error("No GM online to award XP.");
+        game.socket.emit(FEUE_SOCKET, { action: "awardXp", characterIds, amount, userId: game.user.id });
+    }
+};
+
+const FEUEShop = {
+    async requestBuy(payload) {
+        if (game.user.isGM) return this._executeBuy(payload);
+        if (!game.users.activeGM) return ui.notifications.error("No GM online to process purchase.");
+        game.socket.emit(FEUE_SOCKET, { action: "buy", ...payload, userId: game.user.id });
+    },
+    async requestSell(payload) {
+        if (game.user.isGM) return this._executeSell(payload);
+        if (!game.users.activeGM) return ui.notifications.error("No GM online to process sale.");
+        game.socket.emit(FEUE_SOCKET, { action: "sell", ...payload, userId: game.user.id });
+    },
+
+    async _executeBuy({ shopId, itemId, characterId, partyId }) {
+        const shop = game.actors.get(shopId);
+        const party = game.actors.get(partyId);
+        const character = game.actors.get(characterId);
+        const item = shop?.items.get(itemId);
+        if (!shop || !party || !character || !item) return ui.notifications.error("Buy failed: missing reference.");
+        if (!shop.system.isOpen) return ui.notifications.warn("Shop is closed.");
+
+        const price = Math.floor(Number(item.system.price || 0) * Number(shop.system.buyMultiplier ?? 1));
+        const gold = Number(party.system.gold || 0);
+        if (gold < price) return ui.notifications.warn(`Not enough gold (${gold}/${price}).`);
+
+        const stockQty = Number(item.getFlag("feue", "stockQuantity") ?? -1);
+        if (stockQty === 0) return ui.notifications.warn("Out of stock.");
+
+        // Inventory check on character (5 max for items+weapons)
+        const carried = character.items.filter(i => i.type === "item" || i.type === "weapon").length;
+        if (carried >= 5) return ui.notifications.warn(`${character.name}'s inventory is full.`);
+
+        const itemData = item.toObject();
+        delete itemData._id;
+        if (itemData.flags?.feue && "stockQuantity" in itemData.flags.feue) {
+            delete itemData.flags.feue.stockQuantity;
+        }
+        await character.createEmbeddedDocuments("Item", [itemData]);
+        await party.update({ "system.gold": gold - price });
+        if (stockQty > 0) await item.setFlag("feue", "stockQuantity", stockQty - 1);
+
+        ChatMessage.create({
+            content: `<div class="feue-shop-tx"><h3>${character.name} bought ${item.name}</h3><p>From ${shop.name} for ${price}g. Party gold: ${gold - price}.</p></div>`
+        });
+    },
+
+    async _executeSell({ shopId, partyId, characterId, itemId, price }) {
+        const shop = game.actors.get(shopId);
+        const party = game.actors.get(partyId);
+        const character = game.actors.get(characterId);
+        const item = character?.items.get(itemId);
+        if (!shop || !party || !character || !item) return ui.notifications.error("Sell failed: missing reference.");
+        if (!shop.system.isOpen) return ui.notifications.warn("Shop is closed.");
+
+        const gold = Number(party.system.gold || 0);
+        await item.delete();
+        await party.update({ "system.gold": gold + Number(price) });
+
+        ChatMessage.create({
+            content: `<div class="feue-shop-tx"><h3>${character.name} sold ${item.name}</h3><p>To ${shop.name} for ${price}g. Party gold: ${gold + Number(price)}.</p></div>`
+        });
+    }
+};
+
+function _onFeueSocket(payload) {
+    if (!game.user.isGM) return;
+    // Only the first GM acts to avoid duplicate writes.
+    const firstGM = game.users.filter(u => u.isGM && u.active).sort((a, b) => a.id.localeCompare(b.id))[0];
+    if (firstGM?.id !== game.user.id) return;
+    switch (payload?.action) {
+        case "adjustGold": return FEUEParty.adjustGold(payload.partyId, payload.delta);
+        case "awardXp": return FEUEParty.awardXp(payload.characterIds, payload.amount);
+        case "buy": return FEUEShop._executeBuy(payload);
+        case "sell": return FEUEShop._executeSell(payload);
+    }
+}
+
+// ====================================================================
 // 5. HOOKS
 // ====================================================================
 Hooks.once("init", () => {
@@ -1930,13 +2379,18 @@ Hooks.once("init", () => {
 
     Actors.unregisterSheet("core", ActorSheet);
     Actors.registerSheet("feue", FireEmblemCharacterSheet, { types: ["character"], makeDefault: true });
+    Actors.registerSheet("feue", FireEmblemPartySheet, { types: ["party"], makeDefault: true });
+    Actors.registerSheet("feue", FireEmblemShopSheet, { types: ["shop"], makeDefault: true });
     Items.unregisterSheet("core", ItemSheet);
     Items.registerSheet("feue", FireEmblemItemSheet, { makeDefault: true });
     CONFIG.Actor.documentClass = FireEmblemActor;
     CONFIG.Item.documentClass = FireEmblemItem;
 });
 
-Hooks.once("ready", () => { console.log("FEUE | System Ready"); });
+Hooks.once("ready", () => {
+    console.log("FEUE | System Ready");
+    game.socket.on(FEUE_SOCKET, _onFeueSocket);
+});
 
 // Status Effect Auto-Decrement on Combat Turn
 Hooks.on("updateCombat", async (combat, changed) => {
@@ -1978,6 +2432,7 @@ Hooks.on("updateCombat", async (combat, changed) => {
 Hooks.on("preCreateItem", (item, createData) => {
     const p = item.parent;
     if (!p || p.documentName !== "Actor") return true;
+    if (p.type !== "character") return true;
     const t = createData.type ?? item.type;
     if ((t === "item" || t === "weapon") && p.items.filter(i => i.type === "item" || i.type === "weapon").length >= 5) { ui.notifications.error("Inventory full (5 max)."); return false; }
     if (t === "battalion" && p.items.some(i => i.type === "battalion")) { ui.notifications.error("Only one battalion."); return false; }
