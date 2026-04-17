@@ -232,7 +232,22 @@
         "value": 45,
         "max": 45
       },
-      "properties": [],
+      "properties": {
+        "illegal": false,
+        "legendary": false,
+        "slayer": { "enabled": false, "all": false, "types": {} },
+        "cursed": false,
+        "shade": false,
+        "deadly": false,
+        "magical": false,
+        "unwieldy": false,
+        "slow": false,
+        "mechanical": false,
+        "abuse": false,
+        "absorb": false,
+        "puncture": false,
+        "piercing": false
+      },
       "weaponTriangle": {
         "advantage": "—",
         "disadvantage": "—"

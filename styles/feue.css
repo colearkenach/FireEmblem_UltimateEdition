@@ -1707,3 +1707,34 @@
 .feue-bonus-section .bonus-toggle:hover { background: rgba(139, 115, 85, 0.25); }
 .feue-bonus-section.collapsed .bonus-zero { display: none; }
 .feue-bonus-section.collapsed .form-row:not(:has(.form-group:not(.bonus-zero))) { display: none; }
+
+/* Weapon Special Properties */
+.feue-weapon-properties .weapon-props-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px 12px;
+    margin-top: 4px;
+}
+.feue-weapon-properties .weapon-props-grid label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.feue-weapon-properties .weapon-slayer-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: rgba(139, 115, 85, 0.08);
+    border: 1px dashed rgba(139, 115, 85, 0.4);
+    border-radius: 4px;
+}
+.feue-weapon-properties .weapon-slayer-types label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
