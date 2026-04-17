@@ -141,6 +141,9 @@
                 </div>
             </div>
             <div class="form-group"><label>Effect</label><textarea name="system.effect" rows="2">{{item.system.effect}}</textarea></div>
+            {{#if properPromotionEnabled}}
+            <div class="form-group"><label title="Consumed when the character promotes under the Proper Promotion alt rule."><input type="checkbox" name="flags.feue.isPromotionItem" {{#if isPromotionItem}}checked{{/if}} /> Promotion Item</label></div>
+            {{/if}}
         </div>
         {{/if}}
 
