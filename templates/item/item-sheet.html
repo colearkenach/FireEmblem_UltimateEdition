@@ -110,9 +110,11 @@
             </div>
             {{/ifEquals}}
             <div class="form-row">
-                <div class="form-group"><label>Might</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" /></div>
-                <div class="form-group"><label>Hit Rate</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" /></div>
+                <div class="form-group"><label>{{#ifEquals item.system.weaponType "staff"}}Healing{{else}}Might{{/ifEquals}}</label><input type="number" data-dtype="Number" name="system.might" value="{{item.system.might}}" placeholder="0" /></div>
+                <div class="form-group"><label>Hit Rate{{#ifEquals item.system.weaponType "staff"}} <span style="opacity:0.6;font-size:10px;">(optional)</span>{{/ifEquals}}</label><input type="number" data-dtype="Number" name="system.hit" value="{{item.system.hit}}" placeholder="0" /></div>
+                {{#unless (eq item.system.weaponType "staff")}}
                 <div class="form-group"><label>Crit Rate</label><input type="number" data-dtype="Number" name="system.crit" value="{{item.system.crit}}" placeholder="0" /></div>
+                {{/unless}}
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Range</label><input type="text" name="system.range" value="{{item.system.range}}" placeholder="1" /></div>
