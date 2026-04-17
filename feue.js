@@ -45,6 +45,22 @@ const FEUE = {
     }
 };
 
+FEUE.HOLY_BLOOD = {
+    "Baldr":   { weapon: "Tyrfing",     growths: { hp: 2, strength: 1, skill: 1, luck: 1 } },
+    "Od":      { weapon: "Balmung",     growths: { hp: 2, skill: 3 } },
+    "Dáinn":   { weapon: "Gungnir",     growths: { hp: 2, speed: 3 } },
+    "Ullr":    { weapon: "Yewfelle",    growths: { hp: 2, luck: 3 } },
+    "Bragi":   { weapon: "Valkyrie",    growths: { magic: 1, resistance: 2, luck: 1, charm: 1 } },
+    "Thrud":   { weapon: "Mjölnir",     growths: { hp: 2, skill: 3 } },
+    "Fjalar":  { weapon: "Valflame",    growths: { hp: 2, magic: 3 } },
+    "Hoðr":    { weapon: "Mystletainn", growths: { hp: 2, strength: 3 } },
+    "Njörun":  { weapon: "Gáe Bolg",    growths: { hp: 2, strength: 1, speed: 1, defense: 1 } },
+    "Nál":     { weapon: "Helswath",    growths: { strength: 2, defense: 3 } },
+    "Naga":    { weapon: "Naga",        growths: { hp: 1, magic: 2, resistance: 2 } },
+    "Forseti": { weapon: "Forseti",     growths: { hp: 2, speed: 3 } },
+    "Loptous": { weapon: "Loptous",     growths: { hp: 1, magic: 2, resistance: 2 } }
+};
+
 FEUE.WEAPON_RANK_ARTS = {
     sword: {
         D: [{ name: "Wrath Strike", might: 5, hit: 10, crit: 0, durabilityCost: 3, effect: "No additional effect." }],
@@ -310,8 +326,9 @@ class FireEmblemActor extends Actor {
         }
 
         system.growthRates ??= {};
+        const holyGrowths = this._getHolyBloodGrowths();
         for (const k of FEUE.STAT_KEYS) {
-            system.growthRates[k] = (growths[k] || 0) + (bonus.growthRates[k] || 0);
+            system.growthRates[k] = (growths[k] || 0) + (bonus.growthRates[k] || 0) + (holyGrowths[k] || 0);
         }
 
         const battalion = this.items.find(i => i.type === "battalion");
@@ -789,9 +806,37 @@ class FireEmblemActor extends Actor {
 
     canUseWeapon(weapon) {
         if (!weapon?.system?.weaponType || !weapon?.system?.rank) return true;
+        if (this._hasHolyBloodForWeapon(weapon?.name)) return true;
         const r = this.system.weaponRanks?.[weapon.system.weaponType] || "";
         if (!r) return false;
         return FEUE.WEAPON_RANKS[r].order >= FEUE.WEAPON_RANKS[weapon.system.rank].order;
+    }
+
+    _getHolyBloodGrowths() {
+        const out = {};
+        if (!game.settings?.get("feue", "useHolyBlood")) return out;
+        const lines = Array.isArray(this.system.holyBlood) ? this.system.holyBlood : [];
+        for (const entry of lines) {
+            const data = FEUE.HOLY_BLOOD[entry?.bloodline];
+            if (!data) continue;
+            const half = entry.strength === "Minor";
+            for (const [k, v] of Object.entries(data.growths)) {
+                const val = half ? Math.floor(v / 2) : v;
+                out[k] = (out[k] || 0) + val;
+            }
+        }
+        return out;
+    }
+
+    _hasHolyBloodForWeapon(weaponName) {
+        if (!weaponName) return false;
+        if (!game.settings?.get("feue", "useHolyBlood")) return false;
+        const lines = Array.isArray(this.system.holyBlood) ? this.system.holyBlood : [];
+        for (const entry of lines) {
+            const data = FEUE.HOLY_BLOOD[entry?.bloodline];
+            if (data && data.weapon === weaponName) return true;
+        }
+        return false;
     }
 
     getDamageStat(weaponType) {
@@ -881,6 +926,19 @@ class FireEmblemCharacterSheet extends ActorSheet {
         });
         data.supportCount = data.supportEntries.length;
 
+        // Holy Blood (alt rule)
+        data.useHolyBlood = !!game.settings.get("feue", "useHolyBlood");
+        data.holyBloodOptions = Object.keys(FEUE.HOLY_BLOOD);
+        data.holyBloodEntries = (this.actor.system.holyBlood || []).map((e, idx) => {
+            const info = FEUE.HOLY_BLOOD[e.bloodline];
+            return {
+                idx,
+                bloodline: e.bloodline || "",
+                strength: e.strength || "Major",
+                weapon: info?.weapon || "—"
+            };
+        });
+
         // Ensure Level Up Bonus item exists (migration for pre-existing actors)
         if (!this.actor.items.find(i => i.type === "miscBonus" && i.getFlag("feue", "isLevelUpBonus"))) {
             this.actor._getOrCreateLevelUpBonus();  // fire-and-forget, sheet will re-render
@@ -900,6 +958,26 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
         html.find(".level-up").click(async () => this.actor.levelUp());
         html.find(".award-xp").click(() => this._onAwardXp());
+
+        html.find(".holy-blood-add").click(async () => {
+            const lines = foundry.utils.deepClone(this.actor.system.holyBlood || []);
+            lines.push({ bloodline: Object.keys(FEUE.HOLY_BLOOD)[0], strength: "Major" });
+            await this.actor.update({ "system.holyBlood": lines });
+        });
+        html.find(".holy-blood-remove").click(async ev => {
+            const idx = Number($(ev.currentTarget).data("idx"));
+            const lines = foundry.utils.deepClone(this.actor.system.holyBlood || []);
+            lines.splice(idx, 1);
+            await this.actor.update({ "system.holyBlood": lines });
+        });
+        html.find(".holy-blood-bloodline, .holy-blood-strength").change(async ev => {
+            const idx = Number($(ev.currentTarget).data("idx"));
+            const field = ev.currentTarget.classList.contains("holy-blood-bloodline") ? "bloodline" : "strength";
+            const lines = foundry.utils.deepClone(this.actor.system.holyBlood || []);
+            if (!lines[idx]) return;
+            lines[idx][field] = ev.currentTarget.value;
+            await this.actor.update({ "system.holyBlood": lines });
+        });
         html.find(".level-reset").click(async () => {
             new Dialog({
                 title: "Reset Level",
@@ -2376,6 +2454,18 @@ Hooks.once("init", () => {
     Handlebars.registerHelper("eq", function (a, b) { return a === b; });
     Handlebars.registerHelper("checked", function (v) { return v ? "checked" : ""; });
     Handlebars.registerHelper("lookup", function (obj, key) { return obj?.[key]; });
+
+    game.settings.register("feue", "useHolyBlood", {
+        name: "Use Holy Blood",
+        hint: "Enable Holy Blood character creation rule (alt rule). Adds growth rate bonuses and grants Prf rank for the bloodline weapon.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: () => {
+            for (const a of game.actors.filter(x => x.type === "character")) a.sheet?.render(false);
+        }
+    });
 
     Actors.unregisterSheet("core", ActorSheet);
     Actors.registerSheet("feue", FireEmblemCharacterSheet, { types: ["character"], makeDefault: true });

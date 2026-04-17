@@ -418,6 +418,35 @@
                     <div class="detail"><label>Background</label><input type="text" name="system.personalDetails.background" value="{{actor.system.personalDetails.background}}" /></div>
                 </div>
             </div>
+            {{#if useHolyBlood}}
+            <div class="holy-blood-section">
+                <div class="section-header">
+                    <h3>Holy Blood</h3>
+                    <a class="holy-blood-add" title="Add Bloodline"><i class="fas fa-plus"></i> Add</a>
+                </div>
+                {{#if holyBloodEntries.length}}
+                <div class="holy-blood-list">
+                    {{#each holyBloodEntries}}
+                    <div class="holy-blood-entry">
+                        <select class="holy-blood-bloodline" data-idx="{{this.idx}}">
+                            {{#each ../holyBloodOptions as |opt|}}
+                            <option value="{{opt}}" {{#ifEquals ../this.bloodline opt}}selected{{/ifEquals}}>{{opt}}</option>
+                            {{/each}}
+                        </select>
+                        <select class="holy-blood-strength" data-idx="{{this.idx}}">
+                            <option value="Major" {{#ifEquals this.strength "Major"}}selected{{/ifEquals}}>Major</option>
+                            <option value="Minor" {{#ifEquals this.strength "Minor"}}selected{{/ifEquals}}>Minor</option>
+                        </select>
+                        <span class="holy-blood-weapon" title="Counts as Prf rank">{{this.weapon}}</span>
+                        <a class="holy-blood-remove" data-idx="{{this.idx}}" title="Remove"><i class="fas fa-times"></i></a>
+                    </div>
+                    {{/each}}
+                </div>
+                {{else}}
+                <p class="holy-blood-empty">No Holy Blood. Click Add to choose a bloodline.</p>
+                {{/if}}
+            </div>
+            {{/if}}
             <div class="biography-text"><h3>Biography</h3><textarea name="system.biography" rows="8" placeholder="Character biography...">{{actor.system.biography}}</textarea></div>
             <div class="appearance-text"><h3>Appearance</h3><textarea name="system.appearance" rows="6" placeholder="Character appearance...">{{actor.system.appearance}}</textarea></div>
         </div>

@@ -1578,3 +1578,37 @@
 .feue.shop-sheet .shop-notes textarea { width: 100%; }
 
 .feue-shop-tx h3, .feue-party-xp h3 { margin: 0 0 4px; color: #2c4875; }
+
+/* ==================================================================== */
+/* Holy Blood (alt rule)                                                */
+/* ==================================================================== */
+.feue .holy-blood-section { margin-bottom: 12px; }
+.feue .holy-blood-section .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+}
+.feue .holy-blood-section .holy-blood-add {
+    cursor: pointer; color: #2c4875; font-size: 12px;
+}
+.feue .holy-blood-section .holy-blood-add:hover { color: #1a2a4a; }
+.feue .holy-blood-list {
+    display: flex; flex-direction: column; gap: 4px;
+}
+.feue .holy-blood-entry {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px; background: rgba(255, 255, 255, 0.5);
+}
+.feue .holy-blood-entry select { flex: 0 0 auto; min-width: 90px; font-size: 12px; }
+.feue .holy-blood-entry .holy-blood-weapon {
+    flex: 1; font-style: italic; color: #8b4513; font-size: 12px;
+}
+.feue .holy-blood-entry .holy-blood-remove {
+    cursor: pointer; color: #a0522d;
+}
+.feue .holy-blood-empty {
+    color: #888; font-style: italic; font-size: 12px;
+    margin: 4px 0; padding: 6px;
+    border: 1px dashed #b8a080; border-radius: 4px;
+    background: rgba(139, 115, 85, 0.05);
+}
