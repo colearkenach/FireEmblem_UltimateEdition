@@ -1612,3 +1612,34 @@
     border: 1px dashed #b8a080; border-radius: 4px;
     background: rgba(139, 115, 85, 0.05);
 }
+
+/* ==================================================================== */
+/* Fatigue / Crests / Reclass (alt rules)                              */
+/* ==================================================================== */
+.feue .fatigue-section { margin: 8px 0; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.1); border-radius: 4px; background: rgba(255,255,255,0.5); }
+.feue .fatigue-section .section-header { display: flex; align-items: center; gap: 8px; }
+.feue .fatigue-section .fatigue-display { font-weight: bold; color: #2c4875; }
+.feue .fatigue-section.fatigued { background: rgba(220, 60, 60, 0.08); border-color: rgba(180, 40, 40, 0.35); }
+.feue .fatigue-section .fatigue-warning { margin: 4px 0 0; color: #a0522d; font-size: 12px; }
+
+.feue .crests-section, .feue .reclass-section { margin-bottom: 12px; }
+.feue .crests-section .section-header,
+.feue .reclass-section .section-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.feue .crest-list, .feue .alt-class-list { display: flex; flex-direction: column; gap: 4px; }
+.feue .crest-entry, .feue .alt-class-entry {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 4px; background: rgba(255,255,255,0.5);
+}
+.feue .crest-entry input[type="text"] { flex: 1; font-size: 12px; }
+.feue .crest-entry select { flex: 0 0 auto; min-width: 80px; font-size: 12px; }
+.feue .crest-remove, .feue .crest-edit-reductions,
+.feue .alt-class-remove { cursor: pointer; color: #a0522d; }
+.feue .alt-class-name { flex: 1; font-size: 12px; }
+.feue .alt-class-type { color: #888; font-style: italic; }
+.feue .crest-empty, .feue .alt-class-empty {
+    color: #888; font-style: italic; font-size: 12px;
+    margin: 4px 0; padding: 6px;
+    border: 1px dashed #b8a080; border-radius: 4px;
+    background: rgba(139, 115, 85, 0.05);
+}

@@ -45,6 +45,15 @@ const FEUE = {
     }
 };
 
+// Common Crest names from Three Houses. The list is display-only — users can type any value.
+FEUE.CREST_SUGGESTIONS = [
+    "Crest of Blaiddyd", "Crest of Fraldarius", "Crest of Gautier", "Crest of Daphnel",
+    "Crest of Gloucester", "Crest of Riegan", "Crest of Goneril", "Crest of Lamine",
+    "Crest of Charon", "Crest of Dominic", "Crest of Cethleann", "Crest of Cichol",
+    "Crest of Macuil", "Crest of Indech", "Crest of Noa", "Crest of Chevalier",
+    "Crest of Flames", "Crest of Seiros", "Crest of the Beast"
+];
+
 FEUE.HOLY_BLOOD = {
     "Baldr":   { weapon: "Tyrfing",     growths: { hp: 2, strength: 1, skill: 1, luck: 1 } },
     "Od":      { weapon: "Balmung",     growths: { hp: 2, skill: 3 } },
@@ -116,6 +125,31 @@ FEUE.WEAPON_RANK_ARTS = {
 const DEFAULT_WEAPON_RANKS = Object.fromEntries(
     Object.keys(FEUE.WeaponTypes).map(type => [type, ""])
 );
+
+// Static Growth Bonus pattern: for a growth rate R (1-10), the list of levels at which +1 is gained.
+// For R > 10: floor(R/10) gains every level + one extra gain at pattern[R%10] levels.
+FEUE.STATIC_GROWTH_LEVELS = {
+    1: [5, 15],
+    2: [5, 10, 15, 20],
+    3: [4, 7, 10, 14, 17, 20],
+    4: [3, 5, 8, 10, 13, 15, 18, 20],
+    5: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    6: [2, 4, 5, 7, 9, 10, 12, 14, 15, 17, 19, 20],
+    7: [2, 3, 5, 6, 8, 9, 10, 12, 13, 15, 16, 18, 19, 20],
+    8: [2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 19, 20],
+    9: [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    10: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+};
+
+/** Return static gain at the given level for a growth rate (effective GR after all bonuses). */
+function feueStaticGain(gr, level) {
+    const g = Math.max(0, Math.floor(Number(gr) || 0));
+    if (g <= 0) return 0;
+    const whole = Math.floor(g / 10);
+    const rem = g % 10;
+    const extra = rem > 0 && FEUE.STATIC_GROWTH_LEVELS[rem]?.includes(level) ? 1 : 0;
+    return whole + extra;
+}
 
 // ====================================================================
 // 2. ACTOR CLASS
@@ -307,6 +341,8 @@ class FireEmblemActor extends Actor {
 
         system.attributes ??= {};
         const bonus = this._collectBonuses();
+        const statMaxBonus = Number(game.settings?.get("feue", "statMaxBonus") || 0);
+        const useFatigue = !!game.settings?.get("feue", "useFatigue");
 
         for (const k of FEUE.STAT_KEYS) {
             system.attributes[k] ??= { value: 0, max: 0 };
@@ -315,20 +351,46 @@ class FireEmblemActor extends Actor {
 
             if (k === "hp") {
                 // HP special: max = HP stat, value = current HP (user-managed)
-                system.attributes.hp.max = base + (bonus.attributes.hp || 0);
+                let hpMax = base + (bonus.attributes.hp || 0);
+                // Fatigue: when fatigue >= BLD, max HP is halved.
+                if (useFatigue) {
+                    const bld = Number(system.attributes?.build?.value || 0);
+                    const fat = Number(system.fatigue?.value || 0);
+                    if (bld > 0 && fat >= bld) hpMax = Math.floor(hpMax / 2);
+                }
+                system.attributes.hp.max = hpMax;
                 if (system.attributes.hp.value > system.attributes.hp.max && system.attributes.hp.max > 0) {
                     system.attributes.hp.value = system.attributes.hp.max;
                 }
             } else {
                 system.attributes[k].value = base + (bonus.attributes[k] || 0);
-                system.attributes[k].max = cap + (bonus.maximums[k] || 0);
+                const rawCap = cap + (bonus.maximums[k] || 0);
+                // Higher Stat Maximums alt rule: flat +10/+20 to non-HP caps when a cap is set.
+                system.attributes[k].max = rawCap > 0 ? rawCap + statMaxBonus : rawCap;
             }
         }
 
         system.growthRates ??= {};
         const holyGrowths = this._getHolyBloodGrowths();
+        const crestReductions = this._getCrestGrowthReductions();
+        const crestHpPenalty = this._getCrestHpGrowthPenalty();
         for (const k of FEUE.STAT_KEYS) {
-            system.growthRates[k] = (growths[k] || 0) + (bonus.growthRates[k] || 0) + (holyGrowths[k] || 0);
+            let v = (growths[k] || 0) + (bonus.growthRates[k] || 0) + (holyGrowths[k] || 0) - (crestReductions[k] || 0);
+            if (k === "hp") v -= crestHpPenalty;
+            system.growthRates[k] = v;
+        }
+
+        // Multiple Crests penalty: -10 max HP
+        if (game.settings?.get("feue", "useCrests")) {
+            const crests = Array.isArray(system.crests) ? system.crests : [];
+            const hasMajor = crests.some(c => c?.strength === "Major");
+            const hasMinor = crests.some(c => c?.strength === "Minor");
+            if (hasMajor && hasMinor) {
+                system.attributes.hp.max = Math.max(0, (system.attributes.hp.max || 0) - 10);
+                if (system.attributes.hp.value > system.attributes.hp.max) {
+                    system.attributes.hp.value = system.attributes.hp.max;
+                }
+            }
         }
 
         const battalion = this.items.find(i => i.type === "battalion");
@@ -390,6 +452,27 @@ class FireEmblemActor extends Actor {
 
             if (currentLevel >= maxLevel) {
                 if (promos.length) {
+                    // Proper Promotion alt rule: gate promotion on a promotion item.
+                    const mode = game.settings.get("feue", "properPromotion") || "off";
+                    const prevType = node.classType || "";
+                    const isRecruit = prevType === "Recruit";
+                    if (mode !== "off" && !isRecruit) {
+                        const promoItem = this.items.find(i =>
+                            i.type === "item" && i.getFlag("feue", "isPromotionItem") && Number(i.system.uses?.value ?? i.system.quantity ?? 1) > 0
+                        );
+                        if (!promoItem) {
+                            if (mode === "full") {
+                                ui.notifications.warn(`${this.name} needs a Promotion Item to promote (Full Classic).`);
+                                return;
+                            } // partial: allow natural promotion
+                        } else {
+                            // Consume one use/quantity of the promotion item
+                            const q = Number(promoItem.system.quantity || 1);
+                            if (q > 1) await promoItem.update({ "system.quantity": q - 1 });
+                            else await promoItem.delete();
+                            ui.notifications.info(`${this.name} used ${promoItem.name} to promote.`);
+                        }
+                    }
                     await this._showPromotionDialog(ec, promos);
                 } else {
                     ui.notifications.warn(`${this.name} is at max level (${maxLevel}) with no promotions available.`);
@@ -404,6 +487,8 @@ class FireEmblemActor extends Actor {
         const gains = {};
         const newAccumulated = {};
         const rollDetails = [];
+        const useStatic = !!game.settings.get("feue", "useStaticGrowths");
+        const newLevelForStatic = currentLevel + 1;
 
         for (const stat of FEUE.STAT_KEYS) {
             const baseGR = Number(gr[stat] || 0);
@@ -431,7 +516,12 @@ class FireEmblemActor extends Actor {
                 continue;
             }
 
-            if (effectiveGR >= 10) {
+            if (useStatic) {
+                const gained = feueStaticGain(baseGR, newLevelForStatic);
+                gains[stat] = gained;
+                newAccumulated[stat] = 0;
+                rollDetails.push({ stat, roll: "static", effectiveGR: baseGR, gained, atCap: false });
+            } else if (effectiveGR >= 10) {
                 // Guaranteed +1, plus +1 per additional 10 above threshold
                 const gained = 1 + Math.floor((effectiveGR - 10) / 10);
                 gains[stat] = gained;
@@ -452,7 +542,7 @@ class FireEmblemActor extends Actor {
             }
         }
 
-        // Persist accumulated growth rates
+        // Persist accumulated growth rates (reset when static)
         await this.update({ "system.accumulatedGrowthRates": newAccumulated });
 
         const gainedStats = Object.entries(gains).filter(([, v]) => v > 0);
@@ -480,7 +570,7 @@ class FireEmblemActor extends Actor {
         const detailRows = rollDetails.map(d => {
             const label = FEUE.STAT_LABELS[d.stat] || d.stat;
             if (d.atCap) return `<tr><td>${label}</td><td colspan="3" style="color:#888;">At cap</td></tr>`;
-            const rollStr = d.roll === "auto" ? "Auto" : String(d.roll);
+            const rollStr = d.roll === "auto" ? "Auto" : (d.roll === "static" ? "Static" : String(d.roll));
             const resultStr = d.gained > 0
                 ? `<span class="gain">+${d.gained}</span>`
                 : (d.carried ? `<span style="color:#b8860b;">Carry ${d.carried}</span>` : `<span style="color:#888;">—</span>`);
@@ -779,6 +869,52 @@ class FireEmblemActor extends Actor {
         }
     }
 
+    async reclassTo(targetClassId) {
+        if (!game.settings.get("feue", "useReclassing")) {
+            ui.notifications.warn("Reclassing alt rule is not enabled.");
+            return;
+        }
+        const lv = this.system.level || 0;
+        const tlv = this.system.totalLevel || 0;
+        if (lv < 10 && tlv < 10) {
+            ui.notifications.warn(`${this.name} must be at least Level 10 to reclass.`);
+            return;
+        }
+        const target = this.items.get(targetClassId);
+        if (!target || target.type !== "class") {
+            ui.notifications.error("Target class not found.");
+            return;
+        }
+        const current = this.items.find(i => i.type === "class" && i.system.equipped);
+        if (current?.id === target.id) {
+            ui.notifications.info(`${this.name} is already ${target.name}.`);
+            return;
+        }
+
+        // Remove Innate skills granted by previous class
+        const prevSkills = this.items.filter(i =>
+            i.type === "skill" && i.system?.level === "Innate" && i.system?.grantedByClass
+        );
+        if (prevSkills.length) {
+            await this.deleteEmbeddedDocuments("Item", prevSkills.map(s => s.id));
+        }
+
+        // Swap equipped class
+        const updates = [];
+        if (current) updates.push({ _id: current.id, "system.equipped": false });
+        updates.push({ _id: target.id, "system.equipped": true });
+        await this.updateEmbeddedDocuments("Item", updates);
+
+        // Grant innate skills of new class
+        const node = this._getCurrentClassNode(target);
+        await this._grantClassSkills(node, {});
+
+        ChatMessage.create({
+            user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: this }),
+            content: `<div class="feue-levelup"><h3>${this.name} reclassed to ${target.name}!</h3><p>Stats and weapon ranks preserved.</p></div>`
+        });
+    }
+
     async levelReset() {
         const bonusItem = this.items.find(i => i.type === "miscBonus" && i.getFlag("feue", "isLevelUpBonus"));
         if (bonusItem) {
@@ -807,6 +943,7 @@ class FireEmblemActor extends Actor {
     canUseWeapon(weapon) {
         if (!weapon?.system?.weaponType || !weapon?.system?.rank) return true;
         if (this._hasHolyBloodForWeapon(weapon?.name)) return true;
+        if (this._hasCrestForRelic(weapon?.name)) return true;
         if (weapon.system.rank === "Prf") return !!weapon.system.prfProficient;
         const r = this.system.weaponRanks?.[weapon.system.weaponType] || "";
         if (!r) return false;
@@ -827,6 +964,35 @@ class FireEmblemActor extends Actor {
             }
         }
         return out;
+    }
+
+    _getCrestGrowthReductions() {
+        const out = {};
+        if (!game.settings?.get("feue", "useCrests")) return out;
+        const crests = Array.isArray(this.system.crests) ? this.system.crests : [];
+        for (const c of crests) {
+            const red = c?.reductions || {};
+            for (const [k, v] of Object.entries(red)) {
+                out[k] = (out[k] || 0) + Number(v || 0);
+            }
+        }
+        return out;
+    }
+
+    _getCrestHpGrowthPenalty() {
+        if (!game.settings?.get("feue", "useCrests")) return 0;
+        const crests = Array.isArray(this.system.crests) ? this.system.crests : [];
+        const hasMajor = crests.some(c => c?.strength === "Major");
+        const hasMinor = crests.some(c => c?.strength === "Minor");
+        return (hasMajor && hasMinor) ? 1 : 0;
+    }
+
+    _hasCrestForRelic(weaponName) {
+        if (!weaponName) return false;
+        if (!game.settings?.get("feue", "useCrests")) return false;
+        if (!game.settings?.get("feue", "useHeroRelics")) return false;
+        const crests = Array.isArray(this.system.crests) ? this.system.crests : [];
+        return crests.some(c => c?.relic && c.relic === weaponName);
     }
 
     _hasHolyBloodForWeapon(weaponName) {
@@ -927,6 +1093,43 @@ class FireEmblemCharacterSheet extends ActorSheet {
         });
         data.supportCount = data.supportEntries.length;
 
+        // Alt rule flags (read once for template)
+        data.useFatigue = !!game.settings.get("feue", "useFatigue");
+        data.useCrests = !!game.settings.get("feue", "useCrests");
+        data.useReclassing = !!game.settings.get("feue", "useReclassing");
+        data.properPromotion = game.settings.get("feue", "properPromotion") || "off";
+        data.statMaxBonus = Number(game.settings.get("feue", "statMaxBonus") || 0);
+
+        // Fatigue display
+        if (data.useFatigue) {
+            const bld = Number(this.actor.system.attributes?.build?.value || 0);
+            const fat = Number(this.actor.system.fatigue?.value || 0);
+            data.fatigueValue = fat;
+            data.fatigueMax = bld;
+            data.fatigued = bld > 0 && fat >= bld;
+        }
+
+        // Crests
+        data.crestEntries = (this.actor.system.crests || []).map((c, idx) => ({
+            idx,
+            name: c.name || "",
+            strength: c.strength || "Minor",
+            relic: c.relic || "",
+            reductions: c.reductions || {}
+        }));
+
+        // Reclassing: list alternate classes stored by id
+        const allClasses = this.actor.items.filter(i => i.type === "class");
+        const altIds = Array.isArray(this.actor.system.alternateClasses) ? this.actor.system.alternateClasses : [];
+        data.alternateClassEntries = altIds.map(id => {
+            const c = this.actor.items.get(id);
+            return c ? { id, name: c.name, classType: c.system.classType } : null;
+        }).filter(Boolean);
+        data.reclassAvailable = data.useReclassing
+            && ((this.actor.system.totalLevel || 0) >= 10 || (this.actor.system.level || 0) >= 10)
+            && data.alternateClassEntries.length > 0;
+        data.classChoices = allClasses.map(c => ({ id: c.id, name: c.name, classType: c.system.classType }));
+
         // Holy Blood (alt rule)
         data.useHolyBlood = !!game.settings.get("feue", "useHolyBlood");
         data.holyBloodOptions = Object.keys(FEUE.HOLY_BLOOD);
@@ -959,6 +1162,148 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
         html.find(".level-up").click(async () => this.actor.levelUp());
         html.find(".award-xp").click(() => this._onAwardXp());
+
+        // Fatigue
+        html.find(".fatigue-inc").click(async () => {
+            const cur = Number(this.actor.system.fatigue?.value || 0);
+            await this.actor.update({ "system.fatigue.value": cur + 1 });
+        });
+        html.find(".fatigue-rest").click(async () => {
+            const cur = Number(this.actor.system.fatigue?.value || 0);
+            const roll = await new Roll("1d10").evaluate();
+            const reduced = Math.max(0, cur - roll.total);
+            await this.actor.update({ "system.fatigue.value": reduced });
+            ChatMessage.create({
+                user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+                content: `<div class="feue-levelup"><h3>${this.actor.name} rested!</h3><p>Fatigue reduced by ${roll.total} (${cur} → ${reduced}).</p></div>`
+            });
+        });
+
+        // Crests
+        html.find(".crest-add").click(async () => {
+            const list = foundry.utils.deepClone(this.actor.system.crests || []);
+            list.push({ name: "", strength: "Minor", relic: "", reductions: {} });
+            await this.actor.update({ "system.crests": list });
+        });
+        html.find(".crest-remove").click(async ev => {
+            const idx = Number($(ev.currentTarget).data("idx"));
+            const list = foundry.utils.deepClone(this.actor.system.crests || []);
+            list.splice(idx, 1);
+            await this.actor.update({ "system.crests": list });
+        });
+        html.find(".crest-name, .crest-strength, .crest-relic").change(async ev => {
+            const idx = Number($(ev.currentTarget).data("idx"));
+            const el = ev.currentTarget;
+            const field = el.classList.contains("crest-name") ? "name"
+                : el.classList.contains("crest-strength") ? "strength"
+                : "relic";
+            const list = foundry.utils.deepClone(this.actor.system.crests || []);
+            if (!list[idx]) return;
+            list[idx][field] = el.value;
+            await this.actor.update({ "system.crests": list });
+        });
+        html.find(".crest-edit-reductions").click(async ev => {
+            const idx = Number($(ev.currentTarget).data("idx"));
+            const list = foundry.utils.deepClone(this.actor.system.crests || []);
+            const crest = list[idx];
+            if (!crest) return;
+            const rows = FEUE.STAT_KEYS.map(k => {
+                const v = Number(crest.reductions?.[k] || 0);
+                return `<div class="form-group"><label style="flex:1">${FEUE.STAT_LABELS[k] || k}</label><input type="number" data-stat="${k}" value="${v}" style="width:60px" min="0"/></div>`;
+            }).join("");
+            new Dialog({
+                title: `Edit Growth Reductions — ${crest.name || "Crest"}`,
+                content: `<div><p>Major Crest: reduce one GR by 2 <i>or</i> two by 1. Minor Crest: reduce one GR by 1.</p>${rows}</div>`,
+                buttons: {
+                    save: {
+                        label: "Save",
+                        callback: (dlg) => {
+                            const reductions = {};
+                            dlg.find("input[data-stat]").each((_, inp) => {
+                                const k = inp.dataset.stat;
+                                const v = Number(inp.value || 0);
+                                if (v) reductions[k] = v;
+                            });
+                            const list2 = foundry.utils.deepClone(this.actor.system.crests || []);
+                            if (list2[idx]) {
+                                list2[idx].reductions = reductions;
+                                this.actor.update({ "system.crests": list2 });
+                            }
+                        }
+                    },
+                    cancel: { label: "Cancel" }
+                },
+                default: "save"
+            }).render(true);
+        });
+
+        // Reclassing
+        html.find(".alt-class-add").click(async () => {
+            const choices = this.actor.items.filter(i => i.type === "class").map(c => ({ id: c.id, name: c.name, type: c.system.classType }));
+            const current = Array.isArray(this.actor.system.alternateClasses) ? this.actor.system.alternateClasses : [];
+            if (current.length >= 2) {
+                ui.notifications.warn("Maximum 2 alternate classes.");
+                return;
+            }
+            const available = choices.filter(c => !current.includes(c.id));
+            if (!available.length) {
+                ui.notifications.warn("No additional classes on this character to add. Drag a class item in first.");
+                return;
+            }
+            const opts = available.map(c => `<option value="${c.id}">${c.name} (${c.type})</option>`).join("");
+            new Dialog({
+                title: "Add Alternate Class",
+                content: `<div><p>Choose a Standard class to add as an alternate.</p><select id="feue-alt-class" style="width:100%">${opts}</select></div>`,
+                buttons: {
+                    add: {
+                        label: "Add",
+                        callback: async (dlg) => {
+                            const id = dlg.find("#feue-alt-class").val();
+                            if (!id) return;
+                            const list = [...current, id];
+                            await this.actor.update({ "system.alternateClasses": list });
+                        }
+                    },
+                    cancel: { label: "Cancel" }
+                },
+                default: "add"
+            }).render(true);
+        });
+        html.find(".alt-class-remove").click(async ev => {
+            const id = $(ev.currentTarget).data("id");
+            const list = (this.actor.system.alternateClasses || []).filter(x => x !== id);
+            await this.actor.update({ "system.alternateClasses": list });
+        });
+        html.find(".reclass-btn").click(async () => {
+            const eligibleIds = [...(this.actor.system.alternateClasses || [])];
+            // Include current equipped class so users can "swap back"
+            const classes = this.actor.items.filter(i => i.type === "class");
+            const equipped = classes.find(c => c.system.equipped);
+            const choices = [];
+            for (const id of eligibleIds) {
+                const c = this.actor.items.get(id);
+                if (c) choices.push(c);
+            }
+            if (equipped && !eligibleIds.includes(equipped.id)) choices.unshift(equipped);
+            if (!choices.length) { ui.notifications.warn("No classes available to reclass into."); return; }
+            const opts = choices.map(c => `<option value="${c.id}" ${c.system.equipped ? "disabled" : ""}>${c.name} (${c.system.classType})${c.system.equipped ? " — current" : ""}</option>`).join("");
+            new Dialog({
+                title: "Reclass",
+                content: `<div><p>Choose a class to switch to. Stats and weapon ranks are preserved.</p><select id="feue-reclass-choice" style="width:100%">${opts}</select></div>`,
+                buttons: {
+                    reclass: {
+                        label: "Reclass",
+                        callback: async (dlg) => {
+                            const id = dlg.find("#feue-reclass-choice").val();
+                            if (!id) return;
+                            await this.actor.reclassTo(id);
+                        }
+                    },
+                    cancel: { label: "Cancel" }
+                },
+                default: "reclass"
+            }).render(true);
+        });
 
         html.find(".holy-blood-add").click(async () => {
             const lines = foundry.utils.deepClone(this.actor.system.holyBlood || []);
@@ -1638,6 +1983,8 @@ class FireEmblemItemSheet extends ItemSheet {
     getData() {
         const data = super.getData();
         data.FEUE = FEUE;
+        data.properPromotionEnabled = (game.settings?.get("feue", "properPromotion") || "off") !== "off";
+        data.isPromotionItem = !!this.item.getFlag("feue", "isPromotionItem");
         return data;
     }
 
@@ -1645,6 +1992,9 @@ class FireEmblemItemSheet extends ItemSheet {
         super.activateListeners(html);
         if (!this.options.editable) return;
         html.find("input, select, textarea").change(ev => this._saveField(ev));
+        html.find("input[name='flags.feue.isPromotionItem']").change(async (ev) => {
+            await this.item.setFlag("feue", "isPromotionItem", ev.currentTarget.checked);
+        });
 
         if (this.item.type === "class") {
             this._renderPromotionTree(html);
@@ -2456,6 +2806,10 @@ Hooks.once("init", () => {
     Handlebars.registerHelper("checked", function (v) { return v ? "checked" : ""; });
     Handlebars.registerHelper("lookup", function (obj, key) { return obj?.[key]; });
 
+    const _reRenderAll = () => {
+        for (const a of game.actors.filter(x => x.type === "character")) a.sheet?.render(false);
+    };
+
     game.settings.register("feue", "useHolyBlood", {
         name: "Use Holy Blood",
         hint: "Enable Holy Blood character creation rule (alt rule). Adds growth rate bonuses and grants Prf rank for the bloodline weapon.",
@@ -2463,9 +2817,79 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: false,
-        onChange: () => {
-            for (const a of game.actors.filter(x => x.type === "character")) a.sheet?.render(false);
-        }
+        onChange: _reRenderAll
+    });
+
+    game.settings.register("feue", "useStaticGrowths", {
+        name: "Use Static Growth Bonuses",
+        hint: "Alt rule. Replaces random d10 growth rolls on level-up with deterministic gains from a fixed table.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: _reRenderAll
+    });
+
+    game.settings.register("feue", "statMaxBonus", {
+        name: "Higher Stat Maximums",
+        hint: "Alt rule. Flat bonus added to every non-HP stat cap.",
+        scope: "world",
+        config: true,
+        type: Number,
+        choices: { 0: "Off (GBA cap)", 10: "+10", 20: "+20" },
+        default: 0,
+        onChange: _reRenderAll
+    });
+
+    game.settings.register("feue", "useFatigue", {
+        name: "Use Fatigue",
+        hint: "Alt rule. Track Fatigue per map; when Fatigue equals BLD, max HP is halved. Resting reduces fatigue by 1d10.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: _reRenderAll
+    });
+
+    game.settings.register("feue", "useCrests", {
+        name: "Use Crests",
+        hint: "Alt rule. Unique to Fódlan — Crests interact with HP, Skills, and weapons, and apply growth rate reductions when taken.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: _reRenderAll
+    });
+
+    game.settings.register("feue", "useHeroRelics", {
+        name: "Use Hero's Relic Alt Rule",
+        hint: "Alt rule. Relics only work properly with matching Crest — wielders without it take 10 damage/turn. With it, Rank requirement is bypassed (treated as E).",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: _reRenderAll
+    });
+
+    game.settings.register("feue", "properPromotion", {
+        name: "Proper Promotion",
+        hint: "Alt rule. Level 10 no longer auto-qualifies for promotion; a Promotion Item is required.",
+        scope: "world",
+        config: true,
+        type: String,
+        choices: { off: "Off", partial: "Partial Classic (natural promotion if no item)", full: "Full Classic (item required)" },
+        default: "off",
+        onChange: _reRenderAll
+    });
+
+    game.settings.register("feue", "useReclassing", {
+        name: "Use Reclassing",
+        hint: "Alt rule. Choose 2 alternate Standard classes at creation. At Level 10+, switch freely between them. Stats and weapon ranks are preserved.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        onChange: _reRenderAll
     });
 
     Actors.unregisterSheet("core", ActorSheet);

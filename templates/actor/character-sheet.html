@@ -169,6 +169,18 @@
                 </div>
             </div>
 
+            {{#if useFatigue}}
+            <div class="fatigue-section {{#if fatigued}}fatigued{{/if}}">
+                <div class="section-header">
+                    <h3>Fatigue</h3>
+                    <span class="fatigue-display" title="When Fatigue ≥ BLD, max HP is halved.">{{fatigueValue}} / {{fatigueMax}}</span>
+                    <button type="button" class="fatigue-inc" title="Add fatigue (played a map)">+1</button>
+                    <button type="button" class="fatigue-rest" title="Rest (1d10 reduction)">Rest</button>
+                </div>
+                {{#if fatigued}}<p class="fatigue-warning"><i class="fas fa-exclamation-triangle"></i> Fatigued — max HP halved.</p>{{/if}}
+            </div>
+            {{/if}}
+
             {{!-- Status Effects --}}
             <div class="status-effects-section">
                 <div class="section-header">
@@ -418,6 +430,55 @@
                     <div class="detail"><label>Background</label><input type="text" name="system.personalDetails.background" value="{{actor.system.personalDetails.background}}" /></div>
                 </div>
             </div>
+            {{#if useCrests}}
+            <div class="crests-section">
+                <div class="section-header">
+                    <h3>Crests</h3>
+                    <a class="crest-add" title="Add Crest"><i class="fas fa-plus"></i> Add</a>
+                </div>
+                {{#if crestEntries.length}}
+                <div class="crest-list">
+                    {{#each crestEntries}}
+                    <div class="crest-entry flexrow" data-idx="{{this.idx}}">
+                        <input type="text" class="crest-name" data-idx="{{this.idx}}" value="{{this.name}}" placeholder="Crest name..." />
+                        <select class="crest-strength" data-idx="{{this.idx}}">
+                            <option value="Major" {{#ifEquals this.strength "Major"}}selected{{/ifEquals}}>Major</option>
+                            <option value="Minor" {{#ifEquals this.strength "Minor"}}selected{{/ifEquals}}>Minor</option>
+                        </select>
+                        <input type="text" class="crest-relic" data-idx="{{this.idx}}" value="{{this.relic}}" placeholder="Relic / Regalia name (optional)" title="Weapon item with this exact name bypasses rank requirements." />
+                        <a class="crest-edit-reductions" data-idx="{{this.idx}}" title="Edit growth-rate reductions"><i class="fas fa-cog"></i></a>
+                        <a class="crest-remove" data-idx="{{this.idx}}" title="Remove"><i class="fas fa-times"></i></a>
+                    </div>
+                    {{/each}}
+                </div>
+                {{else}}
+                <p class="crest-empty">No Crests. Click Add to assign one.</p>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            {{#if useReclassing}}
+            <div class="reclass-section">
+                <div class="section-header">
+                    <h3>Alternate Classes</h3>
+                    <a class="alt-class-add" title="Add Alternate Class"><i class="fas fa-plus"></i> Add</a>
+                    {{#if reclassAvailable}}<button type="button" class="reclass-btn" title="Switch to an alternate class">Reclass</button>{{/if}}
+                </div>
+                {{#if alternateClassEntries.length}}
+                <div class="alt-class-list">
+                    {{#each alternateClassEntries}}
+                    <div class="alt-class-entry flexrow" data-id="{{this.id}}">
+                        <span class="alt-class-name">{{this.name}} <span class="alt-class-type">({{this.classType}})</span></span>
+                        <a class="alt-class-remove" data-id="{{this.id}}" title="Remove"><i class="fas fa-times"></i></a>
+                    </div>
+                    {{/each}}
+                </div>
+                {{else}}
+                <p class="alt-class-empty">Choose up to 2 alternate Standard classes at character creation.</p>
+                {{/if}}
+            </div>
+            {{/if}}
+
             {{#if useHolyBlood}}
             <div class="holy-blood-section">
                 <div class="section-header">

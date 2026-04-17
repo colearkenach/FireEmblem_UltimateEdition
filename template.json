@@ -114,6 +114,12 @@
       },
       "statusEffects": [],
       "holyBlood": [],
+      "crests": [],
+      "alternateClasses": [],
+      "fatigue": {
+        "value": 0,
+        "max": 0
+      },
       "personalDetails": {
         "age": 0,
         "sex": "",
