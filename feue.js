@@ -26,6 +26,24 @@ const FEUE = {
         "anima": "Anima", "light": "Light", "dark": "Dark",
         "staff": "Staff", "monster": "Monster", "stone": "Stone"
     },
+    BattalionTypes: {
+        "infantry": "Infantry", "cavalry": "Cavalry", "flying": "Flying",
+        "armored": "Armored", "magic": "Magic", "healing": "Healing"
+    },
+    CLASS_MAX_RANK: {
+        "Recruit": "C",
+        "Standard": "A",
+        "Promoted": "S_ONE",
+        "Advanced": "S_ONE",
+        "Enemy Only": "S"
+    },
+    MASTERY_BONUSES: {
+        hitRate: { label: "Hit Rate", step: 5, suffix: "%" },
+        critRate: { label: "Crit Rate", step: 5, suffix: "%" },
+        avoid: { label: "Avoid", step: 5, suffix: "%" },
+        dodge: { label: "Dodge", step: 5, suffix: "%" },
+        attackSpeed: { label: "Attack Speed", step: 2, suffix: "" }
+    },
     STATUS_EFFECTS: [
         "Berserk", "Silence", "Sleep", "Poison", "Petrification",
         "Paralysis", "Shock", "Rattled", "Confusion", "Blood Sacrifice",
@@ -125,6 +143,12 @@ FEUE.WEAPON_RANK_ARTS = {
 const DEFAULT_WEAPON_RANKS = Object.fromEntries(
     Object.keys(FEUE.WeaponTypes).map(type => [type, ""])
 );
+const DEFAULT_BATTALION_RANKS = Object.fromEntries(
+    Object.keys(FEUE.BattalionTypes).map(type => [type, ""])
+);
+const RANK_ORDER = ["", "E", "D", "C", "B", "A", "S"];
+function rankIdx(r) { return RANK_ORDER.indexOf(r || ""); }
+function rankLabel(r) { return r || "—"; }
 
 // Static Growth Bonus pattern: for a growth rate R (1-10), the list of levels at which +1 is gained.
 // For R > 10: floor(R/10) gains every level + one extra gain at pattern[R%10] levels.
@@ -319,6 +343,7 @@ class FireEmblemActor extends Actor {
             maxLevel: sys.maxLevel, baseStats: sys.baseStats || {},
             growthRates: sys.growthRates || {}, statCaps: sys.statCaps || {},
             unitTypes: sys.unitTypes || {}, weaponProficiencies: sys.weaponProficiencies || {},
+            battalionProficiencies: sys.battalionProficiencies || {},
             classSkills: Array.isArray(sys.classSkills) ? sys.classSkills : [],
             promotions: sys.promotions || []
         };
@@ -339,6 +364,14 @@ class FireEmblemActor extends Actor {
         for (const key of Object.keys(DEFAULT_WEAPON_RANKS)) {
             if (system.weaponRanks[key] === undefined || Array.isArray(system.weaponRanks[key])) system.weaponRanks[key] = "";
         }
+
+        // Battalion ranks
+        system.battalionRanks = foundry.utils.mergeObject(foundry.utils.deepClone(DEFAULT_BATTALION_RANKS), system.battalionRanks || {}, { overwrite: true });
+        for (const key of Object.keys(DEFAULT_BATTALION_RANKS)) {
+            if (system.battalionRanks[key] === undefined || Array.isArray(system.battalionRanks[key])) system.battalionRanks[key] = "";
+        }
+
+        system.weaponMasteryBonuses ??= {};
 
         // Resolve equipped class node
         const equippedClass = this.items.find(i => i.type === "class" && i.system?.equipped);
@@ -424,10 +457,18 @@ class FireEmblemActor extends Actor {
         const spd = Number(system.attributes.speed?.value || 0);
         const skl = Number(system.attributes.skill?.value || 0);
         const lck = Number(system.attributes.luck?.value || 0);
-        const as = spd - Math.max(wWeight - bld, 0) + (bonus.combat.attackSpeed || 0);
+        // Weapon mastery bonuses apply only when the equipped weapon matches
+        const mastery = (ew && system.weaponMasteryBonuses?.[ew.system.weaponType]) || {};
+        const mHit = Number(mastery.hitRate || 0);
+        const mCrit = Number(mastery.critRate || 0);
+        const mAvo = Number(mastery.avoid || 0);
+        const mDod = Number(mastery.dodge || 0);
+        const mAs = Number(mastery.attackSpeed || 0);
 
-        const baseHitRate = skl + Math.floor(lck / 4) + (bonus.combat.hitRate || 0);
-        const baseCritRate = Math.floor(skl / 2) + (bonus.combat.critRate || 0);
+        const as = spd - Math.max(wWeight - bld, 0) + (bonus.combat.attackSpeed || 0) + mAs;
+
+        const baseHitRate = skl + Math.floor(lck / 4) + (bonus.combat.hitRate || 0) + mHit;
+        const baseCritRate = Math.floor(skl / 2) + (bonus.combat.critRate || 0) + mCrit;
 
         // Damage: weapon might + relevant stat
         let damage = 0;
@@ -451,8 +492,8 @@ class FireEmblemActor extends Actor {
             baseCritRate,
             hitRate: baseHitRate + wHit,
             critRate: baseCritRate + wCrit,
-            avoid: spd + Math.floor(lck / 4) + (bonus.combat.avoid || 0),
-            dodge: lck + (bonus.combat.dodge || 0),
+            avoid: spd + Math.floor(lck / 4) + (bonus.combat.avoid || 0) + mAvo,
+            dodge: lck + (bonus.combat.dodge || 0) + mDod,
             damage,
             aid
         };
@@ -611,8 +652,9 @@ class FireEmblemActor extends Actor {
         // Award WEXP at level 4 and every 4 levels
         if (newLevel >= 4 && newLevel % 4 === 0 && ec) {
             const node = this._getCurrentClassNode(ec);
-            const profs = Object.entries(node.weaponProficiencies || {}).filter(([, v]) => v);
-            const wexpGain = profs.length;
+            const wProfs = Object.entries(node.weaponProficiencies || {}).filter(([, v]) => v);
+            const bProfs = Object.entries(node.battalionProficiencies || {}).filter(([, v]) => v);
+            const wexpGain = wProfs.length + bProfs.length;
             if (wexpGain > 0) {
                 await this.update({ "system.weaponExp": (system.weaponExp || 0) + wexpGain });
                 ui.notifications.info(`${this.name} gained ${wexpGain} Weapon EXP!`);
@@ -754,6 +796,12 @@ class FireEmblemActor extends Actor {
         for (const wt of Object.keys(FEUE.WeaponTypes)) {
             if (chosenNode?.weaponProficiencies?.[wt] && !existingRanks[wt]) {
                 updates[`system.weaponRanks.${wt}`] = "E";
+            }
+        }
+        const existingBRanks = this.system.battalionRanks || {};
+        for (const bt of Object.keys(FEUE.BattalionTypes)) {
+            if (chosenNode?.battalionProficiencies?.[bt] && !existingBRanks[bt]) {
+                updates[`system.battalionRanks.${bt}`] = "E";
             }
         }
 
@@ -1083,6 +1131,36 @@ class FireEmblemCharacterSheet extends ActorSheet {
             }
         }
         data.hasClassProficiencies = Object.keys(data.proficientWeapons).length > 0;
+
+        // Split battalion ranks into proficient vs other
+        const classBattalionProfs = classNode?.battalionProficiencies || {};
+        data.proficientBattalions = {};
+        data.otherBattalions = {};
+        for (const [btype, rank] of Object.entries(this.actor.system.battalionRanks || {})) {
+            if (classBattalionProfs[btype]) data.proficientBattalions[btype] = rank;
+            else data.otherBattalions[btype] = rank;
+        }
+        data.hasBattalionProficiencies = Object.keys(data.proficientBattalions).length > 0;
+        data.battalionTypeLabels = FEUE.BattalionTypes;
+
+        // Mastery bonuses (for display)
+        data.weaponMasteryDisplay = [];
+        for (const [wt, bonuses] of Object.entries(this.actor.system.weaponMasteryBonuses || {})) {
+            const parts = [];
+            for (const [k, v] of Object.entries(bonuses || {})) {
+                if (!v) continue;
+                const spec = FEUE.MASTERY_BONUSES[k];
+                if (!spec) continue;
+                parts.push(`+${v}${spec.suffix} ${spec.label}`);
+            }
+            if (parts.length) data.weaponMasteryDisplay.push({ type: FEUE.WeaponTypes[wt] || wt, text: parts.join(", ") });
+        }
+
+        // Weapons — plain objects with broken flag
+        data.weapons = data.weapons.map(w => ({
+            _id: w._id, id: w.id, name: w.name, img: w.img, system: w.system,
+            broken: Number(w.system.uses?.max || 0) > 0 && Number(w.system.uses?.value || 0) <= 0
+        }));
 
         // Non-HP attributes for grid
         data.nonHpAttributes = {};
@@ -1446,6 +1524,13 @@ class FireEmblemCharacterSheet extends ActorSheet {
 
         // Weapon EXP spending
         html.find(".wexp-spend").click(async (ev) => this._onSpendWexp(ev));
+        html.find(".wexp-spend-battalion").click(async (ev) => this._onSpendWexpBattalion(ev));
+        html.find(".weapon-repair").click(async (ev) => this._onRepairWeapon(ev));
+        html.find(".battalion-ranks-toggle").click(ev => {
+            const toggle = $(ev.currentTarget);
+            toggle.next(".battalion-ranks-content").slideToggle(200);
+            toggle.find("i.fas").toggleClass("fa-caret-right fa-caret-down");
+        });
 
         // Supports
         html.find(".support-add").click(() => this._onAddSupport());
@@ -1918,24 +2003,173 @@ class FireEmblemCharacterSheet extends ActorSheet {
         });
     }
 
+    /** Compute the max weapon rank index available to a given weapon type for this actor. */
+    _weaponMaxRankIdx(weaponType) {
+        const actor = this.actor;
+        const ec = actor.items.find(i => i.type === "class" && i.system?.equipped);
+        const node = ec ? actor._getCurrentClassNode(ec) : null;
+        const classType = node?.classType || "Standard";
+        const cap = FEUE.CLASS_MAX_RANK[classType] || "A";
+        const isProficient = !!node?.weaponProficiencies?.[weaponType];
+
+        if (!isProficient) return rankIdx("S");
+        if (cap === "S") return rankIdx("S");
+        if (cap === "S_ONE") {
+            // One S-rank across all weapons allowed; others capped at A.
+            const ranks = actor.system.weaponRanks || {};
+            const hasS = Object.entries(ranks).some(([k, v]) => v === "S" && k !== weaponType);
+            return hasS ? rankIdx("A") : rankIdx("S");
+        }
+        return rankIdx(cap);
+    }
+
     async _onSpendWexp(event) {
         event.preventDefault();
         const weaponType = event.currentTarget.dataset.weaponType;
-        const wexp = this.actor.system.weaponExp || 0;
-        if (wexp <= 0) return ui.notifications.warn("No Weapon EXP available.");
+        const actor = this.actor;
+        const wexp = actor.system.weaponExp || 0;
 
-        const currentRank = this.actor.system.weaponRanks?.[weaponType] || "";
-        const rankOrder = ["", "E", "D", "C", "B", "A", "S"];
-        const idx = rankOrder.indexOf(currentRank);
-        if (idx >= rankOrder.length - 1) return ui.notifications.warn(`${weaponType} is already at max rank (S).`);
+        const ec = actor.items.find(i => i.type === "class" && i.system?.equipped);
+        const node = ec ? actor._getCurrentClassNode(ec) : null;
+        const isProficient = !!node?.weaponProficiencies?.[weaponType];
+        const cost = isProficient ? 1 : 2;
+        if (wexp < cost) return ui.notifications.warn(`Need ${cost} WEXP.`);
 
-        const nextRank = rankOrder[idx + 1];
-        await this.actor.update({
+        const currentRank = actor.system.weaponRanks?.[weaponType] || "";
+        const curIdx = rankIdx(currentRank);
+
+        // Post-S mastery bonus: only for characters whose class grants a single weapon proficiency
+        if (isProficient && curIdx >= rankIdx("S")) {
+            const profCount = Object.values(node?.weaponProficiencies || {}).filter(Boolean).length;
+            if (profCount !== 1) return ui.notifications.warn(`Already at max rank.`);
+            return this._promptWeaponMastery(weaponType);
+        }
+
+        const maxIdx = this._weaponMaxRankIdx(weaponType);
+        if (curIdx >= maxIdx) {
+            return ui.notifications.warn(`${FEUE.WeaponTypes[weaponType]} is at its max rank (${RANK_ORDER[maxIdx] || "—"}).`);
+        }
+
+        const nextRank = RANK_ORDER[curIdx + 1];
+        await actor.update({
             [`system.weaponRanks.${weaponType}`]: nextRank,
-            "system.weaponExp": wexp - 1
+            "system.weaponExp": wexp - cost
         });
-        ui.notifications.info(`${FEUE.WeaponTypes[weaponType]} rank advanced to ${nextRank}! (1 WEXP spent)`);
-        await this.actor._grantWeaponArts(weaponType, nextRank);
+        ui.notifications.info(`${FEUE.WeaponTypes[weaponType]} rank advanced to ${nextRank}! (${cost} WEXP spent)`);
+        await actor._grantWeaponArts(weaponType, nextRank);
+    }
+
+    async _promptWeaponMastery(weaponType) {
+        const actor = this.actor;
+        const wexp = actor.system.weaponExp || 0;
+        if (wexp < 1) return ui.notifications.warn("Need 1 WEXP.");
+        const opts = Object.entries(FEUE.MASTERY_BONUSES)
+            .map(([k, v]) => `<option value="${k}">+${v.step}${v.suffix} ${v.label}</option>`).join("");
+        new Dialog({
+            title: `${FEUE.WeaponTypes[weaponType]} Mastery — Spend 1 WEXP`,
+            content: `<form><p>Choose a permanent bonus when wielding ${FEUE.WeaponTypes[weaponType]} weapons:</p>
+                <div class="form-group"><label>Bonus</label><select id="feue-mastery-pick">${opts}</select></div></form>`,
+            buttons: {
+                spend: {
+                    label: "Spend",
+                    callback: async (h) => {
+                        const stat = h.find("#feue-mastery-pick").val();
+                        const spec = FEUE.MASTERY_BONUSES[stat];
+                        if (!spec) return;
+                        const cur = Number(actor.system.weaponMasteryBonuses?.[weaponType]?.[stat] || 0);
+                        await actor.update({
+                            [`system.weaponMasteryBonuses.${weaponType}.${stat}`]: cur + spec.step,
+                            "system.weaponExp": wexp - 1
+                        });
+                        ui.notifications.info(`${actor.name}: +${spec.step}${spec.suffix} ${spec.label} with ${FEUE.WeaponTypes[weaponType]}!`);
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "spend"
+        }).render(true);
+    }
+
+    async _onSpendWexpBattalion(event) {
+        event.preventDefault();
+        const battalionType = event.currentTarget.dataset.battalionType;
+        const actor = this.actor;
+        const wexp = actor.system.weaponExp || 0;
+
+        const ec = actor.items.find(i => i.type === "class" && i.system?.equipped);
+        const node = ec ? actor._getCurrentClassNode(ec) : null;
+        const isProficient = !!node?.battalionProficiencies?.[battalionType];
+        const cost = isProficient ? 1 : 2;
+        if (wexp < cost) return ui.notifications.warn(`Need ${cost} WEXP.`);
+
+        const currentRank = actor.system.battalionRanks?.[battalionType] || "";
+        const curIdx = rankIdx(currentRank);
+
+        const classType = node?.classType || "Standard";
+        const cap = FEUE.CLASS_MAX_RANK[classType] || "A";
+        let maxIdx;
+        if (!isProficient) maxIdx = rankIdx("S");
+        else if (cap === "S") maxIdx = rankIdx("S");
+        else if (cap === "S_ONE") {
+            const ranks = actor.system.battalionRanks || {};
+            const hasS = Object.entries(ranks).some(([k, v]) => v === "S" && k !== battalionType);
+            maxIdx = hasS ? rankIdx("A") : rankIdx("S");
+        } else maxIdx = rankIdx(cap);
+
+        if (curIdx >= maxIdx) {
+            return ui.notifications.warn(`${FEUE.BattalionTypes[battalionType]} is at its max rank (${RANK_ORDER[maxIdx] || "—"}).`);
+        }
+
+        const nextRank = RANK_ORDER[curIdx + 1];
+        await actor.update({
+            [`system.battalionRanks.${battalionType}`]: nextRank,
+            "system.weaponExp": wexp - cost
+        });
+        ui.notifications.info(`${FEUE.BattalionTypes[battalionType]} battalion rank advanced to ${nextRank}! (${cost} WEXP spent)`);
+    }
+
+    async _onRepairWeapon(event) {
+        event.preventDefault();
+        const id = $(event.currentTarget).closest(".item").data("item-id");
+        const weapon = this.actor.items.get(id);
+        if (!weapon || weapon.type !== "weapon") return;
+        const maxUses = Number(weapon.system.uses?.max || 0);
+        if (!maxUses) return ui.notifications.warn("Weapon has no uses.");
+        const curUses = Number(weapon.system.uses?.value || 0);
+        if (curUses >= maxUses) return ui.notifications.info("Already at full durability.");
+        const price = Number(weapon.system.price || 0);
+        const missing = maxUses - curUses;
+        const defaultCost = Math.max(1, Math.ceil((price * missing) / (maxUses * 2)));
+
+        // Find a party this character belongs to, for gold source.
+        const party = game.actors.find(a => a.type === "party" && (a.system.memberIds || []).includes(this.actor.id));
+        const partyGold = party ? Number(party.system.gold || 0) : null;
+
+        new Dialog({
+            title: `Repair ${weapon.name}`,
+            content: `<form>
+                <p>${curUses} / ${maxUses} uses — needs ${missing} repair(s).</p>
+                <div class="form-group"><label>Gold Cost</label><input type="number" id="feue-repair-cost" value="${defaultCost}" min="0"/></div>
+                ${party ? `<p>${party.name} has ${partyGold} Gold.</p>` : `<p><i>No party — gold not deducted.</i></p>`}
+            </form>`,
+            buttons: {
+                repair: {
+                    icon: '<i class="fas fa-hammer"></i>', label: "Repair",
+                    callback: async (h) => {
+                        const cost = Number(h.find("#feue-repair-cost").val()) || 0;
+                        if (party && cost > partyGold) return ui.notifications.warn("Not enough party gold.");
+                        if (party && cost > 0) await party.update({ "system.gold": partyGold - cost });
+                        await weapon.update({ "system.uses.value": maxUses });
+                        ChatMessage.create({
+                            user: game.user.id, speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+                            content: `<div class="feue-repair"><h3>${this.actor.name} repaired ${weapon.name}</h3><p>Uses restored to ${maxUses}/${maxUses}${cost ? ` — ${cost} Gold spent` : ""}.</p></div>`
+                        });
+                    }
+                },
+                cancel: { label: "Cancel" }
+            },
+            default: "repair"
+        }).render(true);
     }
 
     _onAddSupport() {
@@ -2653,6 +2887,110 @@ class FireEmblemPartySheet extends ActorSheet {
 
         html.find(".party-award-xp").click(() => this._onAwardXp());
         html.find(".party-gold-adjust").click(ev => this._onAdjustGold($(ev.currentTarget).data("amount")));
+        html.find(".party-starting-package").click(() => this._onGrantStartingPackage());
+    }
+
+    /** Grant starting package to each Level-1 / 0-XP member. */
+    async _onGrantStartingPackage() {
+        const members = (this.actor.system.memberIds || [])
+            .map(id => game.actors.get(id))
+            .filter(a => a && a.type === "character");
+        const eligible = members.filter(a => (a.system.level || 1) === 1 && (a.system.experience || 0) === 0);
+        if (!eligible.length) return ui.notifications.warn("No eligible members (must be Level 1 with 0 EXP).");
+
+        // Gather compendium indexes once
+        const packs = game.packs.filter(p => p.metadata.type === "Item");
+        const weaponEntries = [];
+        const itemEntries = [];
+        for (const pack of packs) {
+            let index;
+            try { index = await pack.getIndex({ fields: ["type", "img", "name", "system.rank", "system.weaponType", "system.itemType"] }); }
+            catch (e) { continue; }
+            for (const e of index) {
+                const uuid = `Compendium.${pack.collection}.${e._id}`;
+                if (e.type === "weapon" && (e.system?.rank === "E")) {
+                    weaponEntries.push({ uuid, name: e.name, img: e.img, weaponType: e.system?.weaponType || "", pack: pack.metadata.label });
+                } else if (e.type === "item") {
+                    itemEntries.push({ uuid, name: e.name, img: e.img, pack: pack.metadata.label });
+                }
+            }
+        }
+
+        const vulneraryEntry = itemEntries.find(e => /vulnerary/i.test(e.name));
+        const lockpickEntry = itemEntries.find(e => /lockpick/i.test(e.name));
+        if (!vulneraryEntry) ui.notifications.warn("No Vulnerary found in compendiums — skipping.");
+
+        const addFromUuid = async (actor, uuid) => {
+            const src = await fromUuid(uuid);
+            if (!src) return null;
+            const data = src.toObject();
+            delete data._id;
+            const [created] = await actor.createEmbeddedDocuments("Item", [data]);
+            return created;
+        };
+
+        for (const actor of eligible) {
+            await this._grantStartingPackageFor(actor, weaponEntries, vulneraryEntry, lockpickEntry, addFromUuid);
+        }
+    }
+
+    async _grantStartingPackageFor(actor, weaponEntries, vulneraryEntry, lockpickEntry, addFromUuid) {
+        // Filter weapons by this actor's class proficiencies if any
+        const ec = actor.items.find(i => i.type === "class" && i.system?.equipped);
+        const node = ec ? actor._getCurrentClassNode(ec) : null;
+        const profs = node?.weaponProficiencies || {};
+        const profKeys = Object.entries(profs).filter(([, v]) => v).map(([k]) => k);
+        const filtered = weaponEntries.filter(w => !profKeys.length || profKeys.includes(w.weaponType));
+        const choices = filtered.length ? filtered : weaponEntries;
+        const opts = choices.map(w => `<option value="${w.uuid}">${w.name} (${FEUE.WeaponTypes[w.weaponType] || w.weaponType})</option>`).join("");
+
+        const className = node?.name || actor.system.activeClassName || "";
+        const isThief = /thief/i.test(className) || /thief/i.test(ec?.name || "");
+
+        return new Promise(resolve => {
+            new Dialog({
+                title: `Starting Package — ${actor.name}`,
+                content: `<form>
+                    <p>Choose an E-Rank weapon for <b>${actor.name}</b>.</p>
+                    ${choices.length ? `<div class="form-group"><label>Weapon</label><select id="feue-sp-weapon" style="width:100%;">${opts}</select></div>`
+                    : `<p><i>No E-Rank weapons found in compendiums.</i></p>`}
+                    <p>Also grants: Vulnerary${isThief ? " + Lockpick" : ""}.</p>
+                </form>`,
+                buttons: {
+                    grant: {
+                        icon: '<i class="fas fa-gift"></i>', label: "Grant",
+                        callback: async (h) => {
+                            const log = [];
+                            const weaponUuid = h.find("#feue-sp-weapon").val();
+                            if (weaponUuid) {
+                                const w = await addFromUuid(actor, weaponUuid);
+                                if (w) log.push(w.name);
+                            }
+                            if (vulneraryEntry) {
+                                const v = await addFromUuid(actor, vulneraryEntry.uuid);
+                                if (v) log.push(v.name);
+                            }
+                            if (isThief && lockpickEntry) {
+                                const l = await addFromUuid(actor, lockpickEntry.uuid);
+                                if (l) log.push(l.name);
+                            } else if (isThief && !lockpickEntry) {
+                                ui.notifications.warn("No Lockpick found in compendiums.");
+                            }
+                            if (log.length) {
+                                ChatMessage.create({
+                                    user: game.user.id, speaker: ChatMessage.getSpeaker({ actor }),
+                                    content: `<div class="feue-starting-package"><h3>${actor.name} — Starting Package</h3><p>Received: ${log.join(", ")}.</p></div>`
+                                });
+                            }
+                            resolve();
+                        }
+                    },
+                    skip: { label: "Skip", callback: () => resolve() }
+                },
+                default: "grant",
+                close: () => resolve()
+            }).render(true);
+        });
     }
 
     async _onDrop(event) {

@@ -100,6 +100,15 @@
         "monster": "",
         "stone": ""
       },
+      "battalionRanks": {
+        "infantry": "",
+        "cavalry": "",
+        "flying": "",
+        "armored": "",
+        "magic": "",
+        "healing": ""
+      },
+      "weaponMasteryBonuses": {},
       "movement": {
         "base": 0,
         "current": 0
@@ -280,6 +289,7 @@
       "equipped": false,
       "unitTypes": {},
       "weaponProficiencies": {},
+      "battalionProficiencies": {},
       "baseStats": {},
       "growthRates": {},
       "statCaps": {},
@@ -298,6 +308,8 @@
       "hit": 10,
       "crit": 0,
       "range": "1",
+      "battalionType": "infantry",
+      "rank": "E",
       "properties": ""
     },
     "miscBonus": {
