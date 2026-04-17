@@ -2205,6 +2205,9 @@ class FireEmblemItemSheet extends ItemSheet {
         data.FEUE = FEUE;
         data.properPromotionEnabled = (game.settings?.get("feue", "properPromotion") || "off") !== "off";
         data.isPromotionItem = !!this.item.getFlag("feue", "isPromotionItem");
+        const t = this.item.type, s = this.item.system || {};
+        data.showQuantity = t !== "weapon";
+        data.showWeight = (t === "weapon" && s.weaponType !== "staff") || (t === "item" && s.itemType === "equippable");
         return data;
     }
 
@@ -2214,6 +2217,14 @@ class FireEmblemItemSheet extends ItemSheet {
         html.find("input, select, textarea").change(ev => this._saveField(ev));
         html.find("input[name='flags.feue.isPromotionItem']").change(async (ev) => {
             await this.item.setFlag("feue", "isPromotionItem", ev.currentTarget.checked);
+        });
+        html.find(".bonus-toggle").click(ev => {
+            ev.preventDefault();
+            const section = $(ev.currentTarget).closest(".feue-bonus-section");
+            section.toggleClass("collapsed");
+            const label = section.hasClass("collapsed") ? "Show All" : "Hide";
+            const icon = section.hasClass("collapsed") ? "fa-chevron-down" : "fa-chevron-up";
+            $(ev.currentTarget).html(`<i class="fas ${icon}"></i> ${label}`);
         });
 
         if (this.item.type === "class") {

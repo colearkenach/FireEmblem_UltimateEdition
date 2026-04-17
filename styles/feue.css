@@ -1643,3 +1643,18 @@
     border: 1px dashed #b8a080; border-radius: 4px;
     background: rgba(139, 115, 85, 0.05);
 }
+
+/* Collapsible bonus sections on item sheets */
+.feue-bonus-section .bonus-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+}
+.feue-bonus-section .bonus-header h3 { margin: 0; }
+.feue-bonus-section .bonus-toggle {
+    cursor: pointer; font-size: 11px; color: #2c4875;
+    padding: 2px 8px; border: 1px solid #b8a080; border-radius: 4px;
+    background: rgba(139, 115, 85, 0.1);
+}
+.feue-bonus-section .bonus-toggle:hover { background: rgba(139, 115, 85, 0.25); }
+.feue-bonus-section.collapsed .bonus-zero { display: none; }
+.feue-bonus-section.collapsed .form-row:not(:has(.form-group:not(.bonus-zero))) { display: none; }
