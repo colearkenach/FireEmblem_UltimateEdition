@@ -2506,6 +2506,20 @@ class FireEmblemItemSheet extends ItemSheet {
         data.showQuantity = t !== "weapon";
         data.showWeight = (t === "weapon" && s.weaponType !== "staff") || (t === "item" && s.itemType === "equippable");
         data.hidePrice = t === "weapon" && (s.properties?.illegal || s.properties?.legendary);
+
+        // One-time migration: if legacy weapon has a string/array properties field, move text to propertiesNotes
+        if (t === "weapon") {
+            const raw = this.item._source?.system?.properties;
+            if (raw != null && (typeof raw === "string" || Array.isArray(raw))) {
+                const legacyText = typeof raw === "string" ? raw : raw.filter(v => typeof v === "string").join(", ");
+                const update = { "system.properties": normalizeWeaponProperties(null) };
+                if (legacyText && !this.item._source?.system?.propertiesNotes) {
+                    update["system.propertiesNotes"] = legacyText;
+                    data.item.system.propertiesNotes = legacyText;
+                }
+                this.item.update(update);
+            }
+        }
         return data;
     }
 
@@ -2590,11 +2604,17 @@ class FireEmblemItemSheet extends ItemSheet {
 
         const update = { [el.name]: value };
 
-        // Migrate legacy array/string shape of weapon properties before nested writes
+        // Migrate legacy array/string shape of weapon properties before nested writes.
+        // Preserve any prior free-form text into system.propertiesNotes.
         if (this.item.type === "weapon" && el.name.startsWith("system.properties.")) {
             const raw = this.item._source?.system?.properties;
             if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-                await this.item.update({ "system.properties": normalizeWeaponProperties(null) });
+                const migration = { "system.properties": normalizeWeaponProperties(null) };
+                const legacyText = typeof raw === "string" ? raw : (Array.isArray(raw) ? raw.filter(v => typeof v === "string").join(", ") : "");
+                if (legacyText && !this.item._source?.system?.propertiesNotes) {
+                    migration["system.propertiesNotes"] = legacyText;
+                }
+                await this.item.update(migration);
             }
         }
 
